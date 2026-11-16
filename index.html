@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Quantum Pictural Playground</title>
 
   <!-- KaTeX for LaTeX rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
-  <!-- App styles -->
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/diagram-editor.css">
-  <link rel="stylesheet" href="css/dirac-editor.css">
+  <!-- App styles (cache-bust with version param) -->
+  <link rel="stylesheet" href="css/main.css?v=2">
+  <link rel="stylesheet" href="css/layout.css?v=2">
+  <link rel="stylesheet" href="css/diagram-editor.css?v=2">
+  <link rel="stylesheet" href="css/dirac-editor.css?v=2">
 </head>
 <body>
   <div id="app"></div>
 
-  <!-- App modules -->
-  <script type="module" src="js/app.js"></script>
+  <!-- App modules (cache-bust with version param) -->
+  <script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>
