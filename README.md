@@ -1,36 +1,50 @@
 # Quantum Pictural Playground
 
-A browser-based workbench for editing and analysing quantum pictorial diagrams
-in the style of Coecke & Kissinger's
+A browser-based teaching tool for quantum pictorial diagrams and Dirac
+notation, following Coecke & Kissinger's
 [*Picturing Quantum Processes*](https://www.cambridge.org/core/books/picturing-quantum-processes/1119568B3101F3A685BE832FEEC53E52).
-The interface follows a **Blender-style split-panel layout** where every panel
-can be split, merged, resized, and assigned an arbitrary editor type from a
-dropdown menu.
+Features a **drag-and-drop diagram editor** and a **Dirac formula editor**
+with **bidirectional synchronisation**: diagrams generate Dirac expressions,
+and student-written expressions are verified against diagrams.
+
+The interface uses a **Blender-style split-panel layout** where every panel
+can be split, merged, resized, and assigned an arbitrary editor type.
 
 ---
 
 ## Features
 
-### Blender-Style Layout Engine
-- **Split** any panel horizontally or vertically via header buttons or corner grip drag
-- **Close / merge** panels — the sibling absorbs the freed space
-- **Resize** panels by dragging the divider handles
-- **Switch editor type** per-panel with the dropdown in each panel header
-- **Focus highlight** — the active panel is outlined in blue
-
 ### Diagram Editor
-- Five node types: **Z Spider** (green), **X Spider** (red), **Hadamard**
-  (yellow box), **State/Effect** (blue diamond), **Scalar** (purple)
-- Tools: **Select**, **Wire**, **Delete**
-- **Pan** (Alt+drag / middle-mouse) and **Zoom** (scroll wheel)
-- **Phase labels** — double-click any node to set a phase (e.g. `π/2`)
-- **Slide-out component palette** — toggle with ☰, drag-and-drop or click to add
-- Box selection, Shift multi-select, and keyboard shortcuts
+- **10 generator types** from ZX-calculus / categorical quantum mechanics:
+  Z Spider, X Spider, Hadamard, Morphism box, Cup (η), Cap (ε), Swap (σ),
+  State (ψ), Effect, Scalar
+- **Bottom-to-top flow** (PQP convention): inputs from below, outputs above.
+  "↑ time" indicator in the canvas corner.
+- Tools: **Select**, **Wire**, **Delete**. Pan (Alt+drag), Zoom (scroll).
+- **Phase/label editing** — double-click any node
+- **Palette sidebar**, **multiple diagrams**, **undo/redo** (Cmd/Ctrl+Z)
+- **Boundary markers** — numbered "in/out" labels on open ports
 
 ### Dirac Formula Editor
-- LaTeX textarea with **live KaTeX rendering**
-- **16 snippet buttons** for common Dirac notation
-- **Save & recall** formulas in a per-editor list
+- LaTeX textarea with **live KaTeX rendering** and **16 snippet buttons**
+- **Linked to diagrams** — dropdown selector for which diagram to sync with
+- **Generate** — diagram → Dirac expression (per-component, with recognition)
+- **Verify** — student expression vs diagram: ✓ Equivalent / ✗ Not equivalent
+- **Never overwrites student work** — generated forms shown as suggestions
+
+### Diagram → Dirac Translation
+- **Component decomposition** — disconnected pieces translated independently
+- **Named-object recognition** — CNOT, CZ, SWAP, H, X, Y, Z, S, T, Bell
+  states/effects, computational basis (up to scalar)
+- **Pedagogical classification** (Categories A–G)
+- **Scalar folding** — cancelling scalars simplified away
+- **Tensor contraction** — brute-force for ≤6 qubits, sub-millisecond
+
+### Verification
+- Shape-aware; phase vs scalar distinction; pedagogical hints on disagreement
+
+### Layout Engine
+- Split / merge / resize panels; switch editor type per-panel
 
 ---
 
@@ -40,126 +54,141 @@ No build step required — pure vanilla ES modules + one CDN dependency (KaTeX).
 
 ```bash
 cd QuantumPicturalPlayground
-python3 -m http.server 8080
+python3 serve.py 8080          # dev server with no-cache headers
 ```
 
 Open **http://localhost:8080** in your browser.
+Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 
-> **Note:** Must be served over HTTP, not opened as `file://` (browsers block
-> ES module imports from the filesystem).
+> **Note:** Must be served over HTTP (not `file://`). Use `serve.py` for
+> development (sends no-cache headers on all responses including ES modules).
 
 ---
 
 ## Usage
 
-### Layout Controls
-
-| Action | How |
-|---|---|
-| Split horizontally | Click **⬌** in panel header |
-| Split vertically | Click **⬍** in panel header |
-| Split via drag | Drag the **corner grip** (top-right triangle) |
-| Close / merge | Click **✕** in panel header |
-| Resize | Drag the **divider bar** between panels |
-| Change editor type | **Dropdown** in the panel header |
-
 ### Diagram Editor
 
 | Action | How |
 |---|---|
-| Add node (toolbar) | Click a **coloured shape button** |
-| Add node (palette) | Click **☰** → **click** or **drag** item onto canvas |
-| Move node | Select tool → **drag** the node |
-| Connect nodes | **Wire** tool (⟶) → click output port → drag to input port |
-| Set phase | **Double-click** node → type e.g. `π/2` |
-| Select | **Click** node; **Shift+click** to multi-select; **drag** empty area to box-select |
-| Select all | **Cmd+A** / **Ctrl+A** |
-| Delete | **Delete**/**Backspace** key, or **Delete** tool (✕) + click |
-| Clear canvas | Click **🗑** button |
-| Pan | **Alt+click drag** or **middle-mouse drag** |
-| Zoom | **Scroll wheel** (anchored to cursor) |
+| Add node | Toolbar shape button, or **☰** palette (click/drag) |
+| Wire nodes | **Wire** tool (⟶) → click source node → drag to target |
+| Edit label/phase | **Double-click** node |
+| Select | Click; **Shift+click** multi; drag box-select; **Cmd+A** all |
+| Delete | **Delete**/**Backspace** key, or 🗑 button |
+| Pan / Zoom | **Alt+drag** or middle-mouse / **Scroll wheel** |
+| Undo / Redo | **Cmd+Z** / **Cmd+Shift+Z** |
+| Switch diagram | **Diagram** dropdown; **＋ New** to create |
 
 ### Dirac Formula Editor
 
 | Action | How |
 |---|---|
-| Enter formula | Type LaTeX in the **textarea** — preview updates live |
-| Insert snippet | Click a **snippet button** (e.g. \|ψ⟩, ⊗, †) |
-| Save formula | Click **＋ Save Formula** |
-| Reload saved | Click its preview in the list |
-| Delete saved | Click **✕** next to it |
+| Enter formula | Type LaTeX — preview updates live |
+| Insert snippet | Click a snippet button (kets, bras, ⊗, †, etc.) |
+| Link to diagram | **Linked diagram** dropdown |
+| Generate Dirac | Click **Generate** — translates diagram to LaTeX |
+| Verify | Click **Verify** — checks expression against diagram |
+| Save / recall | **＋ Save Formula**; click to reload |
+
+### Layout
+
+| Action | How |
+|---|---|
+| Split panel | **⬌** / **⬍** in header, or drag corner grip |
+| Close panel | **✕** in header |
+| Resize | Drag divider between panels |
+| Change editor | Dropdown in panel header |
 
 ---
 
 ## Architecture
 
 ```
-QuantumPicturalPlayground/
-├── index.html                        # Entry point (loads KaTeX CDN + app module)
-├── css/
-│   ├── main.css                      # Global reset, dark theme, scrollbars
-│   ├── layout.css                    # Split panels, handles, grips, headers
-│   ├── diagram-editor.css            # Diagram canvas, toolbar, palette
-│   └── dirac-editor.css              # LaTeX input, KaTeX preview, formula list
-└── js/
-    ├── app.js                        # Boot: register editors → create LayoutManager
-    ├── layout/
-    │   ├── LayoutManager.js          # Binary split-tree layout engine
-    │   ├── EditorArea.js             # Panel: header dropdown + editor instance
-    │   └── SplitHandle.js            # Draggable divider between panels
-    └── editors/
-        ├── EditorRegistry.js         # Pluggable editor type registry
-        ├── DiagramEditor/
-        │   ├── DiagramEditor.js      # Composes toolbar + canvas + palette
-        │   ├── DiagramCanvas.js      # Interactive canvas: pan, zoom, drag, wire
-        │   ├── DiagramNode.js        # Node model + rendering
-        │   ├── DiagramWire.js        # Wire model + Bézier rendering + hit-testing
-        │   └── DiagramToolbar.js     # Tool & node-add buttons
-        └── DiracEditor/
-            └── DiracEditor.js        # LaTeX input + KaTeX preview + snippets
+js/
+├── app.js                            # Boot: register editors, create LayoutManager
+├── core/                             # Sync engine (pure computation, no DOM)
+│   ├── FlowDirection.js              # Single source of truth for diagram convention
+│   ├── Complex.js                    # Complex arithmetic as [re,im] pairs
+│   ├── Tensor.js                     # Dense complex matrices: mul, kron, trace, etc.
+│   ├── Phase.js                      # Rational π-multiple phases
+│   ├── IR.js                         # Internal representation: typed open graph
+│   ├── DiagramToIR.js                # Diagram → IR adapter + well-formedness checks
+│   ├── ContractIR.js                 # Tensor network contraction
+│   ├── Interpret.js                  # Generator → tensor (spiders, cups, caps, etc.)
+│   ├── KnownGates.js                 # Recognition library (CNOT, H, Bell, etc.)
+│   ├── Classify.js                   # Pedagogical classifier (Categories A–G)
+│   ├── DiagramToDirac.js             # Diagram → Dirac LaTeX (component decomposition)
+│   ├── DiracParser.js                # LaTeX → AST (recursive descent)
+│   ├── DiracEval.js                  # AST → Tensor
+│   ├── Verify.js                     # Tensor comparison with pedagogical hints
+│   ├── SyncController.js             # Sync state machine (stale/equivalent/etc.)
+│   └── Config.js                     # Thresholds and settings
+├── editors/
+│   ├── EditorRegistry.js             # Pluggable editor type registry
+│   ├── DiagramEditor/                # Canvas-based diagram editor
+│   │   ├── DiagramEditor.js          # Toolbar + doc selector + canvas + palette
+│   │   ├── DiagramCanvas.js          # Interactive canvas + boundary markers
+│   │   ├── DiagramNode.js            # 10 generator types + rendering
+│   │   ├── DiagramWire.js            # Bézier wires + hit-testing
+│   │   ├── DiagramToolbar.js         # Tool & node-add buttons
+│   │   ├── DiagramDocument.js        # Shared data model + undo/redo + observer
+│   │   └── DiagramDocumentStore.js   # Singleton document registry
+│   └── DiracEditor/
+│       └── DiracEditor.js            # Textarea + KaTeX + sync bar + Generate/Verify
+└── layout/                           # Blender-style split-panel engine
+    ├── LayoutManager.js, EditorArea.js, SplitHandle.js
 ```
 
 ### Key Design Patterns
 
-- **Binary split-tree** — `LayoutManager` maintains a tree where leaves are
-  `EditorArea` instances and internal nodes hold a split ratio, direction, and
-  handle. `render()` rebuilds the DOM with explicit pixel sizes.
-- **Editor Registry** — A `Map<string, class>` decoupling layout from editors.
-  `EditorArea` reads it to populate dropdowns and instantiate by name.
-- **Editor contract** — Any registered class must implement:
-  - `static get typeName()` → display name
-  - `constructor(containerEl)` — mount into DOM element
-  - `onResize()` — respond to size changes
-  - `destroy()` — clean up
+- **Sync hub** — both editors translate into/out of a shared IR (typed open
+  graph). They never translate directly into each other.
+- **Observer pattern** — `DiagramDocument` fires change events; multiple
+  canvases viewing the same document stay in sync automatically.
+- **Component decomposition** — disconnected diagram pieces are translated
+  independently and combined with ⊗.
+- **Pluggable editors** — `EditorRegistry` decouples layout from editor types.
+  New editors implement `typeName`, `constructor(el)`, `onResize()`, `destroy()`.
 
 ---
 
-## Adding a New Editor Type
+## Diagram Convention
 
-```js
-// js/editors/MyEditor/MyEditor.js
-export default class MyEditor {
-  static get typeName() { return 'My Editor'; }
+Diagrams follow the **PQP (bottom-to-top)** convention:
 
-  constructor(containerEl) {
-    this.el = document.createElement('div');
-    this.el.textContent = 'Hello from My Editor';
-    containerEl.appendChild(this.el);
-  }
+| Element | Role | Ports |
+|---|---|---|
+| Cup (∪) | State \|Φ⁺⟩ | 2 outputs (top) |
+| Cap (∩) | Effect ⟨Φ⁺\| | 2 inputs (bottom) |
+| State (▽) | State preparation | 1 output (top) |
+| Effect (△) | Measurement/effect | 1 input (bottom) |
+| Z/X Spider | Observable spider | Outputs top, inputs bottom |
+| Box (H, f) | Process | Output top, input bottom |
+| Swap | Wire crossing | Outputs top, inputs bottom |
 
-  onResize() { /* handle container size changes */ }
-  destroy()  { this.el.remove(); }
-}
-```
+The flow direction is controlled by `js/core/FlowDirection.js` and consulted
+by port positioning, drawing, interpretation, and boundary ordering.
 
-Register in `app.js`:
+---
 
-```js
-import MyEditor from './editors/MyEditor/MyEditor.js';
-EditorRegistry.register(MyEditor);
-```
+## Documentation
 
-It will immediately appear in every panel's editor-type dropdown.
+| Document | Path |
+|---|---|
+| Architecture analysis | `docs/existing-architecture.md` |
+| Compute-location decision | `docs/decision-compute.md` |
+| Component-decomposition fix | `docs/fix-disconnected-components.md` |
+| Shape/scalar/direction fix | `docs/fix-bra-ket-shape-scalar.md` |
+
+---
+
+## Tests
+
+Open **http://localhost:8080/tests/test-fixtures.html** in a browser.
+Tests cover: component decomposition, cup/cap tensors, CNOT recognition,
+scalar folding, round-trip (generate → parse → eval → verify), shape
+mismatch rejection, and direction correctness.
 
 ---
 
@@ -167,16 +196,16 @@ It will immediately appear in every panel's editor-type dropdown.
 
 | Dependency | Source | Purpose |
 |---|---|---|
-| [KaTeX](https://katex.org/) 0.16.9 | CDN (jsdelivr) | LaTeX rendering in the Dirac Formula Editor |
+| [KaTeX](https://katex.org/) 0.16.9 | CDN | LaTeX rendering |
 
 Everything else is **vanilla JavaScript ES modules** — no bundler, no
-framework, no transpilation.
+framework, no transpilation. ~2,000 lines of core sync engine (`js/core/`).
 
 ---
 
 ## Browser Support
 
-Tested in modern Chromium-based browsers (Chrome, Edge, Arc) and Firefox.
+Modern Chromium (Chrome, Edge, Arc) and Firefox.
 Requires ES module support (`<script type="module">`).
 
 ---
