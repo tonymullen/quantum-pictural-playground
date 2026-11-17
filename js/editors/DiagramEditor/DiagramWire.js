@@ -19,6 +19,7 @@ export default class DiagramWire {
     this.toNodeId = toNodeId;
     this.toPort = toPort;
     this.selected = false;
+    this.wireType = 'qubit';   // 'qubit' | 'qubit-thick' | 'classical'
   }
 
   /**

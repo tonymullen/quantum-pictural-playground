@@ -135,3 +135,42 @@
 .dirac-formula-item .formula-delete:hover {
   color: var(--danger);
 }
+
+/* Sync status bar */
+.dirac-sync-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  min-height: 26px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+  user-select: none;
+}
+.dirac-sync-bar .sync-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.dirac-sync-bar .sync-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dirac-sync-bar .verify-ok   { color: var(--success); }
+.dirac-sync-bar .verify-fail { color: var(--danger); }
+.dirac-sync-bar .verify-stale { color: var(--warning); }
+.dirac-sync-bar .verify-unknown { color: var(--text-secondary); }
+.dirac-sync-bar button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.dirac-sync-bar button:hover {
+  border-color: var(--accent-dim);
+}

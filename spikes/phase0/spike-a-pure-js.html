@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Spike A: Pure JS tensor ops</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@13.2.2/lib/browser/math.min.js"></script>
+</head><body>
+<h2>Spike A: Pure JS (math.js) — complex tensor contraction</h2>
+<pre id="out"></pre>
+<script>
+const log = s => { document.getElementById('out').textContent += s + '\n'; console.log(s); };
+
+// Test 1: Complex matrix multiplication
+const i = math.complex(0, 1);
+const H = math.multiply(1/Math.sqrt(2), [[1, 1], [1, -1]]);  // Hadamard
+const ket0 = [[1], [0]];
+const plus = math.multiply(H, ket0);
+log('H|0⟩ = ' + JSON.stringify(plus));
+
+// Test 2: Kronecker product (tensor product) with complex entries
+const CNOT = [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]];
+const ket00 = math.kron([[1],[0]], [[1],[0]]);
+const result = math.multiply(CNOT, ket00);
+log('CNOT|00⟩ = ' + JSON.stringify(result));
+
+// Test 3: Bell state: CNOT · (H⊗I) · |00⟩
+const I2 = [[1,0],[0,1]];
+const HI = math.kron(H, I2);
+const bell = math.multiply(CNOT, math.multiply(HI, ket00));
+log('Bell |Φ+⟩ = ' + JSON.stringify(bell));
+
+// Test 4: Complex phase spider
+const alpha = Math.PI / 4;  // π/4
+const phase = math.complex(Math.cos(alpha), Math.sin(alpha));
+const Z_phase = [[1, 0], [0, phase]];
+const phased = math.multiply(Z_phase, plus);
+log('Z(π/4)|+⟩ = ' + JSON.stringify(phased));
+
+// Test 5: Trace (loop = trace of identity = 2)
+const tr = math.trace(I2);
+log('tr(I₂) = ' + tr);
+
+// Test 6: Inner product ⟨0|1⟩ = 0
+const bra0 = math.transpose(ket0);
+const ket1 = [[0],[1]];
+const inner = math.multiply(bra0, ket1);
+log('⟨0|1⟩ = ' + JSON.stringify(inner));
+
+// Test 7: Outer product |0⟩⟨1| (projector)
+const bra1 = [[0,1]];
+const outer = math.multiply(ket0, bra1);
+log('|0⟩⟨1| = ' + JSON.stringify(outer));
+
+// Test 8: Timing — 6 qubit tensor contraction
+const t0 = performance.now();
+let big = math.identity(1);
+for (let q = 0; q < 6; q++) big = math.kron(big, H);
+const t1 = performance.now();
+log(`6-qubit H⊗6 (64×64): ${(t1-t0).toFixed(1)} ms, size ${math.size(big)}`);
+
+// Test 9: Matrix comparison up to global phase
+function matricesEqualUpToPhase(A, B, tol=1e-10) {
+  const a = math.flatten(A);
+  const b = math.flatten(B);
+  // Find first nonzero entry to determine phase
+  let phase = null;
+  for (let k = 0; k < a.length; k++) {
+    const ak = math.complex(a[k]);
+    const bk = math.complex(b[k]);
+    if (math.abs(ak) > tol && math.abs(bk) > tol) {
+      phase = math.divide(bk, ak);
+      break;
+    }
+  }
+  if (!phase) return math.deepEqual(a.map(x => math.abs(x) < tol ? 0 : 1), b.map(x => math.abs(x) < tol ? 0 : 1));
+  const scaled = a.map(x => math.multiply(x, phase));
+  for (let k = 0; k < a.length; k++) {
+    if (math.abs(math.subtract(scaled[k], b[k])) > tol) return false;
+  }
+  return true;
+}
+log('I == e^{iπ/4}·I up to phase? ' + matricesEqualUpToPhase(I2, math.multiply(phase, I2)));
+
+log('\n✅ All tests complete. math.js covers: complex, kron, multiply, trace, transpose, identity, flatten.');
+log('Missing from math.js: partial trace, tensor contraction over index pairs. These need custom code (~50 lines).');
+</script>
+</body></html>

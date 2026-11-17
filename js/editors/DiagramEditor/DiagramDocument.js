@@ -19,6 +19,9 @@ export default class DiagramDocument {
     this._maxUndo = 50;
     /** @type {Set<Function>} */
     this._listeners = new Set();
+    // Boundary ordering (populated by DiagramToIR adapter)
+    this.inputBoundary = [];   // { nodeId, portIndex }[]
+    this.outputBoundary = [];  // { nodeId, portIndex }[]
   }
 
   /* ---- Observer pattern ---- */
@@ -35,12 +38,15 @@ export default class DiagramDocument {
         id: n.id, typeKey: n.type.key,
         x: n.x, y: n.y, label: n.label,
         inputs: n.inputs, outputs: n.outputs,
-        selected: n.selected
+        selected: n.selected,
+        phase: n.phase, symbolicForm: n.symbolicForm,
+        provenance: n.provenance
       });
     }
     const wires = this.wires.map(w => ({
       id: w.id, fromNodeId: w.fromNodeId, fromPort: w.fromPort,
-      toNodeId: w.toNodeId, toPort: w.toPort, selected: w.selected
+      toNodeId: w.toNodeId, toPort: w.toPort, selected: w.selected,
+      wireType: w.wireType
     }));
     return JSON.stringify({ nodes, wires });
   }
@@ -55,11 +61,15 @@ export default class DiagramDocument {
       node.id = nd.id; node.label = nd.label;
       node.inputs = nd.inputs; node.outputs = nd.outputs;
       node.selected = nd.selected;
+      node.phase = nd.phase || null;
+      node.symbolicForm = nd.symbolicForm || null;
+      node.provenance = nd.provenance || null;
       this.nodes.set(node.id, node);
     }
     this.wires = data.wires.map(wd => {
       const w = new DiagramWire(wd.fromNodeId, wd.fromPort, wd.toNodeId, wd.toPort);
       w.id = wd.id; w.selected = wd.selected;
+      w.wireType = wd.wireType || 'qubit';
       return w;
     });
   }

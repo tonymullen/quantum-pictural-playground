@@ -121,8 +121,68 @@ export default class DiagramCanvas {
     for (const wire of this.wires) wire.draw(ctx, this.nodes);
     if (this.wiring) this._drawWiringPreview(ctx);
     for (const node of this.nodes.values()) node.draw(ctx);
+    this._drawBoundaryMarkers(ctx);
     ctx.restore();
+    // Flow indicator (screen space, always visible)
+    this._drawFlowArrow();
     if (this.selectionRect) this._drawSelRect();
+  }
+
+  /** Draw numbered markers on open (boundary) ports. */
+  _drawBoundaryMarkers(ctx) {
+    if (!this.doc.inputBoundary.length && !this.doc.outputBoundary.length) return;
+    ctx.save();
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Input boundaries (bottom in PQP) — blue circles with "in N"
+    for (let i = 0; i < this.doc.inputBoundary.length; i++) {
+      const b = this.doc.inputBoundary[i];
+      const node = this._findNodeByIRId(b.nodeId);
+      if (!node) continue;
+      const p = node.getInputPort(b.portIndex);
+      if (!p) continue;
+      const my = p.y + 12; // marker below port (input = bottom in PQP)
+      ctx.fillStyle = '#2a7ab5';
+      ctx.beginPath(); ctx.arc(p.x, my, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`in${i}`, p.x, my);
+    }
+
+    // Output boundaries (top in PQP) — green circles with "out N"
+    for (let i = 0; i < this.doc.outputBoundary.length; i++) {
+      const b = this.doc.outputBoundary[i];
+      const node = this._findNodeByIRId(b.nodeId);
+      if (!node) continue;
+      const p = node.getOutputPort(b.portIndex);
+      if (!p) continue;
+      const my = p.y - 12; // marker above port (output = top in PQP)
+      ctx.fillStyle = '#6a9955';
+      ctx.beginPath(); ctx.arc(p.x, my, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`out${i}`, p.x, my);
+    }
+
+    ctx.restore();
+  }
+
+  /** Draw a small flow-direction indicator in the top-right corner. */
+  _drawFlowArrow() {
+    const ctx = this.ctx;
+    const w = this.canvas.width / (window.devicePixelRatio || 1);
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('↑ time', w - 8, 8);
+    ctx.restore();
+  }
+
+  /** Find a diagram node by id (boundaries now store diagram node ids). */
+  _findNodeByIRId(nodeId) {
+    return this.nodes.get(nodeId) || null;
   }
 
   _drawWiringPreview(ctx) {

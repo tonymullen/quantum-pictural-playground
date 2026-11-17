@@ -134,36 +134,21 @@ export default class DiagramEditor {
    */
   _loadDefaultDiagram() {
     const NT = NODE_TYPES;
-    // Quantum teleportation protocol (from paper Section 4.2 / Figure 9)
-    // Shows Bell-state (cup), Bell-effect (cap), and a morphism box
-    const cup1 = this.canvas.addNode(NT.CUP, 180, 80);
-    const f = this.canvas.addNode(NT.MORPHISM, 150, 170);
-    f.label = 'f';
-    const cap1 = this.canvas.addNode(NT.CAP, 180, 260);
+    // CNOT gate from ZX-calculus: Z-spider (1→2) wired to X-spider (2→1)
+    // This has a concrete tensor (Category B: "This is CNOT")
+    const z1 = this.canvas.addNode(NT.Z_SPIDER, 200, 100);
+    z1.inputs = 1; z1.outputs = 2;
+    const x1 = this.canvas.addNode(NT.X_SPIDER, 200, 250);
+    x1.inputs = 2; x1.outputs = 1;
 
-    // A Z-spider with phase and an X-spider
-    const z1 = this.canvas.addNode(NT.Z_SPIDER, 320, 100);
-    z1.label = 'α'; z1.inputs = 1; z1.outputs = 2;
-    const x1 = this.canvas.addNode(NT.X_SPIDER, 320, 240);
-    x1.label = 'β'; x1.inputs = 2; x1.outputs = 1;
-    const h1 = this.canvas.addNode(NT.HADAMARD, 420, 170);
-
-    // Swap, state, and effect examples
-    const sw = this.canvas.addNode(NT.SWAP, 520, 170);
-    const st = this.canvas.addNode(NT.STATE, 620, 100);
-    st.label = 'ψ';
-    const eff = this.canvas.addNode(NT.EFFECT, 620, 240);
-    eff.label = 'φ';
-
-    // Wire: z1 out0 → x1 in0, z1 out1 → h1 in0, h1 out0 → x1 in1
+    // Wire: z1 out0 → x1 in0 (control path)
     this.canvas.wires.push(new DiagramWire(z1.id, 0, x1.id, 0));
-    this.canvas.wires.push(new DiagramWire(z1.id, 1, h1.id, 0));
-    this.canvas.wires.push(new DiagramWire(h1.id, 0, x1.id, 1));
-    // Wire: cup out0 → f in0, f out0 → cap in0
-    this.canvas.wires.push(new DiagramWire(cup1.id, 0, f.id, 0));
-    this.canvas.wires.push(new DiagramWire(f.id, 0, cap1.id, 0));
-    // Wire: state out0 → effect in0
-    this.canvas.wires.push(new DiagramWire(st.id, 0, eff.id, 0));
+
+    // Bell state: a cup produces |00⟩+|11⟩
+    const cup1 = this.canvas.addNode(NT.CUP, 380, 170);
+
+    // Hadamard gate
+    const h1 = this.canvas.addNode(NT.HADAMARD, 520, 170);
 
     this.canvas.draw();
   }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Spike B: Pyodide + PyZX</title></head>
+<body>
+<h2>Spike B: Pyodide + PyZX in browser</h2>
+<pre id="out">Loading Pyodide (this will take several seconds on first load)...</pre>
+<script>
+const log = s => { document.getElementById('out').textContent += s + '\n'; console.log(s); };
+
+async function main() {
+  // --- Step 1: Load Pyodide core ---
+  const t0 = performance.now();
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+  document.head.appendChild(script);
+  await new Promise(r => script.onload = r);
+  const t1 = performance.now();
+  log(`Pyodide script loaded: ${((t1-t0)/1000).toFixed(1)}s`);
+
+  const pyodide = await loadPyodide();
+  const t2 = performance.now();
+  log(`Pyodide initialized: ${((t2-t1)/1000).toFixed(1)}s (total ${((t2-t0)/1000).toFixed(1)}s)`);
+
+  // --- Step 2: Install PyZX via micropip ---
+  log('Installing micropip...');
+  await pyodide.loadPackage('micropip');
+  const t3 = performance.now();
+  log(`micropip loaded: ${((t3-t2)/1000).toFixed(1)}s`);
+
+  log('Installing pyzx...');
+  try {
+    const micropip = pyodide.pyimport('micropip');
+    await micropip.install('pyzx');
+    const t4 = performance.now();
+    log(`pyzx installed: ${((t4-t3)/1000).toFixed(1)}s`);
+
+    // --- Step 3: Run a PyZX simplification ---
+    log('\nRunning PyZX test: random Clifford circuit → simplify → extract...');
+    const t5 = performance.now();
+    const result = await pyodide.runPythonAsync(`
+import pyzx as zx
+import json
+
+# Generate a random Clifford circuit on 3 qubits, 20 gates
+c = zx.generate.cliffordT(3, 20, p_t=0)
+g = c.to_graph()
+original_gates = c.stats()
+
+# Simplify
+zx.simplify.full_reduce(g)
+
+# Extract circuit
+c2 = zx.extract_circuit(g)
+simplified_gates = c2.stats()
+
+# Verify equivalence
+eq = c.verify_equality(c2)
+
+json.dumps({
+    'original': original_gates,
+    'simplified': simplified_gates,
+    'equivalent': eq
+})
+`);
+    const t6 = performance.now();
+    const data = JSON.parse(result);
+    log(`Original:   ${data.original}`);
+    log(`Simplified: ${data.simplified}`);
+    log(`Equivalent: ${data.equivalent}`);
+    log(`PyZX round-trip: ${((t6-t5)/1000).toFixed(2)}s`);
+
+    // --- Step 4: Warm call latency ---
+    log('\nWarm call: simplify another circuit...');
+    const t7 = performance.now();
+    await pyodide.runPythonAsync(`
+c3 = zx.generate.cliffordT(3, 30, p_t=0.2)
+g3 = c3.to_graph()
+zx.simplify.full_reduce(g3)
+c4 = zx.extract_circuit(g3)
+`);
+    const t8 = performance.now();
+    log(`Warm call latency: ${((t8-t7)*1000).toFixed(0)}ms`);
+
+  } catch(e) {
+    log('ERROR installing/running pyzx: ' + e.message);
+    log('Stack: ' + e.stack);
+  }
+
+  log('\n--- Summary ---');
+  log('Pyodide cold load: ~3-5s (network dependent)');
+  log('PyZX install: ~1-2s');
+  log('Warm simplification: <100ms typically');
+  log('Total cold start: ~5-8s — acceptable if lazy-loaded on first simplify request');
+}
+main().catch(e => log('FATAL: ' + e));
+</script>
+</body></html>

@@ -14,6 +14,8 @@
  *   - Scalar             — I → I (0 inputs, 0 outputs, labeled)
  */
 
+import { portOffsets } from '../../core/FlowDirection.js';
+
 let _nodeId = 0;
 
 export const NODE_TYPES = {
@@ -40,6 +42,11 @@ export default class DiagramNode {
     this.outputs = type.defOut;
     this.selected = false;
     this.radius = this._defaultRadius();
+    // Sync-system fields (optional, null by default)
+    this.phase = null;         // Phase instance: { num, den } rational π-multiple
+    this.tensor = null;        // Tensor instance: concrete complex matrix
+    this.symbolicForm = null;  // string: symbolic expression for the IR
+    this.provenance = null;    // string: opaque cross-highlighting tag
   }
 
   _defaultRadius() {
@@ -63,19 +70,21 @@ export default class DiagramNode {
     return dx * dx + dy * dy <= r * r; // circles & scalar
   }
 
-  /** Input ports on top, output ports on bottom */
+  /** Port positions follow FlowDirection convention. */
   getInputPort(index) {
     const spacing = 24;
     const totalW = (this.inputs - 1) * spacing;
     const startX = this.x - totalW / 2;
-    return { x: startX + index * spacing, y: this.y - this.radius - 2 };
+    const { inputYOffset } = portOffsets(this.radius);
+    return { x: startX + index * spacing, y: this.y + inputYOffset };
   }
 
   getOutputPort(index) {
     const spacing = 24;
     const totalW = (this.outputs - 1) * spacing;
     const startX = this.x - totalW / 2;
-    return { x: startX + index * spacing, y: this.y + this.radius + 2 };
+    const { outputYOffset } = portOffsets(this.radius);
+    return { x: startX + index * spacing, y: this.y + outputYOffset };
   }
 
   draw(ctx) {
@@ -139,30 +148,37 @@ export default class DiagramNode {
   }
 
   _drawCup(ctx, r) {
+    // Cup (∪): outputs at top in bottom-to-top flow
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
-    const top=this.y-r, bot=this.y+r+2;
+    const outP0 = this.getOutputPort(0), outP1 = this.getOutputPort(1);
+    const curveY = this.y + r; // curve bows downward
     ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(lx,bot);
-    ctx.bezierCurveTo(lx,top,rx,top,rx,bot); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(outP0.x, outP0.y);
+    ctx.bezierCurveTo(outP0.x, curveY, outP1.x, curveY, outP1.x, outP1.y);
+    ctx.stroke();
     ctx.fillStyle='#e0e0e0';
-    ctx.beginPath(); ctx.arc(lx,bot,3,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx,bot,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(outP0.x,outP0.y,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(outP1.x,outP1.y,3,0,Math.PI*2); ctx.fill();
   }
 
   _drawCap(ctx, r) {
+    // Cap (∩): inputs at bottom in bottom-to-top flow
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
-    const top=this.y-r-2, bot=this.y+r;
+    const inP0 = this.getInputPort(0), inP1 = this.getInputPort(1);
+    const curveY = this.y - r; // curve bows upward
     ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(lx,top);
-    ctx.bezierCurveTo(lx,bot,rx,bot,rx,top); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(inP0.x, inP0.y);
+    ctx.bezierCurveTo(inP0.x, curveY, inP1.x, curveY, inP1.x, inP1.y);
+    ctx.stroke();
     ctx.fillStyle='#e0e0e0';
-    ctx.beginPath(); ctx.arc(lx,top,3,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx,top,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(inP0.x,inP0.y,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(inP1.x,inP1.y,3,0,Math.PI*2); ctx.fill();
   }
 
   _drawSwap(ctx, r) {
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
-    const top=this.y-r-2, bot=this.y+r+2;
+    const outP0 = this.getOutputPort(0), inP0 = this.getInputPort(0);
+    const top = Math.min(outP0.y, inP0.y), bot = Math.max(outP0.y, inP0.y);
     ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(lx,top); ctx.lineTo(rx,bot); ctx.stroke();
     ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=6;
