@@ -63,28 +63,35 @@ export default class LayoutManager {
     for (const a of this.areas.values()) a.onResize();
   }
 
-  /** Create the default layout: Diagram Editor (top) + Dirac Editor (bottom). */
+  /**
+   * Create the default layout:
+   *   ┌──────────────┬──────────────┐
+   *   │ Circuit      │ Diagram      │
+   *   ├──────────────┴──────────────┤
+   *   │ Dirac                       │
+   *   └─────────────────────────────┘
+   * Panels are created diagram → Dirac → circuit, so the Dirac editor first
+   * links to the example diagram (the circuit and its diagram come after).
+   */
   _createDefaultLayout() {
     const types = EditorRegistry.list();
-    const diagramType = types.find(t => t.includes('Diagram')) || types[0] || 'Diagram Editor';
-    const diracType = types.find(t => t.includes('Dirac')) || types[1] || types[0] || 'Diagram Editor';
-
-    const topArea = new EditorArea(diagramType, this);
-    this.areas.set(topArea.id, topArea);
-    const bottomArea = new EditorArea(diracType, this);
-    this.areas.set(bottomArea.id, bottomArea);
-
-    const handle = new SplitHandle('vertical', () => {});
-    const splitNode = {
-      type: 'split', direction: 'vertical', ratio: 0.6,
-      children: [
-        { type: 'leaf', areaId: topArea.id, area: topArea },
-        { type: 'leaf', areaId: bottomArea.id, area: bottomArea }
-      ],
-      handle
+    const pick = (word, fallback) => types.find(t => t.includes(word)) || fallback || types[0];
+    const leaf = type => {
+      const area = new EditorArea(type, this);
+      this.areas.set(area.id, area);
+      return { type: 'leaf', areaId: area.id, area };
     };
-    handle.onDragCallback = (delta, ev) => this._handleDrag(splitNode, ev);
-    this.tree = splitNode;
+    const split = (direction, ratio, a, b) => {
+      const handle = new SplitHandle(direction, () => {});
+      const node = { type: 'split', direction, ratio, children: [a, b], handle };
+      handle.onDragCallback = (delta, ev) => this._handleDrag(node, ev);
+      return node;
+    };
+    const diagram = leaf(pick('Diagram'));
+    const dirac = leaf(pick('Dirac'));
+    const circuitType = types.find(t => t.includes('Circuit'));
+    const top = circuitType ? split('horizontal', 0.45, leaf(circuitType), diagram) : diagram;
+    this.tree = split('vertical', 0.6, top, dirac);
     this.render();
   }
 

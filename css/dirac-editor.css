@@ -174,3 +174,10 @@
 .dirac-sync-bar button:hover {
   border-color: var(--accent-dim);
 }
+
+.dirac-order-note {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 6px;
+  white-space: nowrap;
+}

@@ -3,7 +3,7 @@
  * Features a snippet toolbar, LaTeX textarea, live KaTeX preview,
  * saved formula list, and sync with diagram documents.
  */
-import DiagramDocumentStore from '../DiagramEditor/DiagramDocumentStore.js';
+import DocumentStore from '../DocumentStore.js';
 import SyncController from '../../core/SyncController.js';
 
 export default class DiracEditor {
@@ -24,6 +24,15 @@ export default class DiracEditor {
     this._buildBody();
     this._linkToFirstDoc();
     this._render();
+
+    // A circuit editor asked to be linked: the first Dirac editor takes it
+    this._onShowCircuit = e => {
+      if (e.detail.diracHandled) return;
+      e.detail.diracHandled = true;
+      this._linkToDoc(e.detail.circuitId);
+      this._refreshDocSelect();
+    };
+    window.addEventListener('qpp:show-circuit', this._onShowCircuit);
   }
 
   /* ---- Document selector ---- */
@@ -36,7 +45,7 @@ export default class DiracEditor {
     this.docBarEl.style.gap = '6px';
 
     const label = document.createElement('span');
-    label.textContent = 'Linked diagram:';
+    label.textContent = 'Linked to:';
     label.style.color = 'var(--text-secondary)';
     label.style.fontSize = '11px';
     this.docBarEl.appendChild(label);
@@ -47,14 +56,18 @@ export default class DiracEditor {
     this.docSelectEl.addEventListener('change', () => this._onDocSelectChange());
     this.docBarEl.appendChild(this.docSelectEl);
 
+    this.orderNoteEl = document.createElement('span');
+    this.orderNoteEl.className = 'dirac-order-note';
+    this.docBarEl.appendChild(this.orderNoteEl);
+
     this.el.appendChild(this.docBarEl);
 
     this._onStoreChange = () => this._refreshDocSelect();
-    DiagramDocumentStore.onListChange(this._onStoreChange);
+    DocumentStore.onListChange(this._onStoreChange);
   }
 
   _refreshDocSelect() {
-    const docs = DiagramDocumentStore.list();
+    const docs = DocumentStore.list();
     const prev = this.docSelectEl.value;
     this.docSelectEl.innerHTML = '';
     const noneOpt = document.createElement('option');
@@ -62,7 +75,7 @@ export default class DiracEditor {
     this.docSelectEl.appendChild(noneOpt);
     for (const d of docs) {
       const opt = document.createElement('option');
-      opt.value = d.id; opt.textContent = d.name;
+      opt.value = d.id; opt.textContent = d.kind === 'circuit' ? `Circuit: ${d.name}` : d.name;
       this.docSelectEl.appendChild(opt);
     }
     this.docSelectEl.value = this.linkedDocId || prev || '';
@@ -74,25 +87,53 @@ export default class DiracEditor {
   }
 
   _linkToFirstDoc() {
-    const docs = DiagramDocumentStore.list();
+    const docs = DocumentStore.list();
     if (docs.length > 0) this._linkToDoc(docs[0].id);
     this._refreshDocSelect();
   }
 
+  /**
+   * Link to a document and show its generated Dirac expression right away.
+   * A student-authored expression for the previous document is kept in the
+   * saved-formula list rather than discarded. Re-linking the same document
+   * does nothing (so it never replaces work on the current document).
+   */
   _linkToDoc(docId) {
+    if (docId && docId === this.linkedDocId && this.syncController) return;
+    const prev = this.textarea ? this.textarea.value.trim() : '';
+    const wasAuthored = !!(this.syncController && this.syncController.diracAuthored);
     this.linkedDocId = docId;
     if (this.syncController) { this.syncController.destroy(); this.syncController = null; }
-    if (docId) {
-      const doc = DiagramDocumentStore.get(docId);
-      if (doc) {
-        this.syncController = new SyncController(doc);
-        this.syncController.onStateChange(() => this._updateSyncBar());
-        // Start from whatever is already in the textarea (not student-authored)
-        const current = this.textarea ? this.textarea.value.trim() : '';
-        if (current) this.syncController.onDiracChanged(current, false);
+    const doc = docId ? DocumentStore.get(docId) : null;
+    if (doc) {
+      this.syncController = new SyncController(doc);
+      this.syncController.onStateChange(() => this._updateSyncBar());
+      if (wasAuthored && prev && !this.formulas.includes(prev)) {
+        this.formulas.push(prev);
+        this._renderList();
       }
+      this._updateSyncBar();
+      this._generateInto();   // its verify refreshes the bar
+      return;
     }
     this._updateSyncBar();
+  }
+
+  /** Put the linked document's generated expression in the textarea and verify it now. */
+  _generateInto() {
+    const sc = this.syncController;
+    const result = sc.generateDirac();
+    this._showInfoPanel(result.info || '');
+    this.textarea.value = result.latex || '';
+    sc.diracAuthored = false;
+    sc.diracGenerated = !!result.latex;
+    if (this._genPreviewEl) this._genPreviewEl.innerHTML = '';
+    this._render();
+    if (result.latex) { sc.onDiracChanged(result.latex, false); sc.verifyNow(); }
+    else {
+      // Nothing parseable to show (e.g. too large): say why
+      this.syncTextEl.textContent = result.reason || 'No expression generated';
+    }
   }
 
   /* ---- Sync status bar ---- */
@@ -210,6 +251,10 @@ export default class DiracEditor {
   }
 
   _updateSyncBar() {
+    const doc = this.syncController ? this.syncController.doc : null;
+    this.orderNoteEl.textContent = doc
+      ? (doc.tensorOrder === 'little-endian' ? '⊗ order: first wire last (Qiskit)' : '⊗ order: first wire first (N&C)')
+      : '';
     if (!this.syncController) {
       this.syncIconEl.textContent = '—';
       this.syncIconEl.className = 'sync-icon verify-unknown';
@@ -389,7 +434,8 @@ export default class DiracEditor {
   onResize() { /* no-op */ }
 
   destroy() {
-    DiagramDocumentStore.offListChange(this._onStoreChange);
+    DocumentStore.offListChange(this._onStoreChange);
+    window.removeEventListener('qpp:show-circuit', this._onShowCircuit);
     if (this.syncController) this.syncController.destroy();
     this.el.remove();
   }

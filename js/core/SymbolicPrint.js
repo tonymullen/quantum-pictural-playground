@@ -72,6 +72,7 @@ function _nodeToLatex(n) {
   if (generatorTensor(n)) {
     if (n.kind === GenKind.HADAMARD) return { latex: 'H', isSum: false };
     if (n.kind === GenKind.SWAP) return { latex: '\\operatorname{SWAP}', isSum: false };
+    if (n.kind === GenKind.IDENTITY) return { latex: 'I', isSum: false };
     return { latex: _opName(n), isSum: false };
   }
   const lbl = toTex(n.label || n.kind);

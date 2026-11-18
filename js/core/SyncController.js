@@ -22,9 +22,13 @@ import evalDirac, { DiracEvalError } from './DiracEval.js';
  * @typedef {'synced'|'stale-diagram'|'stale-dirac'|'not-equivalent'|'unavailable'} SyncState
  */
 
+/** IR for any linked document (diagram, circuit, …). */
+const docToIR = doc => (typeof doc.toIR === 'function' ? doc.toIR() : diagramToIR(doc));
+
 export default class SyncController {
   /**
-   * @param {import('../editors/DiagramEditor/DiagramDocument.js').default} doc
+   * @param {{ onChange: Function, offChange: Function, toIR?: Function,
+   *           generateDirac?: Function }} doc — a diagram or circuit document
    */
   constructor(doc) {
     this.doc = doc;
@@ -96,14 +100,14 @@ export default class SyncController {
     clearTimeout(this._debounceTimer);
 
     // Build IR from diagram
-    const ir = diagramToIR(this.doc);
+    const ir = docToIR(this.doc);
     this.lastIR = ir;
 
     if (!ir.isValid) {
       this.state = 'unavailable';
       this.lastVerifyResult = {
         status: 'unavailable',
-        hint: 'Diagram has errors: ' + ir.diagnostics.map(d => d.message).join('; ')
+        hint: 'Diagram has errors: ' + ir.diagnostics.filter(d => d.severity === 'error').map(d => d.message).join('; ')
       };
       this._notify();
       return;
@@ -180,7 +184,8 @@ export default class SyncController {
    * Returns the generation result and updates the sync state.
    */
   generateDirac() {
-    const result = diagramToDirac(this.doc);
+    const result = typeof this.doc.generateDirac === 'function'
+      ? this.doc.generateDirac() : diagramToDirac(this.doc);
     this.lastGenerateResult = result;
     if (result.tensor) this.lastDiagramTensor = result.tensor;
     this.lastIR = result.ir;

@@ -13,7 +13,8 @@
  *   - Delete / Backspace      → delete selection (same as the 🗑 button)
  *   - Alt+drag / middle-drag  → pan; wheel → zoom
  */
-import DiagramNode from './DiagramNode.js';
+import DiagramNode, { uprightText } from './DiagramNode.js';
+import { ORIENTATIONS, orient, unorient } from '../../core/FlowDirection.js';
 import DiagramWire, { wireCurve, straightCurve, strokeCurve } from './DiagramWire.js';
 import diagramToIR from '../../core/DiagramToIR.js';
 
@@ -32,6 +33,7 @@ export default class DiagramCanvas {
     this.doc = doc;
     this.hooks = hooks;
     this.panX = 0; this.panY = 0; this.zoom = 1;
+    this.orientation = ORIENTATIONS.pqp;   // view only (see FlowDirection.js)
     this.gesture = null;   // active mouse gesture (move | wire | rect | press)
     this.hover = null;     // { kind:'port', nodeId, dir, port } | { kind:'node'|'wire', ... }
     this.selectedPort = null; // { nodeId, dir, port } — a selected leg (view state)
@@ -71,6 +73,7 @@ export default class DiagramCanvas {
     this.doc = doc;
     this.doc.onChange(this._onDocChange);
     this.gesture = null; this.hover = null; this.selectedPort = null;
+    if (doc.derivedFrom) this.fitToContent();  // generated layouts can be anywhere
     this.draw();
     this._selectionChanged();
   }
@@ -80,8 +83,7 @@ export default class DiagramCanvas {
   addNode(type, x, y) {
     if (x === undefined) {
       const r = this.canvas.getBoundingClientRect();
-      x = (r.width / 2 - this.panX) / this.zoom;
-      y = (r.height / 2 - this.panY) / this.zoom;
+      ({ x, y } = this._screenToWorld(r.width / 2, r.height / 2));
     }
     this.doc.pushUndo();
     const node = new DiagramNode(type, x, y);
@@ -152,6 +154,28 @@ export default class DiagramCanvas {
 
   _selectionChanged() { if (this.hooks.onSelectionChange) this.hooks.onSelectionChange(); }
 
+  /** Change the view orientation (drawing only) and refit the view. */
+  setOrientation(id) {
+    this.orientation = ORIENTATIONS[id] || ORIENTATIONS.pqp;
+    if (this.nodes.size) this.fitToContent(); else this.draw();
+  }
+
+  /** Pan/zoom so every node is visible (zoom capped at 1). */
+  fitToContent(margin = 50) {
+    const r = this.canvas.getBoundingClientRect();
+    if (!this.nodes.size || !r.width || !r.height) return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const n of this.nodes.values()) {
+      const p = orient(this.orientation, n.x, n.y), pad = n.radius + 20;
+      x0 = Math.min(x0, p.x - pad); x1 = Math.max(x1, p.x + pad);
+      y0 = Math.min(y0, p.y - pad); y1 = Math.max(y1, p.y + pad);
+    }
+    this.zoom = Math.min(1, (r.width - 2 * margin) / (x1 - x0), (r.height - 2 * margin) / (y1 - y0));
+    this.panX = r.width / 2 - ((x0 + x1) / 2) * this.zoom;
+    this.panY = r.height / 2 - ((y0 + y1) / 2) * this.zoom;
+    this.draw();
+  }
+
   /* ---- Rendering ---- */
 
   resize() {
@@ -177,6 +201,9 @@ export default class DiagramCanvas {
     ctx.save();
     ctx.translate(this.panX, this.panY);
     ctx.scale(this.zoom, this.zoom);
+    const o = this.orientation;
+    ctx.transform(o.a, o.b, o.c, o.d, 0, 0);
+    ctx.__orient = o;
     this._drawGrid(ctx, w, h);
     const g = this.gesture;
     for (const wire of this.wires) {
@@ -269,7 +296,7 @@ export default class DiagramCanvas {
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.arc(p.x, p.y + dy, 9, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = '#fff';
-        ctx.fillText(`${dir}${i}`, p.x, p.y + dy);
+        uprightText(ctx, `${dir}${i}`, p.x, p.y + dy);
       });
     };
     mark(this.doc.inputBoundary, 'in', '#2a7ab5', 14);
@@ -285,7 +312,7 @@ export default class DiagramCanvas {
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
-    ctx.fillText('↑ time', w - 8, 8);
+    ctx.fillText(this.orientation.arrow, w - 8, 8);
     ctx.restore();
   }
 
@@ -322,8 +349,10 @@ export default class DiagramCanvas {
   _drawGrid(ctx, sw, sh) {
     const step = 30; ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1 / this.zoom;
-    const l = -this.panX / this.zoom, t = -this.panY / this.zoom;
-    const r = l + sw / this.zoom, b = t + sh / this.zoom;
+    // Visible world rectangle (the view may be rotated)
+    const cs = [[0, 0], [sw, 0], [0, sh], [sw, sh]].map(([x, y]) => this._screenToWorld(x, y));
+    const l = Math.min(...cs.map(c => c.x)), r = Math.max(...cs.map(c => c.x));
+    const t = Math.min(...cs.map(c => c.y)), b = Math.max(...cs.map(c => c.y));
     const sx = Math.floor(l / step) * step, sy = Math.floor(t / step) * step;
     for (let x = sx; x < r; x += step) { ctx.beginPath(); ctx.moveTo(x, t); ctx.lineTo(x, b); ctx.stroke(); }
     for (let y = sy; y < b; y += step) { ctx.beginPath(); ctx.moveTo(l, y); ctx.lineTo(r, y); ctx.stroke(); }
@@ -332,7 +361,14 @@ export default class DiagramCanvas {
 
   /* ---- Hit testing (world coordinates) ---- */
 
-  _screenToWorld(sx, sy) { return { x: (sx - this.panX) / this.zoom, y: (sy - this.panY) / this.zoom }; }
+  _screenToWorld(sx, sy) {
+    return unorient(this.orientation, (sx - this.panX) / this.zoom, (sy - this.panY) / this.zoom);
+  }
+
+  worldToScreen(x, y) {
+    const p = orient(this.orientation, x, y);
+    return { x: this.panX + p.x * this.zoom, y: this.panY + p.y * this.zoom };
+  }
 
   _portPos(node, dir, i) { return dir === 'in' ? node.getInputPort(i) : node.getOutputPort(i); }
 
@@ -369,7 +405,11 @@ export default class DiagramCanvas {
     return out;
   }
 
-  _legHandlePos(node) { return { x: node.x + node.radius + 11, y: node.y }; }
+  /** The + handle sits to the node's right on screen, whatever the orientation. */
+  _legHandlePos(node) {
+    const off = unorient(this.orientation, node.radius + 11, 0);
+    return { x: node.x + off.x, y: node.y + off.y };
+  }
 
   _legHandleAt(wx, wy) {
     for (const n of this._legHandleNodes()) {
@@ -576,7 +616,7 @@ export default class DiagramCanvas {
       const x1 = Math.min(g.x1, g.x2), y1 = Math.min(g.y1, g.y2);
       const x2 = Math.max(g.x1, g.x2), y2 = Math.max(g.y1, g.y2);
       for (const n of this.nodes.values()) {
-        const px = n.x * this.zoom + this.panX, py = n.y * this.zoom + this.panY;
+        const { x: px, y: py } = this.worldToScreen(n.x, n.y);
         if (px >= x1 && px <= x2 && py >= y1 && py <= y2) n.selected = true;
       }
       this._selectionChanged();

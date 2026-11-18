@@ -1,13 +1,15 @@
 /**
  * DiagramEditor — Full editor component for quantum pictorial diagrams.
  * Composes DiagramToolbar + DiagramCanvas + palette sidebar.
- * Supports multiple diagrams via DiagramDocumentStore.
+ * Supports multiple diagrams via DocumentStore.
  */
 import DiagramCanvas from './DiagramCanvas.js';
 import DiagramToolbar from './DiagramToolbar.js';
 import { NODE_TYPES } from './DiagramNode.js';
 import DiagramWire from './DiagramWire.js';
-import DiagramDocumentStore from './DiagramDocumentStore.js';
+import DocumentStore from '../DocumentStore.js';
+import { ORIENTATIONS } from '../../core/FlowDirection.js';
+import { TENSOR_ORDERS } from '../../core/IR.js';
 
 export default class DiagramEditor {
   static get typeName() { return 'Diagram Editor'; }
@@ -40,16 +42,16 @@ export default class DiagramEditor {
     this._buildPalette();
 
     // Get or create the initial document
-    let doc = DiagramDocumentStore.list()[0];
+    let doc = DocumentStore.list('diagram')[0];
     if (!doc) {
-      doc = DiagramDocumentStore.create('Example');
+      doc = DocumentStore.createDiagram('Example');
       this._needsDefault = true; // flag to load example content
     }
     this.currentDocId = doc.id;
 
     // Canvas — pass the shared document
     this.canvas = new DiagramCanvas(this.canvasWrap, doc, {
-      onSelectionChange: () => this._refreshInspector(),
+      onSelectionChange: () => { this._refreshInspector(); this._refreshDerivedNote(); },
       onEditLabel: () => { this._refreshInspector(); this.inspLabel.focus(); this.inspLabel.select(); },
     });
 
@@ -62,18 +64,29 @@ export default class DiagramEditor {
 
     this._refreshDocSelect();
     this._refreshInspector();
+
+    // A circuit editor asked to show its diagram: the first Diagram Editor takes it
+    this._onShowCircuit = e => {
+      if (e.detail.diagramHandled) return;
+      e.detail.diagramHandled = true;
+      const doc = DocumentStore.get(e.detail.diagramId);
+      if (!doc) return;
+      this.currentDocId = doc.id;
+      this._refreshDocSelect();
+      // Match the circuit editor's view (Circuit → or Algebraic ←)
+      this.viewSelectEl.value = e.detail.orientation;
+      this.canvas.setDocument(doc);
+      this.canvas.setOrientation(e.detail.orientation);
+      this._refreshDerivedNote();
+    };
+    window.addEventListener('qpp:show-circuit', this._onShowCircuit);
   }
 
   /* ---- Document selector ---- */
 
   _buildDocSelector() {
     this.docBarEl = document.createElement('div');
-    this.docBarEl.className = 'diagram-toolbar';
-    this.docBarEl.style.height = '26px';
-    this.docBarEl.style.minHeight = '26px';
-    this.docBarEl.style.paddingLeft = '6px';
-    this.docBarEl.style.gap = '6px';
-    this.docBarEl.style.fontSize = '11px';
+    this.docBarEl.className = 'diagram-toolbar doc-bar';
 
     const label = document.createElement('span');
     label.textContent = 'Diagram:';
@@ -95,12 +108,41 @@ export default class DiagramEditor {
     newBtn.addEventListener('click', () => this._createNewDiagram());
     this.docBarEl.appendChild(newBtn);
 
+    // View orientation (this panel only) and tensor order (the document's setting)
+    const mkSelect = (labelText, options, title, onChange) => {
+      const lab = document.createElement('label');
+      lab.className = 'diagram-bar-field';
+      lab.title = title;
+      lab.append(labelText);
+      const sel = document.createElement('select');
+      sel.className = 'editor-type-select';
+      for (const [value, text] of options) {
+        const o = document.createElement('option'); o.value = value; o.textContent = text; sel.appendChild(o);
+      }
+      sel.addEventListener('change', () => onChange(sel.value));
+      lab.appendChild(sel);
+      this.docBarEl.appendChild(lab);
+      return sel;
+    };
+    this.viewSelectEl = mkSelect('View', Object.values(ORIENTATIONS).map(o => [o.id, o.label]),
+      'Which way time flows in this panel (drawing only — does not change the maths)',
+      id => this.canvas.setOrientation(id));
+    this.orderSelectEl = mkSelect('⊗ order', [
+        ['big-endian', 'First wire first (N&C)'], ['little-endian', 'First wire last (Qiskit)']],
+      'Which wire is the first tensor factor / leftmost ket digit (a setting of this diagram)',
+      order => { const d = DocumentStore.get(this.currentDocId); if (d) d.setTensorOrder(order); });
+    this.orderSelectEl.title = Object.values(TENSOR_ORDERS).join('\n');
+
+    this.derivedNoteEl = document.createElement('span');
+    this.derivedNoteEl.className = 'diagram-derived-note';
+    this.docBarEl.appendChild(this.derivedNoteEl);
+
     this._buildInspector();
     this.el.appendChild(this.docBarEl);
 
     // Listen for store changes (other editors may create/delete docs)
     this._onStoreChange = () => this._refreshDocSelect();
-    DiagramDocumentStore.onListChange(this._onStoreChange);
+    DocumentStore.onListChange(this._onStoreChange);
   }
 
   /* ---- Inspector: label + leg counts of the selected node ---- */
@@ -197,7 +239,7 @@ export default class DiagramEditor {
   }
 
   _refreshDocSelect() {
-    const docs = DiagramDocumentStore.list();
+    const docs = DocumentStore.list('diagram');
     this.docSelectEl.innerHTML = '';
     for (const d of docs) {
       const opt = document.createElement('option');
@@ -206,21 +248,32 @@ export default class DiagramEditor {
       this.docSelectEl.appendChild(opt);
     }
     this.docSelectEl.value = this.currentDocId;
+    this._refreshDerivedNote();
+  }
+
+  _refreshDerivedNote() {
+    const doc = DocumentStore.get(this.currentDocId);
+    const src = doc && doc.derivedFrom ? DocumentStore.get(doc.derivedFrom) : null;
+    if (doc) this.orderSelectEl.value = doc.tensorOrder || 'big-endian';
+    this.orderSelectEl.disabled = !!src;   // a generated diagram follows its circuit
+    this.derivedNoteEl.textContent = src ? `Generated from circuit “${src.name}” — edits are replaced when it changes` : '';
+    this.derivedNoteEl.hidden = !src;
   }
 
   _onDocSelectChange() {
     const id = this.docSelectEl.value;
     if (id === this.currentDocId) return;
-    const doc = DiagramDocumentStore.get(id);
+    const doc = DocumentStore.get(id);
     if (!doc) return;
     this.currentDocId = id;
     this.canvas.setDocument(doc);
+    this._refreshDerivedNote();
   }
 
   _createNewDiagram() {
-    const name = prompt('Diagram name:', `Diagram ${DiagramDocumentStore.list().length + 1}`);
+    const name = prompt('Diagram name:', `Diagram ${DocumentStore.list('diagram').length + 1}`);
     if (!name) return;
-    const doc = DiagramDocumentStore.create(name);
+    const doc = DocumentStore.createDiagram(name);
     this.currentDocId = doc.id;
     this.canvas.setDocument(doc);
     this._refreshDocSelect();
@@ -293,6 +346,9 @@ export default class DiagramEditor {
         swatch.style.textAlign = 'center';
         swatch.style.lineHeight = '18px';
         swatch.style.border = 'none';
+      } else if (t.shape === 'wire') {
+        swatch.style.width = '2px'; swatch.style.borderRadius = '0';
+        swatch.style.border = 'none'; swatch.style.margin = '0 8px';
       } else if (t.shape === 'triangle-down' || t.shape === 'triangle-up') {
         swatch.style.width = '0'; swatch.style.height = '0';
         swatch.style.background = 'transparent'; swatch.style.border = 'none';
@@ -347,7 +403,8 @@ export default class DiagramEditor {
   }
 
   destroy() {
-    DiagramDocumentStore.offListChange(this._onStoreChange);
+    DocumentStore.offListChange(this._onStoreChange);
+    window.removeEventListener('qpp:show-circuit', this._onShowCircuit);
     if (this.canvas) this.canvas.destroy();
     this.el.remove();
   }

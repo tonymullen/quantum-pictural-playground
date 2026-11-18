@@ -2,7 +2,7 @@
  * DiagramToIR — Adapter: reads a DiagramDocument and builds an IRGraph.
  * Performs well-formedness checks with located diagnostics.
  */
-import { IRGraph, IRNode, IREdge, IRPort, WireType, GenKind } from './IR.js';
+import { IRGraph, IRNode, IREdge, IRPort, WireType, GenKind, applyTensorOrder } from './IR.js';
 import Phase from './Phase.js';
 
 /**
@@ -29,6 +29,7 @@ export default function diagramToIR(doc) {
     const irNode = new IRNode(kind, inPorts, outPorts);
     irNode.label = dNode.label || '';
     irNode.provenance = { editorType: 'diagram', elementId: dNode.id };
+    if (dNode.tensor) irNode.tensor = dNode.tensor;   // e.g. a box generated from a circuit
 
     // Parse phase from label for spiders. An unparseable label (e.g. "α")
     // is a symbolic phase: the spider then has no concrete tensor.
@@ -102,11 +103,10 @@ export default function diagramToIR(doc) {
     }
   }
 
-  // --- 4. Boundary ordering (planar, grouped by component) ---
-  // Components are ordered left-to-right by their leftmost node; within a
-  // component, open ports are ordered by their on-screen position (x, then y).
-  // Grouping by component keeps Generate (⊗ of components) and Verify
-  // (whole-graph contraction) on the same wire order.
+  // --- 4. Boundary ordering (planar) ---
+  // Open ports are read left to right by on-screen position (x, then y), as
+  // in PQP. (Generate copes with components whose wires interleave by
+  // merging them into one tensor factor — see DiagramToDirac.tensorFactors.)
   const irToDiagram = new Map();
   for (const [dId, irId] of nodeIdMap) irToDiagram.set(irId, doc.nodes.get(dId));
   const insertion = new Map(Array.from(graph.nodes.keys()).map((id, i) => [id, i]));
@@ -122,25 +122,23 @@ export default function diagramToIR(doc) {
       || (insertion.get(a.nodeId) - insertion.get(b.nodeId)) || (a.portIndex - b.portIndex);
   };
   const strip = p => ({ nodeId: p.nodeId, portIndex: p.portIndex });
-  const orderedInputs = [], orderedOutputs = [];
-  for (const comp of graph.connectedComponents()) {
-    const open = comp.openPorts();
-    orderedInputs.push(...open.inputs.sort(planar('in')).map(strip));
-    orderedOutputs.push(...open.outputs.sort(planar('out')).map(strip));
-  }
+  const open = graph.openPorts();
+  const orderedInputs = open.inputs.sort(planar('in')).map(strip);
+  const orderedOutputs = open.outputs.sort(planar('out')).map(strip);
   graph.inputBoundary = orderedInputs;
   graph.outputBoundary = orderedOutputs;
+  applyTensorOrder(graph, doc.tensorOrder);  // wire order → ⊗ order
 
   // Store the reverse map (IR nodeId → diagram nodeId) for boundary markers
   graph._irToDiagramId = new Map();
   for (const [dId, irId] of nodeIdMap) graph._irToDiagramId.set(irId, dId);
 
   // Also store boundaries in diagram-node-id space on the document
-  doc.inputBoundary = orderedInputs.map(b => ({
+  doc.inputBoundary = graph.inputBoundary.map(b => ({
     nodeId: graph._irToDiagramId.get(b.nodeId) || b.nodeId,
     portIndex: b.portIndex
   }));
-  doc.outputBoundary = orderedOutputs.map(b => ({
+  doc.outputBoundary = graph.outputBoundary.map(b => ({
     nodeId: graph._irToDiagramId.get(b.nodeId) || b.nodeId,
     portIndex: b.portIndex
   }));

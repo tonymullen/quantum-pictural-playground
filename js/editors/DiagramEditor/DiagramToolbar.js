@@ -67,6 +67,8 @@ export default class DiagramToolbar {
       return `<span style="${base}width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:12px solid ${c};"></span>`;
     if (s === 'triangle-up')
       return `<span style="${base}width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ${c};"></span>`;
+    if (s === 'wire')
+      return `<span style="${base}width:2px;height:16px;background:${c};"></span>`;
     if (s === 'scalar')
       return `<span style="${base}width:10px;height:10px;border-radius:50%;background:${c};border:2px solid #fff;"></span>`;
     return `<span style="${base}width:14px;height:14px;background:${c};"></span>`;

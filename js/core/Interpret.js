@@ -43,6 +43,8 @@ export function generatorTensor(node) {
       return capTensor();
     case GenKind.SWAP:
       return swapTensor();
+    case GenKind.IDENTITY:
+      return Tensor.identity(2);
     case GenKind.STATE:
     case GenKind.EFFECT:
     case GenKind.MORPHISM:

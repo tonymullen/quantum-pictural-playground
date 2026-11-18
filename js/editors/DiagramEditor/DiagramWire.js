@@ -57,8 +57,8 @@ export default class DiagramWire {
     const toNode = nodesMap.get(this.toNodeId);
     if (!fromNode || !toNode) return null;
     const p1 = fromNode.getOutputPort(this.fromPort), p2 = toNode.getInputPort(this.toPort);
-    // Spider-to-spider wires are legs: a straight line between the two edges
-    if (fromNode.isSpider() && toNode.isSpider()) return straightCurve(p1, p2);
+    // Spider-to-spider (and spider–H) wires are legs: a straight line between the edges
+    if (fromNode.isFlexible() && toNode.isFlexible()) return straightCurve(p1, p2);
     return wireCurve(p1, p2);
   }
 

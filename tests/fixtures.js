@@ -13,6 +13,12 @@ import evalDirac from '../js/core/DiracEval.js';
 import Tensor from '../js/core/Tensor.js';
 import C from '../js/core/Complex.js';
 import { verify } from '../js/core/Verify.js';
+import circuitToIR from '../js/core/CircuitToIR.js';
+import circuitToDirac from '../js/core/CircuitToDirac.js';
+import { circuitTensor } from '../js/core/CircuitGates.js';
+import CircuitDocument from '../js/editors/CircuitEditor/CircuitDocument.js';
+import { derivedDiagram } from '../js/editors/CircuitEditor/CircuitDiagramLink.js';
+import SyncController from '../js/core/SyncController.js';
 
 const out = document.getElementById('out');
 let passed = 0, failed = 0;
@@ -717,6 +723,229 @@ log('\n=== L8: Remove a specific leg ===');
   assert(a.inputs === 2 && d.wires[0].toPort === 1, 'in0 removed; wire on in2 now on in1');
   d.removeLeg(a, 'in', 1);
   assert(a.inputs === 1 && d.wires.length === 0 && h.outputs === 1, 'Connected leg to a box: wire removed, box port kept');
+}
+
+
+// ===== CIRCUITS =====
+
+const circ = (n, cols, inputs, outputs) => ({ nQubits: n, columns: cols,
+  inputs: inputs || Array(n).fill('open'), outputs: outputs || Array(n).fill('open') });
+const col = (...cells) => cells.map(g => (g ? (typeof g === 'string' ? { gate: g } : g) : null));
+const CIRCUITS = {
+  'H':              circ(1, [col('H')]),
+  'Y':              circ(1, [col('Y')]),
+  'Z(π/8)':         circ(1, [col({ gate: 'P', param: 'π/8' })]),
+  'X(π/3)':         circ(1, [col({ gate: 'XP', param: 'π/3' })]),
+  'S† T†':          circ(1, [col('Sdg'), col('Tdg')]),
+  'CNOT':           circ(2, [col('ctrl', 'X')]),
+  'reverse CNOT':   circ(2, [col('X', 'ctrl')]),
+  'fan-out CNOT':   circ(3, [col('ctrl', 'X', 'X')]),
+  'CZ':             circ(2, [col('ctrl', 'Z')]),
+  'CZ fan-out':     circ(3, [col('Z', 'ctrl', 'Z')]),
+  'CNOT 0→2, CH 1': circ(3, [col('ctrl', 'H', 'X')]),
+  'CNOT 0→2 only':  circ(3, [col('ctrl', null, 'X')]),
+  'Toffoli':        circ(3, [col('ctrl', 'ctrl', 'X')]),
+  'anti-control':   circ(2, [col('actrl', 'X')]),
+  'CH':             circ(2, [col('ctrl', 'H')]),
+  'Fredkin':        circ(3, [col('ctrl', 'swap', 'swap')]),
+  'swap':           circ(2, [col('swap', 'swap')]),
+  'H then swap':    circ(2, [col('H', null), col('swap', 'swap')]),
+  'swap 0,2 + T':   circ(3, [col('swap', 'T', 'swap')]),
+  'Bell state':     circ(2, [col('H', null), col('ctrl', 'X')], ['0', '0']),
+  'Bell effect':    circ(2, [col('ctrl', 'X'), col('H', null)], undefined, ['0', '0']),
+  'mixed in/out':   circ(3, [col('H', 'ctrl', 'X')], ['open', '1', '+'], ['-', 'open', '0']),
+  'empty':          circ(2, []),
+  'GHZ':            circ(3, [col('H', null, null), col('ctrl', 'X', null), col(null, 'ctrl', 'X')], ['0', '0', '0']),
+};
+
+log('\n=== C1: Circuit → IR equals the reference simulator exactly ===');
+for (const [name, c] of Object.entries(CIRCUITS)) {
+  const ref = circuitTensor(c), t = contractIR(circuitToIR(c)).tensor;
+  assert(ref && t && Tensor.equal(ref, t), `${name}`);
+}
+
+log('\n=== C2: Circuit → Dirac parses and evaluates to the circuit exactly ===');
+for (const [name, c] of Object.entries(CIRCUITS)) {
+  const { latex } = circuitToDirac(c);
+  let ok = false;
+  try { const e = evalStr(latex); ok = !!e && Tensor.equal(circuitTensor(c), e); }
+  catch (e) { log(`  ${e.message} in ${latex}`, 'fail'); }
+  assert(ok, `${name}: ${latex}`);
+}
+
+log('\n=== C3: Generated diagram reads back as the same map ===');
+for (const [name, c] of Object.entries(CIRCUITS)) {
+  const doc = new CircuitDocument(name, c.nQubits);
+  doc._restore({ ...c, name });
+  const d = derivedDiagram(doc);
+  const t = contractIR(diagramToIR(d)).tensor;
+  assert(t && Tensor.equal(circuitTensor(c), t), `${name} (${d.nodes.size} nodes)`);
+}
+
+log('\n=== C4: Textbook forms ===');
+{
+  assert(circuitToDirac(CIRCUITS['Bell state']).latex === '\\operatorname{CNOT} (H \\otimes I) |00\\rangle',
+    'Bell state = CNOT (H ⊗ I)|00⟩');
+  const ir = circuitToIR(CIRCUITS['CNOT']);
+  const kinds = [...ir.nodes.values()].map(n => n.kind).sort().join(',');
+  assert(kinds === 'scalar,x-spider,z-spider', 'CNOT is a Z spider + X spider (+ scalar √2)');
+  const sc = [...ir.nodes.values()].find(n => n.kind === 'scalar');
+  assert(sc.label === '√2', 'Scalar labelled √2');
+  const d = derivedDiagram(Object.assign(new CircuitDocument('cnot', 2), { columns: [col('ctrl', 'X')] }));
+  const z = [...d.nodes.values()].find(n => n.type.key === 'z-spider');
+  const x = [...d.nodes.values()].find(n => n.type.key === 'x-spider');
+  assert(z.y === x.y && z.x < x.x, 'Control and target drawn side by side, control on the left');
+}
+
+log('\n=== C5: CircuitDocument editing and undo ===');
+{
+  const doc = new CircuitDocument('edit', 2);
+  let notes = 0; doc.onChange(() => notes++);
+  doc.setCell(0, 0, { gate: 'H' });
+  doc.setCell(1, 0, { gate: 'ctrl' });
+  doc.setCell(1, 1, { gate: 'X' });
+  assert(doc.columns.length === 2 && notes === 3, 'Three edits, two steps, three notifications');
+  doc.setCell(0, 0, null);
+  assert(doc.columns.length === 1 && doc.cell(0, 0).gate === 'ctrl', 'Emptied step is removed');
+  doc.undo();
+  assert(doc.columns.length === 2 && doc.cell(0, 0).gate === 'H', 'Undo restores it');
+  doc.redo();
+  assert(doc.columns.length === 1, 'Redo removes it again');
+  doc.addQubit(1);
+  assert(doc.nQubits === 3 && doc.cell(0, 2).gate === 'X' && doc.cell(0, 1) === null, 'Insert a qubit between control and target');
+  doc.setInput(0, '0');
+  assert(doc.inputs.join() === '0,open,open', 'Set input state');
+  doc.removeQubit(1);
+  assert(doc.nQubits === 2 && doc.cell(0, 1).gate === 'X', 'Remove it again');
+  let threw = false; try { doc.setCell(0, 0, { gate: 'nope' }); } catch { threw = true; }
+  assert(threw, 'Unknown gate rejected');
+}
+
+log('\n=== C6: Dirac editor can sync with a circuit ===');
+{
+  const doc = new CircuitDocument('sync', 2);
+  doc.setCell(0, 0, { gate: 'H' }); doc.setCell(1, 0, { gate: 'ctrl' }); doc.setCell(1, 1, { gate: 'X' });
+  doc.setInput(0, '0'); doc.setInput(1, '0');
+  const sc = new SyncController(doc);
+  const g = sc.generateDirac();
+  sc.onDiracChanged(g.latex, false); sc.verifyNow();
+  assert(sc.lastVerifyResult.status === 'equivalent' && C.eq(sc.lastVerifyResult.scalar, C.ONE), 'Generated Dirac verifies exactly');
+  sc.onDiracChanged('\\frac{1}{\\sqrt{2}}(|00\\rangle + |11\\rangle)', true); sc.verifyNow();
+  assert(sc.lastVerifyResult.status === 'equivalent', 'Student writes the Bell state → equivalent');
+  sc.onDiracChanged('|00\\rangle', true); sc.verifyNow();
+  assert(sc.lastVerifyResult.status === 'not-equivalent', '|00⟩ → not equivalent');
+  sc.destroy();
+}
+
+log('\n=== C7: Derived diagram follows circuit edits ===');
+{
+  const doc = new CircuitDocument('follow', 2);
+  const d = derivedDiagram(doc);
+  doc.setCell(0, 0, { gate: 'ctrl' }); doc.setCell(0, 1, { gate: 'X' });
+  const t = contractIR(diagramToIR(d)).tensor;
+  assert(t && Tensor.equal(circuitTensor(doc), t), 'Diagram regenerated after edit');
+  assert(derivedDiagram(doc) === d, 'Same diagram document reused');
+}
+
+log('\n=== C8: Interleaved components in a hand-drawn diagram ===');
+{
+  // CNOT from wire 0 to wire 2, with a state on wire 1 drawn between them:
+  // not expressible as A ⊗ B in wire order, so Generate merges them
+  const d = new DiagramDocument('c8');
+  const z = addN(d, NT.Z_SPIDER, 100, 100, {inputs:1, outputs:2});
+  addN(d, NT.X_SPIDER, 190, 100, {inputs:0, outputs:1});
+  const x = addN(d, NT.X_SPIDER, 280, 100, {inputs:2, outputs:1});
+  w(d, z, 1, x, 0);
+  roundTrip(d, 'CNOT(0,2) beside a state on wire 1');
+  const r = diagramToDirac(d);
+  assert(!r.latex.includes('otimes'), 'Interleaved pieces merged into one factor (no wrong ⊗)');
+}
+
+
+
+log('\n=== C9: insertCell / moveCell are single undo steps ===');
+{
+  const doc = new CircuitDocument('ops', 2);
+  doc.setCell(0, 0, { gate: 'H' });
+  doc.setCell(1, 1, { gate: 'X' });
+  let pos = doc.insertCell(1, 0, { gate: 'T' });
+  assert(pos.t === 1 && pos.q === 0 && doc.columns.length === 3 && doc.cell(2, 1).gate === 'X', 'Insert T between the steps');
+  doc.undo();
+  assert(doc.columns.length === 2 && doc.cell(1, 1).gate === 'X', 'One undo removes it');
+  pos = doc.moveCell({ t: 0, q: 0 }, { t: 1, q: 0, insert: false });
+  assert(pos.t === 0 && pos.q === 0 && doc.columns.length === 1 && doc.cell(0, 1).gate === 'X',
+    'Move H into the X step; the emptied step disappears and H lands at step 1→0');
+  doc.undo();
+  assert(doc.columns.length === 2 && doc.cell(0, 0).gate === 'H', 'One undo restores it');
+  pos = doc.moveCell({ t: 1, q: 1 }, { t: 0, q: 1, insert: true });
+  assert(pos.t === 0 && doc.cell(0, 1).gate === 'X' && doc.cell(1, 0).gate === 'H', 'Move X into a new step before H');
+}
+
+// ===== TENSOR ORDER (big- vs little-endian) =====
+
+/** Reverse the bit order of a tensor's row and column indices (independent reference). */
+function reverseBits(T) {
+  const m = Math.round(Math.log2(T.rows)), n = Math.round(Math.log2(T.cols));
+  const rev = (x, k) => { let r = 0; for (let i = 0; i < k; i++) r = (r << 1) | ((x >> i) & 1); return r; };
+  const R = Tensor.zeros(T.rows, T.cols);
+  for (let i = 0; i < T.rows; i++) for (let j = 0; j < T.cols; j++) R.set(rev(i, m), rev(j, n), T.get(i, j));
+  return R;
+}
+
+log('\n=== E1: Little-endian diagram: CNOT reads as control on the last factor ===');
+{
+  const d = new DiagramDocument('e1');
+  addCNOT(d);
+  const big = diagTensor(d);
+  d.setTensorOrder('little-endian');
+  const little = diagTensor(d);
+  assert(Tensor.equal(little, reverseBits(big)), 'Same picture, factors reversed');
+  assert(!Tensor.equalUpToPhase(CNOT_T, little).equal, 'No longer the textbook CNOT matrix');
+  diagramToIR(d);
+  assert(d.inputBoundary[0].nodeId === [...d.nodes.values()].find(n => n.type.key === 'x-spider').id,
+    'Marker in0 is now on the rightmost wire');
+  roundTrip(d, 'Little-endian CNOT');
+}
+
+log('\n=== E2: Little-endian circuits — IR, Dirac and diagram agree with the reference ===');
+for (const [name, c0] of Object.entries(CIRCUITS)) {
+  const c = { ...c0, tensorOrder: 'little-endian' };
+  const want = reverseBits(circuitTensor(c0));
+  const ir = contractIR(circuitToIR(c)).tensor;
+  let dirac = null;
+  try { dirac = evalStr(circuitToDirac(c).latex); } catch (e) { log('  ' + e.message, 'fail'); }
+  const doc = new CircuitDocument(name, c.nQubits);
+  doc._restore({ ...c, name });
+  const dg = contractIR(diagramToIR(derivedDiagram(doc))).tensor;
+  assert(ir && dirac && dg && Tensor.equal(want, ir) && Tensor.equal(want, dirac) && Tensor.equal(want, dg), name);
+}
+
+log('\n=== E3: Little-endian textbook forms ===');
+{
+  const bell = { ...CIRCUITS['Bell state'], tensorOrder: 'little-endian' };
+  const latex = circuitToDirac(bell).latex;
+  log(`  Bell (little-endian): ${latex}`, 'info');
+  assert(latex === '(I \\otimes |0\\rangle\\langle 0| + X \\otimes |1\\rangle\\langle 1|) (I \\otimes H) |00\\rangle',
+    'H on qubit 0 appears as the last factor');
+  const doc = new CircuitDocument('order', 1);
+  doc.setTensorOrder('little-endian');
+  doc.undo();
+  assert(doc.tensorOrder === 'big-endian', 'Changing the order is undoable');
+}
+
+log('\n=== E4: Sync follows the document\'s order ===');
+{
+  const doc = new CircuitDocument('e4', 2);
+  doc.setCell(0, 0, { gate: 'X' }); doc.setInput(0, '0'); doc.setInput(1, '0');
+  const sc = new SyncController(doc);
+  sc.onDiracChanged('|10\\rangle', true); sc.verifyNow();
+  assert(sc.lastVerifyResult.status === 'equivalent', 'Big-endian: X on qubit 0 gives |10⟩');
+  doc.setTensorOrder('little-endian');
+  sc.verifyNow();
+  assert(sc.lastVerifyResult.status === 'not-equivalent', 'Little-endian: |10⟩ is now wrong');
+  sc.onDiracChanged('|01\\rangle', true); sc.verifyNow();
+  assert(sc.lastVerifyResult.status === 'equivalent', 'Little-endian: |01⟩ is right');
+  sc.destroy();
 }
 
 // === Summary ===

@@ -1,0 +1,106 @@
+/* ===== Circuit Editor ===== */
+
+.circuit-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.circuit-dim { color: var(--text-secondary); }
+.circuit-text-btn { width: auto; padding: 0 6px; font-size: 11px; white-space: nowrap; }
+
+.circuit-stage-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #1e1e1e;
+  outline: none;
+}
+.circuit-stage {
+  position: relative;
+  margin: 12px;
+}
+.circuit-stage svg { position: absolute; left: 0; top: 0; pointer-events: none; }
+.cw-wire { stroke: #b0b0b0; stroke-width: 2; }
+.cw-link { stroke: #e0e0e0; stroke-width: 2; }
+
+/* Placed cells */
+.circuit-cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  border-radius: 4px;
+}
+.circuit-cell.selected { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Faces (also used in the palette and the drag ghost) */
+.cg-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 30px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 3px;
+  font: bold 12px var(--font-sans, sans-serif);
+  color: #fff;
+  white-space: nowrap;
+}
+.circuit-cell .cg-gate { width: 100%; height: 100%; }
+.cg-z { background: #6a9955; }       /* Z spiders */
+.cg-x { background: #ce4a4a; }       /* X spiders */
+.cg-h { background: #cca700; }       /* Hadamard */
+.cg-y { background: #7a6aa8; }
+.cg-ctrl { width: 12px; height: 12px; border-radius: 50%; background: #e0e0e0; }
+.cg-actrl { width: 10px; height: 10px; border-radius: 50%; background: #1e1e1e; border: 2px solid #e0e0e0; }
+.cg-swap { color: #e0e0e0; font: 22px/1 sans-serif; }
+
+.circuit-palette-btn { width: auto; min-width: 28px; padding: 0 2px; cursor: grab; }
+.circuit-palette-btn .cg-gate { height: 22px; min-width: 22px; font-size: 11px; }
+
+.circuit-qubit-label {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  font: 11px var(--font-mono, monospace);
+  color: var(--text-secondary);
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+.circuit-qubit-label:hover { color: var(--text-bright); background: rgba(255,255,255,0.06); }
+.circuit-qubit-label.selected { color: #fff; outline: 2px solid var(--accent); }
+
+.circuit-picker {
+  position: absolute;
+  font-size: 11px;
+  color: var(--text-bright);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+.circuit-picker.open { color: var(--text-secondary); }
+
+.circuit-drop-indicator { position: absolute; pointer-events: none; }
+.circuit-drop-indicator.slot { border: 2px dashed var(--accent); border-radius: 5px; box-sizing: border-box; }
+.circuit-drop-indicator.gap { background: var(--accent); border-radius: 2px; }
+
+.circuit-ghost {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 1000;
+}
+.circuit-ghost.removing { opacity: 0.35; filter: grayscale(1); }
+
+.circuit-toast {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  padding: 6px 14px; border-radius: 4px; font-size: 12px;
+  background: #886600; color: #fff; pointer-events: none; z-index: 20;
+}

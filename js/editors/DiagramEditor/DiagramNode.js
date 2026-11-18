@@ -12,9 +12,24 @@
  *   - State (triangle)   — named state ψ : I → A (0 inputs, 1 output)
  *   - Effect (triangle)  — named effect : A → I (1 input, 0 outputs)
  *   - Scalar             — I → I (0 inputs, 0 outputs, labeled)
+ *   - Wire               — a plain wire segment (identity), 1 → 1
  */
 
 import { portOffsets } from '../../core/FlowDirection.js';
+
+/**
+ * Draw text at world point (x, y) so it reads upright on screen, whatever
+ * view orientation the canvas applies (DiagramCanvas sets ctx.__orient).
+ */
+export function uprightText(ctx, text, x, y) {
+  const o = ctx.__orient;
+  if (!o || (o.a === 1 && o.d === 1)) { ctx.fillText(text, x, y); return; }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.transform(o.a, o.c, o.b, o.d, 0, 0);   // undo the orientation (inverse = transpose)
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
 
 let _nodeId = 0;
 
@@ -29,6 +44,7 @@ export const NODE_TYPES = {
   STATE:     { key: 'state',     label: 'State (ψ)',  color: '#4fc1ff', shape: 'triangle-down', defIn: 0, defOut: 1, defLabel: 'ψ' },
   EFFECT:    { key: 'effect',    label: 'Effect',     color: '#c586c0', shape: 'triangle-up',   defIn: 1, defOut: 0, defLabel: 'φ' },
   SCALAR:    { key: 'scalar',    label: 'Scalar',     color: '#c586c0', shape: 'scalar',   defIn: 0, defOut: 0, defLabel: 's' },
+  IDENTITY:  { key: 'identity',  label: 'Wire',       color: '#b0b0b0', shape: 'wire',     defIn: 1, defOut: 1 },
 };
 
 export default class DiagramNode {
@@ -47,6 +63,8 @@ export default class DiagramNode {
     this.tensor = null;        // Tensor instance: concrete complex matrix
     this.symbolicForm = null;  // string: symbolic expression for the IR
     this.provenance = null;    // string: opaque cross-highlighting tag
+    this.portXOffsets = null;  // number[] | null: explicit x offset of port k (in & out),
+                               // e.g. a circuit box whose ports sit on their qubits' wires
   }
 
   _defaultRadius() {
@@ -56,6 +74,7 @@ export default class DiagramNode {
     if (s === 'swap') return 20;
     if (s === 'triangle-down' || s === 'triangle-up') return 18;
     if (s === 'scalar') return 14;
+    if (s === 'wire') return 14;
     return 20; // spiders
   }
 
@@ -63,15 +82,30 @@ export default class DiagramNode {
     const r = this.radius + 4; // small tolerance
     const dx = Math.abs(px - this.x), dy = Math.abs(py - this.y);
     const s = this.type.shape;
-    if (s === 'box' || s === 'morphbox') return dx <= r && dy <= r;
+    if (s === 'box') return dx <= r && dy <= r;
+    if (s === 'morphbox') return dx <= this._boxWidth() / 2 + 4 && dy <= r;
+    if (s === 'wire') return dx <= 7 && dy <= r;
     if (s === 'cup' || s === 'cap') return dx <= r + 6 && dy <= r;
     if (s === 'swap') return dx <= r && dy <= r;
     if (s === 'triangle-down' || s === 'triangle-up') return dx <= r && dy <= r;
     return dx * dx + dy * dy <= r * r; // circles & scalar
   }
 
+  /** Width of a morphism box: wide enough for all its ports. */
+  _boxWidth() {
+    if (this.portXOffsets && this.portXOffsets.length) {
+      const o = this.portXOffsets;
+      return Math.max(36, 2 * Math.max(...o.map(Math.abs)) + 30);
+    }
+    return Math.max(this.radius * 2, 36, (Math.max(this.inputs, this.outputs) - 1) * 24 + 20);
+  }
+
   /** Z and X spiders: their legs are interchangeable (flexsymmetry). */
   isSpider() { return this.type.key === 'z-spider' || this.type.key === 'x-spider'; }
+
+  /** Drawn with side legs when wired to another flexible node: spiders, and
+   *  Hadamard boxes (H is symmetric, so e.g. the H on a CZ's leg sits in line). */
+  isFlexible() { return this.isSpider() || this.type.key === 'hadamard'; }
 
   /**
    * Port positions. Ports carrying a wire to another spider are "side legs":
@@ -89,6 +123,10 @@ export default class DiagramNode {
       return { x: this.x + r * Math.cos(a), y: this.y + r * Math.sin(a) };
     }
     const count = dir === 'in' ? this.inputs : this.outputs;
+    const { inputYOffset: iy, outputYOffset: oy } = portOffsets(this.radius);
+    if (this.portXOffsets && this.portXOffsets.length === count) {
+      return { x: this.x + this.portXOffsets[index], y: this.y + (dir === 'in' ? iy : oy) };
+    }
     let rank = index, n = count;
     if (side && side.size) {
       rank = 0;
@@ -116,9 +154,9 @@ export default class DiagramNode {
     } else if (s === 'box') {
       ctx.beginPath(); ctx.rect(this.x-r, this.y-r, r*2, r*2); ctx.fill(); ctx.stroke();
       if (!this.label) { ctx.fillStyle='#fff'; ctx.font='bold 14px sans-serif';
-        ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('H',this.x,this.y); }
+        ctx.textAlign='center'; ctx.textBaseline='middle'; uprightText(ctx,'H',this.x,this.y); }
     } else if (s === 'morphbox') {
-      const w=Math.max(r*2,36), h=r*2;
+      const w=this._boxWidth(), h=r*2;
       this._roundRect(ctx,this.x-w/2,this.y-h/2,w,h,5); ctx.fill(); ctx.stroke();
     } else if (s==='cup') { this._drawCup(ctx,r);
     } else if (s==='cap') { this._drawCap(ctx,r);
@@ -129,6 +167,10 @@ export default class DiagramNode {
     } else if (s==='triangle-up') {
       ctx.beginPath(); ctx.moveTo(this.x-r,this.y+r); ctx.lineTo(this.x+r,this.y+r);
       ctx.lineTo(this.x,this.y-r); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (s==='wire') {
+      const a = this.getInputPort(0), b = this.getOutputPort(0);
+      ctx.strokeStyle = this.type.color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     } else if (s==='scalar') {
       ctx.beginPath(); ctx.arc(this.x,this.y,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.arc(this.x,this.y,r-4,0,Math.PI*2);
@@ -139,7 +181,7 @@ export default class DiagramNode {
       ctx.fillStyle='#fff'; ctx.font='12px sans-serif';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       const ly = s==='triangle-down'?this.y-4 : s==='triangle-up'?this.y+4 : this.y;
-      ctx.fillText(this.label, this.x, ly);
+      uprightText(ctx, this.label, this.x, ly);
     }
     // Port dots (cups/caps/swaps draw their own)
     if (s!=='cup'&&s!=='cap'&&s!=='swap') {

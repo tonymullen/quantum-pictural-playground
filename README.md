@@ -7,12 +7,18 @@ Features a **drag-and-drop diagram editor** and a **Dirac formula editor**
 with **bidirectional synchronisation**: diagrams generate Dirac expressions,
 and student-written expressions are verified against diagrams.
 
+The default layout shows a **Circuit Editor** and a **Diagram Editor** side by side above a **Dirac editor**.
 The interface uses a **Blender-style split-panel layout** where every panel
 can be split, merged, resized, and assigned an arbitrary editor type.
 
 ---
 
 ## Features
+
+### Circuit Editor
+- **Quirk-style circuits** — drag gates onto wires; controls, anti-controls, swaps, phase gates
+- **Live PQP diagram** — each circuit keeps a generated ZX-style diagram (CNOT = spiders joined by a horizontal leg)
+- **Dirac** — written step by step, e.g. `CNOT (H ⊗ I)|00⟩`, and verified like any diagram
 
 ### Diagram Editor
 - **10 generator types** from ZX-calculus / categorical quantum mechanics:
@@ -92,7 +98,7 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 |---|---|
 | Enter formula | Type LaTeX — preview updates live |
 | Insert snippet | Click a snippet button (kets, bras, ⊗, †, etc.) |
-| Link to diagram | **Linked diagram** dropdown |
+| Link to a diagram or circuit | **Linked to** dropdown — the generated expression appears and is verified at once (your own expression for the previous document goes to the saved list) |
 | Generate Dirac | Click **Generate** — translates diagram to LaTeX |
 | Verify | Click **Verify** — checks expression against diagram |
 | Save / recall | **＋ Save Formula**; click to reload |
@@ -127,19 +133,27 @@ js/
 │   ├── DiagramToDirac.js             # Diagram → Dirac LaTeX (component decomposition)
 │   ├── DiracParser.js                # LaTeX → AST (recursive descent)
 │   ├── DiracEval.js                  # AST → Tensor
+│   ├── CircuitGates.js               # Gate library, column operators, reference simulator
+│   ├── CircuitToIR.js                # Circuit → ZX-style IR (exact, scalars included)
+│   ├── CircuitToDirac.js             # Circuit → Dirac, column by column
 │   ├── Verify.js                     # Tensor comparison with pedagogical hints
 │   ├── SyncController.js             # Sync state machine (stale/equivalent/etc.)
 │   └── Config.js                     # Thresholds and settings
 ├── editors/
 │   ├── EditorRegistry.js             # Pluggable editor type registry
+│   ├── DocumentStore.js              # Registry of all documents (diagrams + circuits)
 │   ├── DiagramEditor/                # Canvas-based diagram editor
 │   │   ├── DiagramEditor.js          # Toolbar + doc selector + canvas + palette
 │   │   ├── DiagramCanvas.js          # Interactive canvas + boundary markers
 │   │   ├── DiagramNode.js            # 10 generator types + rendering
 │   │   ├── DiagramWire.js            # Bézier wires + hit-testing
 │   │   ├── DiagramToolbar.js         # Tool & node-add buttons
-│   │   ├── DiagramDocument.js        # Shared data model + undo/redo + observer
-│   │   └── DiagramDocumentStore.js   # Singleton document registry
+│   │   └── DiagramDocument.js        # Shared data model + undo/redo + observer
+│   ├── CircuitEditor/
+│   │   ├── CircuitEditor.js          # Drag-and-drop circuit editor (no tool modes)
+│   │   ├── CircuitDocument.js        # Circuit model (Quirk-style columns) + undo/redo
+│   │   ├── IRToDiagram.js            # Lay out a circuit's IR as a PQP diagram
+│   │   └── CircuitDiagramLink.js     # Keep a generated diagram in sync with a circuit
 │   └── DiracEditor/
 │       └── DiracEditor.js            # Textarea + KaTeX + sync bar + Generate/Verify
 └── layout/                           # Blender-style split-panel engine
@@ -156,6 +170,57 @@ js/
   independently and combined with ⊗.
 - **Pluggable editors** — `EditorRegistry` decouples layout from editor types.
   New editors implement `typeName`, `constructor(el)`, `onResize()`, `destroy()`.
+
+---
+
+## Circuits
+
+`CircuitDocument` models a Quirk-style circuit: qubits × time steps, where a
+step's controls (•, ∘) condition every gate in that step and two × cells
+swap. Qubit 0 is the leftmost tensor factor (leftmost wire in the diagram).
+Inputs can be open or |0⟩, |1⟩, |+⟩, |−⟩; outputs open or post-selected.
+
+- **→ diagram** (ZX style): phase gates become spiders, CNOT/CZ become spiders
+  joined by legs, SWAP is a wire crossing, other controlled gates are boxes
+  with their exact matrix. Scalars are collected into one scalar node, so the
+  diagram equals the circuit exactly.
+- **→ Dirac**: one factor per step, latest on the left, e.g.
+  `\operatorname{CNOT}(H \otimes I)|00\rangle`; controlled gates in projector form.
+- The Dirac editor can link to a circuit and verify against it.
+
+### Circuit Editor
+
+| Action | How |
+|---|---|
+| Add a gate | Drag it from the palette onto a wire — onto a step, or into the gap between steps to insert a new step (an occupied cell is replaced) |
+| Controlled gates | Put • (control) or ∘ (anti-control) in the same step: they condition every gate in that step |
+| Swap | Two × in one step |
+| Move / remove | Drag a placed gate; drag it off the circuit to remove it |
+| Select / delete | Click a gate or a qubit label (q0, q1, …), then 🗑 or **Delete** |
+| Phase of Z(θ), X(θ) | Select the gate, type in the inspector's **Phase** field (π/8, −π/2, α, …) |
+| Inputs / outputs | Pickers at each end of a wire: open, \|0⟩, \|1⟩, \|+⟩, \|−⟩ (outputs: post-selected effects) |
+| Qubits | **＋ Qubit**; select a qubit label + 🗑 to remove |
+| View | Circuit (time →) or Algebraic (time ←) |
+| Show the diagram | **◇ Diagram** — opens the circuit's PQP diagram in the Diagram Editor and links the Dirac editor |
+| Undo / Redo | **Cmd+Z** / **Cmd+Shift+Z** |
+
+
+---
+
+## Reading conventions
+
+Two independent settings:
+
+| Setting | Where | Options | Changes the maths? |
+|---|---|---|---|
+| **View** — which way time flows | each Diagram Editor panel | PQP (↑), Top-down (↓), Circuit (→), Algebraic (←, as in Wood, Biamonte & Cory: reads like the formula) | No — drawing only |
+| **⊗ order** — which wire is the first tensor factor | each document (diagram or circuit) | First wire first (Nielsen & Chuang, PQP) · First wire last (Qiskit, Quirk) | Yes — Dirac output and verification follow it |
+
+Documents are stored in the PQP frame; a view is a rotation/reflection of
+it, so changing the view can never change a diagram's meaning. "First wire"
+means leftmost in the PQP view (topmost in the Circuit and Algebraic views).
+A diagram generated from a circuit takes the circuit's ⊗ order. The Dirac
+editor shows the order of the document it is linked to.
 
 ---
 

@@ -226,3 +226,30 @@
 .diagram-inspector .insp-stepper button:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
 .diagram-inspector .insp-stepper button:disabled { opacity: 0.35; cursor: default; }
 .diagram-inspector .insp-count { min-width: 12px; text-align: center; color: var(--text-bright); }
+
+.diagram-derived-note {
+  font-size: 11px;
+  color: #cca700;
+  white-space: nowrap;
+}
+.diagram-derived-note[hidden] { display: none; }
+
+.diagram-bar-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Document bars (diagram & circuit editors): wrap onto a second line when narrow */
+.diagram-toolbar.doc-bar {
+  height: auto;
+  min-height: 28px;
+  flex-wrap: wrap;
+  row-gap: 3px;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  overflow: visible;
+}

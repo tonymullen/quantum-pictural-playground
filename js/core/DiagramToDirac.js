@@ -1,8 +1,9 @@
 /**
  * DiagramToDirac — Generate Dirac-notation LaTeX from an IR graph.
  *
- * Pipeline: IR → decompose into connected components → per-component:
- *   contract → classify → recognise → format.
+ * Pipeline: IR → split into tensor factors (connected components, merged
+ *   where their wires interleave) → per factor: contract → classify →
+ *   recognise → format.
  * Scalar components become prefactors. Non-scalar components combine with ⊗,
  * in the same left-to-right order as the IR boundary, so the generated
  * expression evaluates to exactly the whole-diagram tensor.
@@ -21,13 +22,20 @@ import symbolicPrint from './SymbolicPrint.js';
  *             tensor: null, ir: import('./IR.js').IRGraph }}
  */
 export default function diagramToDirac(doc) {
-  const ir = diagramToIR(doc);
+  return irToDirac(diagramToIR(doc));
+}
+
+/**
+ * Generate Dirac LaTeX for any IR graph (from a diagram, a circuit, …).
+ * @param {import('./IR.js').IRGraph} ir
+ */
+export function irToDirac(ir) {
   if (!ir.isValid) {
-    return { latex: '', info: ir.diagnostics.map(d => d.message).join('; '),
+    return { latex: '', info: ir.diagnostics.filter(d => d.severity === 'error').map(d => d.message).join('; '),
       category: 'error', reason: 'Diagram has errors', tensor: null, ir };
   }
 
-  const components = ir.connectedComponents();
+  const components = tensorFactors(ir);
   if (components.length === 0) {
     return { latex: '', info: 'Empty diagram', category: 'C', reason: 'Empty', tensor: null, ir };
   }
@@ -84,6 +92,76 @@ export default function diagramToDirac(doc) {
 
   const info = infoParts.join(' | ');
   return { latex, info, category: overallCat, reason: overallReason, tensor: null, ir };
+}
+
+/**
+ * Split an IR into tensor factors whose ⊗ (in the returned order) equals the
+ * whole graph's tensor in its boundary order.
+ *
+ * Starts from connected components. Components whose wires interleave on the
+ * boundary (e.g. a CNOT on wires 0 and 2 beside an H on wire 1) cannot be
+ * written as A ⊗ B, so they are merged into one factor. Factors are ordered
+ * consistently with both the input and the output boundary; if no such
+ * order exists, everything becomes a single factor.
+ * @param {import('./IR.js').IRGraph} ir
+ * @returns {import('./IR.js').IRGraph[]}
+ */
+export function tensorFactors(ir) {
+  const comps = ir.connectedComponents();
+  if (comps.length <= 1) return comps;
+
+  const compOf = new Map();
+  comps.forEach((c, i) => { for (const id of c.nodes.keys()) compOf.set(id, i); });
+  const seqIn = ir.inputBoundary.map(b => compOf.get(b.nodeId));
+  const seqOut = ir.outputBoundary.map(b => compOf.get(b.nodeId));
+
+  // Union-find over component indices; merge anything inside another's span
+  const parent = comps.map((_, i) => i);
+  const find = i => { while (parent[i] !== i) i = parent[i] = parent[parent[i]]; return i; };
+  const union = (a, b) => { a = find(a); b = find(b); if (a !== b) { parent[a] = b; return true; } return false; };
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const seq of [seqIn, seqOut]) {
+      const first = new Map(), last = new Map();
+      seq.forEach((c, k) => { const r = find(c); if (!first.has(r)) first.set(r, k); last.set(r, k); });
+      for (const [r, f] of first)
+        for (let k = f; k <= last.get(r); k++) if (union(r, seq[k])) changed = true;
+    }
+  }
+
+  // Order groups so both boundary sequences are respected (topological sort)
+  const roots = [...new Set(comps.map((_, i) => find(i)))];
+  const after = new Map(roots.map(r => [r, new Set()]));
+  const indeg = new Map(roots.map(r => [r, 0]));
+  for (const seq of [seqIn, seqOut]) {
+    const order = [];
+    for (const c of seq) { const r = find(c); if (order[order.length - 1] !== r) order.push(r); }
+    for (let k = 1; k < order.length; k++) {
+      if (!after.get(order[k - 1]).has(order[k])) {
+        after.get(order[k - 1]).add(order[k]);
+        indeg.set(order[k], indeg.get(order[k]) + 1);
+      }
+    }
+  }
+  const firstPos = r => {
+    const i = seqOut.findIndex(c => find(c) === r), j = seqIn.findIndex(c => find(c) === r);
+    return Math.min(i < 0 ? Infinity : i, j < 0 ? Infinity : j);
+  };
+  const ready = roots.filter(r => indeg.get(r) === 0);
+  const sorted = [];
+  while (ready.length) {
+    ready.sort((a, b) => firstPos(a) - firstPos(b));
+    const r = ready.shift();
+    sorted.push(r);
+    for (const nx of after.get(r)) { indeg.set(nx, indeg.get(nx) - 1); if (indeg.get(nx) === 0) ready.push(nx); }
+  }
+  if (sorted.length !== roots.length) return [ir.subgraph(ir.nodes.keys())]; // no consistent order
+
+  return sorted.map(r => {
+    const ids = [];
+    comps.forEach((c, i) => { if (find(i) === r) ids.push(...c.nodes.keys()); });
+    return ir.subgraph(ids);
+  });
 }
 
 function _translateComponent(tensor, cl, comp) {

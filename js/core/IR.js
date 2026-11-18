@@ -28,10 +28,31 @@ export const GenKind = {
   STATE:     'state',
   EFFECT:    'effect',
   SCALAR:    'scalar',
+  IDENTITY:  'identity',   // a plain wire segment (1 → 1)
   DISCARD:   'discard',
   MEASURE:   'measure',
   PREPARE:   'prepare',
 };
+
+/**
+ * Tensor order: which wire is the first ⊗ factor (the leftmost ket digit).
+ * "First wire" is the leftmost in the PQP frame (topmost in a circuit).
+ *   big-endian    — first wire = first factor (Nielsen & Chuang, PQP)
+ *   little-endian — first wire = last factor  (Qiskit, Quirk)
+ */
+export const TENSOR_ORDERS = {
+  'big-endian':    'First wire = first ⊗ factor (Nielsen & Chuang, PQP)',
+  'little-endian': 'First wire = last ⊗ factor (Qiskit, Quirk)',
+};
+
+/** Put a graph's boundary (given in wire order) into the requested tensor order. */
+export function applyTensorOrder(graph, order) {
+  if (order === 'little-endian') {
+    graph.inputBoundary.reverse();
+    graph.outputBoundary.reverse();
+  }
+  return graph;
+}
 
 let _irNodeId = 0;
 let _irEdgeId = 0;
@@ -194,29 +215,33 @@ export class IRGraph {
       .map(ids => ({ ids, key: keyOf(ids) }))
       .sort((a, b) => a.key[0] - b.key[0] || a.key[1] - b.key[1]);
 
-    // Build sub-graphs
-    const components = [];
-    for (const { ids: nodeIds } of ordered) {
-      const idSet = new Set(nodeIds);
-      const sub = new IRGraph();
-      for (const id of nodeIds) {
-        sub.nodes.set(id, this.nodes.get(id));
-        if (this.layoutKey.has(id)) sub.layoutKey.set(id, this.layoutKey.get(id));
-      }
-      for (const e of this.edges) {
-        if (idSet.has(e.srcNodeId) && idSet.has(e.tgtNodeId)) sub.edges.push(e);
-      }
-      // Inherit boundary order from the parent when it covers this component
-      const open = sub.openPorts();
-      const strip = p => ({ nodeId: p.nodeId, portIndex: p.portIndex });
-      const inh = (list, n) => {
-        const f = list.filter(b => idSet.has(b.nodeId)).map(strip);
-        return f.length === n ? f : null;
-      };
-      sub.inputBoundary = inh(this.inputBoundary, open.inputs.length) || open.inputs.map(strip);
-      sub.outputBoundary = inh(this.outputBoundary, open.outputs.length) || open.outputs.map(strip);
-      components.push(sub);
+    return ordered.map(({ ids }) => this.subgraph(ids));
+  }
+
+  /**
+   * The subgraph on the given nodes: their internal edges, and a boundary
+   * that keeps this graph's boundary order (falls back to openPorts order
+   * if this graph's boundary does not cover the subgraph's open ports).
+   * @param {Iterable<string>} nodeIds
+   */
+  subgraph(nodeIds) {
+    const idSet = new Set(nodeIds);
+    const sub = new IRGraph();
+    for (const id of idSet) {
+      sub.nodes.set(id, this.nodes.get(id));
+      if (this.layoutKey.has(id)) sub.layoutKey.set(id, this.layoutKey.get(id));
     }
-    return components;
+    for (const e of this.edges) {
+      if (idSet.has(e.srcNodeId) && idSet.has(e.tgtNodeId)) sub.edges.push(e);
+    }
+    const open = sub.openPorts();
+    const strip = p => ({ nodeId: p.nodeId, portIndex: p.portIndex });
+    const inh = (list, n) => {
+      const f = list.filter(b => idSet.has(b.nodeId)).map(strip);
+      return f.length === n ? f : null;
+    };
+    sub.inputBoundary = inh(this.inputBoundary, open.inputs.length) || open.inputs.map(strip);
+    sub.outputBoundary = inh(this.outputBoundary, open.outputs.length) || open.outputs.map(strip);
+    return sub;
   }
 }

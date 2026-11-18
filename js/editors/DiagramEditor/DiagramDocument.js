@@ -5,13 +5,21 @@
  */
 import DiagramNode, { NODE_TYPES } from './DiagramNode.js';
 import DiagramWire from './DiagramWire.js';
+import Tensor from '../../core/Tensor.js';
+import diagramToIR from '../../core/DiagramToIR.js';
+import { irToDirac } from '../../core/DiagramToDirac.js';
 
 let _docId = 0;
 
 export default class DiagramDocument {
   constructor(name) {
     this.id = `doc-${_docId++}`;
+    this.kind = 'diagram';
     this.name = name || `Diagram ${_docId}`;
+    /** Id of the circuit this diagram is generated from (its contents get replaced), or null. */
+    this.derivedFrom = null;
+    /** Which wire is the first ⊗ factor — see IR.TENSOR_ORDERS. */
+    this.tensorOrder = 'big-endian';
     this.nodes = new Map();
     this.wires = [];
     this._undoStack = [];
@@ -30,6 +38,26 @@ export default class DiagramDocument {
   offChange(fn) { this._listeners.delete(fn); }
   _notify() { for (const fn of this._listeners) fn(this); }
 
+  /* ---- Common document interface (shared with CircuitDocument) ---- */
+  toIR() { return diagramToIR(this); }
+  generateDirac() { return irToDirac(this.toIR()); }
+
+  /** Replace all nodes and wires (used for diagrams generated from a circuit). */
+  replaceContents(nodes, wires) {
+    this.nodes.clear();
+    for (const n of nodes) this.nodes.set(n.id, n);
+    this.wires = wires;
+    this._undoStack = []; this._redoStack = [];
+    this._notify();
+  }
+
+  /** Change the tensor order (a document setting; notifies so sync re-checks). */
+  setTensorOrder(order) {
+    if (order === this.tensorOrder) return;
+    this.tensorOrder = order;
+    this._notify();
+  }
+
   /* ---- Undo / Redo ---- */
   _snapshot() {
     const nodes = [];
@@ -40,7 +68,9 @@ export default class DiagramDocument {
         inputs: n.inputs, outputs: n.outputs,
         selected: n.selected,
         phase: n.phase, symbolicForm: n.symbolicForm,
-        provenance: n.provenance
+        provenance: n.provenance,
+        tensor: n.tensor ? { rows: n.tensor.rows, cols: n.tensor.cols, d: n.tensor.d } : null,
+        portXOffsets: n.portXOffsets
       });
     }
     const wires = this.wires.map(w => ({
@@ -64,6 +94,8 @@ export default class DiagramDocument {
       node.phase = nd.phase || null;
       node.symbolicForm = nd.symbolicForm || null;
       node.provenance = nd.provenance || null;
+      node.tensor = nd.tensor ? new Tensor(nd.tensor.rows, nd.tensor.cols, nd.tensor.d) : null;
+      node.portXOffsets = nd.portXOffsets || null;
       this.nodes.set(node.id, node);
     }
     this.wires = data.wires.map(wd => {
@@ -104,7 +136,8 @@ export default class DiagramDocument {
   /* ---- Spider legs ---- */
 
   /**
-   * Recompute which ports are side legs. A wire joining two spiders is drawn
+   * Recompute which ports are side legs. A wire joining two spiders (or a
+   * spider and a Hadamard box) is drawn
    * as a straight leg out of each spider's edge, facing the other one (PQP
    * draws e.g. the CNOT's control–target wire horizontally). Several legs
    * between the same pair fan out slightly. This is derived layout only.
@@ -114,7 +147,7 @@ export default class DiagramDocument {
     const pairs = new Map();
     for (const w of this.wires) {
       const a = this.nodes.get(w.fromNodeId), b = this.nodes.get(w.toNodeId);
-      if (!a || !b || !a.isSpider() || !b.isSpider()) continue;
+      if (!a || !b || !a.isFlexible() || !b.isFlexible()) continue;
       const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
       if (!pairs.has(key)) pairs.set(key, []);
       pairs.get(key).push(w);
