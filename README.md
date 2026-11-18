@@ -20,7 +20,9 @@ can be split, merged, resized, and assigned an arbitrary editor type.
   State (ψ), Effect, Scalar
 - **Bottom-to-top flow** (PQP convention): inputs from below, outputs above.
   "↑ time" indicator in the canvas corner.
-- Tools: **Select**, **Wire**, **Delete**. Pan (Alt+drag), Zoom (scroll).
+- **No tool modes** — drag port handles to wire, drag nodes to move, 🗑 deletes the selection. Pan (Alt+drag), Zoom (scroll).
+- **Inspector** — edit the selected node's label/phase and its number of input/output legs
+- **Spider legs** — wires between two spiders are legs (direction-free, by flexsymmetry): drawn straight between the dots, added on demand, and removed together with the wire
 - **Phase/label editing** — double-click any node
 - **Palette sidebar**, **multiple diagrams**, **undo/redo** (Cmd/Ctrl+Z)
 - **Boundary markers** — numbered "in/out" labels on open ports
@@ -38,7 +40,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
   states/effects, computational basis (up to scalar)
 - **Pedagogical classification** (Categories A–G)
 - **Scalar folding** — cancelling scalars simplified away
-- **Tensor contraction** — brute-force for ≤6 qubits, sub-millisecond
+- **Tensor contraction** — pairwise tensor-network contraction (greedy order); wire order follows port positions, left to right
 
 ### Verification
 - Shape-aware; phase vs scalar distinction; pedagogical hints on disagreement
@@ -72,10 +74,14 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 | Action | How |
 |---|---|
 | Add node | Toolbar shape button, or **☰** palette (click/drag) |
-| Wire nodes | **Wire** tool (⟶) → click source node → drag to target |
-| Edit label/phase | **Double-click** node |
-| Select | Click; **Shift+click** multi; drag box-select; **Cmd+A** all |
-| Delete | **Delete**/**Backspace** key, or 🗑 button |
+| Wire nodes | Drag from a port handle (dot) to a port on another node — or onto the node |
+| Join two spiders | Hover/select a spider, drag its **+** handle onto another spider — both gain a leg, drawn straight between them (e.g. the CNOT's control–target wire) |
+| Re-route / remove wire | Drag a connected port's handle to another port; drop on empty space to remove |
+| Edit label/phase | **Double-click** node, or the **Label** field in the inspector |
+| Change leg count | **In / Out ±** in the inspector (spiders, boxes); **−** removes an unconnected leg first |
+| Remove a specific leg | Click its dot to select it, then 🗑 (or **Delete**) |
+| Select / move | Click; **Shift+click** multi; drag box-select; **Cmd+A** all; drag to move the selection |
+| Delete | 🗑 button (or **Delete**/**Backspace**) deletes the selection |
 | Pan / Zoom | **Alt+drag** or middle-mouse / **Scroll wheel** |
 | Undo / Redo | **Cmd+Z** / **Cmd+Shift+Z** |
 | Switch diagram | **Diagram** dropdown; **＋ New** to create |

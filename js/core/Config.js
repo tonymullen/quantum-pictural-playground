@@ -8,6 +8,7 @@ const Config = {
   maxMatrixDisplay: 16,        // Largest matrix to show as heatmap (16×16)
   maxQubits: 6,                // Target qubit limit for full contraction
   maxGenerators: 30,           // Target generator budget
+  maxContractionRank: 22,      // Max open wires on any intermediate tensor (2^22 entries ≈ 64 MB)
 
   // Sync
   debounceMs: 500,             // Debounce delay before auto-sync

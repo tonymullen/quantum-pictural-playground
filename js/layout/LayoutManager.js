@@ -14,8 +14,7 @@ export default class LayoutManager {
     this.areas = new Map();
     this.focusedId = null;
     this.tree = null;
-    const defaultType = EditorRegistry.list()[0] || 'Diagram Editor';
-    this._createLeaf(defaultType);
+    this._createDefaultLayout();
     this._resizeObserver = new ResizeObserver(() => this.render());
     this._resizeObserver.observe(this.rootEl);
   }
@@ -62,6 +61,31 @@ export default class LayoutManager {
     const r = this.rootEl.getBoundingClientRect();
     this.rootEl.appendChild(this._buildDOM(this.tree, r.width, r.height));
     for (const a of this.areas.values()) a.onResize();
+  }
+
+  /** Create the default layout: Diagram Editor (top) + Dirac Editor (bottom). */
+  _createDefaultLayout() {
+    const types = EditorRegistry.list();
+    const diagramType = types.find(t => t.includes('Diagram')) || types[0] || 'Diagram Editor';
+    const diracType = types.find(t => t.includes('Dirac')) || types[1] || types[0] || 'Diagram Editor';
+
+    const topArea = new EditorArea(diagramType, this);
+    this.areas.set(topArea.id, topArea);
+    const bottomArea = new EditorArea(diracType, this);
+    this.areas.set(bottomArea.id, bottomArea);
+
+    const handle = new SplitHandle('vertical', () => {});
+    const splitNode = {
+      type: 'split', direction: 'vertical', ratio: 0.6,
+      children: [
+        { type: 'leaf', areaId: topArea.id, area: topArea },
+        { type: 'leaf', areaId: bottomArea.id, area: bottomArea }
+      ],
+      handle
+    };
+    handle.onDragCallback = (delta, ev) => this._handleDrag(splitNode, ev);
+    this.tree = splitNode;
+    this.render();
   }
 
   _createLeaf(editorType) {

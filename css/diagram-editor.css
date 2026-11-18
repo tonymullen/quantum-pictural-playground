@@ -182,3 +182,47 @@
   background: var(--border-color);
   margin: 3px 0;
 }
+
+/* Selection inspector (in the document bar) */
+.diagram-inspector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding-right: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.diagram-inspector [hidden] { display: none !important; }
+.diagram-inspector .insp-type { color: var(--text-primary); }
+.diagram-inspector .insp-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.diagram-inspector input {
+  width: 110px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--text-bright);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+.diagram-inspector input:focus { outline: none; border-color: var(--accent); }
+.diagram-inspector .insp-stepper button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  line-height: 1;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.diagram-inspector .insp-stepper button:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+.diagram-inspector .insp-stepper button:disabled { opacity: 0.35; cursor: default; }
+.diagram-inspector .insp-count { min-width: 12px; text-align: center; color: var(--text-bright); }

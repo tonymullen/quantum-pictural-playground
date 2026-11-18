@@ -3,22 +3,22 @@
  *
  * Pipeline: IR → decompose into connected components → per-component:
  *   contract → classify → recognise → format.
- * Scalar components become prefactors. Non-scalar components combine with ⊗.
+ * Scalar components become prefactors. Non-scalar components combine with ⊗,
+ * in the same left-to-right order as the IR boundary, so the generated
+ * expression evaluates to exactly the whole-diagram tensor.
  * Returns { latex (parseable), info (display-only), category, reason, tensor, ir }.
  */
 import C from './Complex.js';
-import Tensor from './Tensor.js';
 import Config from './Config.js';
 import diagramToIR from './DiagramToIR.js';
 import contractIR from './ContractIR.js';
 import classify from './Classify.js';
-import { recognise } from './KnownGates.js';
+import symbolicPrint from './SymbolicPrint.js';
 
 /**
  * @param {import('../editors/DiagramEditor/DiagramDocument.js').default} doc
- * @returns {{ latex: string, category: string, reason: string,
- *             tensor: Tensor|null, ir: import('./IR.js').IRGraph,
- *             display: string }}
+ * @returns {{ latex: string, info: string, category: string, reason: string,
+ *             tensor: null, ir: import('./IR.js').IRGraph }}
  */
 export default function diagramToDirac(doc) {
   const ir = diagramToIR(doc);
@@ -37,11 +37,11 @@ export default function diagramToDirac(doc) {
   const infoParts = [];
 
   for (const comp of components) {
-    const { tensor, symbolic } = contractIR(comp);
-    const cl = classify(tensor, symbolic, comp);
+    const { tensor, symbolic, reason } = contractIR(comp);
+    const cl = classify(tensor, symbolic, comp, reason);
     const isScalar = tensor && tensor.rows === 1 && tensor.cols === 1;
 
-    if (isScalar && tensor) {
+    if (isScalar) {
       scalarPrefactor = C.mul(scalarPrefactor, tensor.get(0, 0));
       infoParts.push('Scalar: ' + C.str(tensor.get(0, 0)));
       continue;
@@ -56,134 +56,100 @@ export default function diagramToDirac(doc) {
     if (compResult.info) infoParts.push(compResult.info);
   }
 
-  if (C.isZero(scalarPrefactor)) {
-    return { latex: '0', info: 'Evaluates to zero', category: 'C',
-      reason: 'All components contract to zero', tensor: null, ir };
-  }
-
-  let latex = '';
   const prefactorIsOne = C.eq(scalarPrefactor, C.ONE);
+  const wrap = p => (p.isSum && (parts.length > 1 || !prefactorIsOne)) ? `(${p.latex})` : p.latex;
+  const combined = parts.map(wrap).join(' \\otimes ');
+
+  let latex;
   if (parts.length === 0) {
     latex = _complexToLatex(scalarPrefactor);
+  } else if (prefactorIsOne) {
+    latex = combined;
   } else {
-    const partLatexes = parts.map(p => p.latex).filter(Boolean);
-    const combined = partLatexes.join(' \\otimes ');
-    if (!prefactorIsOne) {
-      latex = _complexToLatex(scalarPrefactor) + ' \\cdot ' + (parts.length > 1 ? '(' + combined + ')' : combined);
-    } else {
-      latex = combined;
-    }
+    const pre = C.isZero(scalarPrefactor) ? '0' : _complexToLatex(scalarPrefactor);
+    latex = pre + ' \\cdot ' + (parts.length > 1 ? '(' + combined + ')' : combined);
   }
+  // A component that could not be printed would silently change the shape of
+  // the ⊗ product, so emit nothing parseable rather than a wrong expression.
+  if (parts.some(p => !p.latex)) latex = '';
 
   const cats = parts.map(p => p.category);
-  const overallCat = cats.includes('D') ? 'D' : cats.includes('F') ? 'F'
-    : cats.includes('A') ? 'A' : cats.includes('B') ? 'B' : cats.includes('C') ? 'C' : 'A';
+  const overallCat = parts.length === 0 ? 'C'
+    : cats.includes('D') ? 'D' : cats.includes('F') ? 'F'
+    : cats.includes('A') ? 'A' : cats.includes('B') ? 'B' : 'C';
   const reasons = parts.map(p => p.reason).filter(Boolean);
-  const overallReason = reasons.length <= 1 ? (reasons[0] || '') : parts.length + ' components';
+  const overallReason = parts.length === 0
+    ? (C.isZero(scalarPrefactor) ? 'Evaluates to zero' : 'Scalar')
+    : reasons.length <= 1 ? (reasons[0] || '') : parts.length + ' components';
 
-  const info = infoParts.length ? infoParts.join(' | ') : '';
-  const allParseable = parts.every(p => p.latex);
-  if (!allParseable) latex = '';
-
+  const info = infoParts.join(' | ');
   return { latex, info, category: overallCat, reason: overallReason, tensor: null, ir };
 }
 
 function _translateComponent(tensor, cl, comp) {
+  if (cl.category === 'D') {
+    const s = cl.structural || {};
+    const nIn = comp.inputBoundary.length, nOut = comp.outputBoundary.length;
+    const info = s.tooLarge ? cl.reason
+      : `Map from ${nIn} to ${nOut} qubits, ${s.nonzero || '?'} non-zero entries`;
+    return { latex: '', info, category: 'D', reason: info };
+  }
   if (!tensor) {
-    return { latex: '', info: 'Symbolic: ' + cl.reason, category: cl.category, reason: cl.reason };
+    // Symbolic: generate latex from node labels + structure
+    const sp = symbolicPrint(comp);
+    const info = sp.assumptions.length ? sp.assumptions.join('; ') : '';
+    return { latex: sp.latex, isSum: !!sp.isSum, info, category: 'F',
+      reason: info || 'Symbolic expression' };
   }
   switch (cl.category) {
     case 'B': {
-      const latex = cl.latex || _tensorToLatex(tensor, comp);
-      const scalar = cl.phase || C.ONE; // scalar between actual tensor and named form
+      const scalar = cl.phase || C.ONE; // tensor = scalar · named form
       let info = 'This is ' + cl.name;
       if (!C.eq(scalar, C.ONE)) {
-        const mag = C.abs(scalar);
-        const isPhase = Math.abs(mag - 1) < 1e-10;
+        const isPhase = Math.abs(C.abs(scalar) - 1) < 1e-10;
         info += isPhase ? ` (up to phase ${C.str(scalar)})` : ` (scalar ${C.str(scalar)})`;
       }
-      return { latex, info, category: 'B', reason: info, scalar };
+      return { latex: cl.latex, isSum: false, info, category: 'B', reason: info, scalar };
     }
     case 'C': {
-      const latex = _tensorToLatex(tensor, comp);
-      return { latex, info: cl.reason, category: 'C', reason: cl.reason };
-    }
-    case 'D': {
-      const s = cl.structural || {};
-      const nIn = comp.inputBoundary.length;
-      const nOut = comp.outputBoundary.length;
-      const info = 'Map from ' + nIn + ' to ' + nOut + ' qubits, ' + (s.nonzero||'?') + ' non-zero entries';
-      return { latex: '', info, category: 'D', reason: info };
+      const { latex, nTerms } = _tensorToLatex(tensor);
+      return { latex, isSum: nTerms > 1, info: cl.reason, category: 'C', reason: cl.reason };
     }
     case 'A':
     default: {
-      const latex = _tensorToLatex(tensor, comp);
-      return { latex, info: '', category: 'A', reason: cl.reason };
+      const { latex, nTerms } = _tensorToLatex(tensor);
+      return { latex, isSum: nTerms > 1, info: '', category: 'A', reason: cl.reason };
     }
   }
 }
 
-/** Convert a tensor to Dirac LaTeX notation. */
-function _tensorToLatex(tensor, ir) {
-  if (!tensor) return '\\text{(symbolic)}';
+/**
+ * Convert a tensor to Dirac LaTeX as a sum of basis terms.
+ * A zero tensor prints as 0 times a basis element so its shape is preserved.
+ * @returns {{ latex: string, nTerms: number }}
+ */
+function _tensorToLatex(tensor) {
   const { rows, cols } = tensor;
-  const isState = cols === 1 && rows > 1;
-  const isEffect = rows === 1 && cols > 1;
-  const isScalar = rows === 1 && cols === 1;
-
-  if (isScalar) return _complexToLatex(tensor.get(0, 0));
+  if (rows === 1 && cols === 1) return { latex: _complexToLatex(tensor.get(0, 0)), nTerms: 1 };
 
   const nQOut = Math.round(Math.log2(rows));
   const nQIn = Math.round(Math.log2(cols));
+  const basis = (i, j) => {
+    const ket = nQOut ? `|${i.toString(2).padStart(nQOut, '0')}\\rangle` : '';
+    const bra = nQIn ? `\\langle ${j.toString(2).padStart(nQIn, '0')}|` : '';
+    return ket + bra;
+  };
 
-  if (isState) return _stateToLatex(tensor, nQOut);
-  if (isEffect) return _effectToLatex(tensor, nQIn);
-  return _operatorToLatex(tensor, nQOut, nQIn);
-}
-
-/** State vector → ket sum. */
-function _stateToLatex(t, nQ) {
   const terms = [];
-  for (let i = 0; i < t.rows; i++) {
-    const v = t.get(i, 0);
-    if (C.isZero(v)) continue;
-    const label = i.toString(2).padStart(nQ, '0');
-    const coeff = _coeffToLatex(v, terms.length === 0);
-    terms.push(`${coeff}|${label}\\rangle`);
-  }
-  return terms.length ? terms.join(' ') : '0';
-}
-
-/** Effect (bra) → bra sum. */
-function _effectToLatex(t, nQ) {
-  const terms = [];
-  for (let j = 0; j < t.cols; j++) {
-    const v = t.get(0, j);
-    if (C.isZero(v)) continue;
-    const label = j.toString(2).padStart(nQ, '0');
-    const coeff = _coeffToLatex(v, terms.length === 0);
-    terms.push(`${coeff}\\langle ${label}|`);
-  }
-  return terms.length ? terms.join(' ') : '0';
-}
-
-/** Operator → outer product sum. */
-function _operatorToLatex(t, nQOut, nQIn) {
-  const terms = [];
-  for (let i = 0; i < t.rows; i++) {
-    for (let j = 0; j < t.cols; j++) {
-      const v = t.get(i, j);
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const v = tensor.get(i, j);
       if (C.isZero(v)) continue;
-      const ket = i.toString(2).padStart(nQOut, '0');
-      const bra = j.toString(2).padStart(nQIn, '0');
-      const coeff = _coeffToLatex(v, terms.length === 0);
-      terms.push(`${coeff}|${ket}\\rangle\\langle ${bra}|`);
+      terms.push(_coeffToLatex(v, terms.length === 0) + basis(i, j));
     }
   }
-  if (terms.length > Config.maxAdditiveTerms) {
-    return `\\text{(${terms.length}-term operator, ${t.rows}\\times${t.cols})}`;
-  }
-  return terms.length ? terms.join(' ') : '0';
+  if (terms.length === 0) return { latex: '0 ' + basis(0, 0), nTerms: 1 };
+  return { latex: terms.join(' '), nTerms: terms.length };
 }
 
 /** Format a complex coefficient for a sum. */
@@ -204,7 +170,7 @@ function _coeffToLatex(z, isFirst) {
   if (isImag) {
     const sign = im > 0 ? (isFirst ? '' : '+ ') : '- ';
     const mag = Math.abs(im);
-    return `${sign}${mag === 1 ? '' : _niceReal(mag)}i`;
+    return `${sign}${Math.abs(mag - 1) < tol ? '' : _niceReal(mag)}i`;
   }
   const prefix = isFirst ? '' : '+ ';
   return `${prefix}(${_complexToLatex(z)})`;
@@ -218,42 +184,18 @@ function _complexToLatex(z) {
   return `${_niceReal(re)}${sign}${_niceReal(im)}i`;
 }
 
-/** Format a real number, recognising √2, 1/√2, etc. */
+/** Format a real number, recognising √2, 1/√2, integers, etc. */
 function _niceReal(x) {
   const tol = 1e-10;
   if (Math.abs(x) < tol) return '0';
-  if (Math.abs(x - 1) < tol) return '1';
-  if (Math.abs(x + 1) < tol) return '-1';
-  const s2 = 1 / Math.sqrt(2);
-  if (Math.abs(x - s2) < tol) return '\\frac{1}{\\sqrt{2}}';
-  if (Math.abs(x + s2) < tol) return '-\\frac{1}{\\sqrt{2}}';
-  if (Math.abs(x - Math.sqrt(2)) < tol) return '\\sqrt{2}';
+  const sign = x < 0 ? '-' : '';
+  const a = Math.abs(x);
+  if (Math.abs(a - Math.round(a)) < tol) return sign + Math.round(a);
+  if (Math.abs(a - 1 / Math.sqrt(2)) < tol) return sign + '\\frac{1}{\\sqrt{2}}';
+  if (Math.abs(a - Math.sqrt(2)) < tol) return sign + '\\sqrt{2}';
+  for (const d of [2, 3, 4, 8]) {           // simple fractions: 1/2, 3/4, …
+    const n = a * d;
+    if (Math.abs(n - Math.round(n)) < tol) return `${sign}\\frac{${Math.round(n)}}{${d}}`;
+  }
   return x.toFixed(Config.complexPrecision);
-}
-
-function _structuralSummary(cl, tensor) {
-  const s = cl.structural || {};
-  return `\\text{${s.nQubits || '?'}-qubit, ${s.nonzero || '?'} non-zero entries, } ${s.rows} \\times ${s.cols}`;
-}
-
-function _symbolicForm(ir) {
-  // Show only symbolic (non-evaluable) generators
-  const symbolic = [];
-  const concrete = [];
-  for (const n of ir.nodes.values()) {
-    const name = n.label || n.kind;
-    if (n.kind === 'morphism' || n.kind === 'state' || n.kind === 'effect' || n.kind === 'scalar') {
-      symbolic.push(`\\text{${name}}`);
-    } else {
-      concrete.push(name);
-    }
-  }
-  if (symbolic.length === 0) {
-    return concrete.map(c => `\\text{${c}}`).join(' \\cdot ');
-  }
-  let result = symbolic.join(' \\cdot ');
-  if (concrete.length > 0) {
-    result += ` \\quad \\text{(with ${concrete.length} concrete generator${concrete.length > 1 ? 's' : ''})}`;
-  }
-  return result;
 }

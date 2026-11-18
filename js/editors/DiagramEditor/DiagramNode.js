@@ -19,16 +19,16 @@ import { portOffsets } from '../../core/FlowDirection.js';
 let _nodeId = 0;
 
 export const NODE_TYPES = {
-  Z_SPIDER:  { key: 'z-spider',  label: 'Z Spider',  color: '#6a9955', shape: 'circle',   defIn: 1, defOut: 1 },
-  X_SPIDER:  { key: 'x-spider',  label: 'X Spider',  color: '#ce4a4a', shape: 'circle',   defIn: 1, defOut: 1 },
+  Z_SPIDER:  { key: 'z-spider',  label: 'Z Spider',  color: '#6a9955', shape: 'circle',   defIn: 1, defOut: 1, variableArity: true },
+  X_SPIDER:  { key: 'x-spider',  label: 'X Spider',  color: '#ce4a4a', shape: 'circle',   defIn: 1, defOut: 1, variableArity: true },
   HADAMARD:  { key: 'hadamard',  label: 'Hadamard',  color: '#cca700', shape: 'box',      defIn: 1, defOut: 1 },
-  MORPHISM:  { key: 'morphism',  label: 'Morphism',  color: '#5b7eaa', shape: 'morphbox', defIn: 1, defOut: 1 },
+  MORPHISM:  { key: 'morphism',  label: 'Morphism',  color: '#5b7eaa', shape: 'morphbox', defIn: 1, defOut: 1, variableArity: true, defLabel: 'f' },
   CUP:       { key: 'cup',       label: 'Cup (η)',    color: '#b0b0b0', shape: 'cup',      defIn: 0, defOut: 2 },
   CAP:       { key: 'cap',       label: 'Cap (ε)',    color: '#b0b0b0', shape: 'cap',      defIn: 2, defOut: 0 },
   SWAP:      { key: 'swap',      label: 'Swap (σ)',   color: '#b0b0b0', shape: 'swap',     defIn: 2, defOut: 2 },
-  STATE:     { key: 'state',     label: 'State (ψ)',  color: '#4fc1ff', shape: 'triangle-down', defIn: 0, defOut: 1 },
-  EFFECT:    { key: 'effect',    label: 'Effect',     color: '#c586c0', shape: 'triangle-up',   defIn: 1, defOut: 0 },
-  SCALAR:    { key: 'scalar',    label: 'Scalar',     color: '#c586c0', shape: 'scalar',   defIn: 0, defOut: 0 },
+  STATE:     { key: 'state',     label: 'State (ψ)',  color: '#4fc1ff', shape: 'triangle-down', defIn: 0, defOut: 1, defLabel: 'ψ' },
+  EFFECT:    { key: 'effect',    label: 'Effect',     color: '#c586c0', shape: 'triangle-up',   defIn: 1, defOut: 0, defLabel: 'φ' },
+  SCALAR:    { key: 'scalar',    label: 'Scalar',     color: '#c586c0', shape: 'scalar',   defIn: 0, defOut: 0, defLabel: 's' },
 };
 
 export default class DiagramNode {
@@ -37,7 +37,7 @@ export default class DiagramNode {
     this.type = type;
     this.x = x;
     this.y = y;
-    this.label = '';           // text label (phase for spiders, name for morphisms/states)
+    this.label = type.defLabel || '';  // text label (phase for spiders, name for morphisms/states)
     this.inputs = type.defIn;
     this.outputs = type.defOut;
     this.selected = false;
@@ -70,21 +70,35 @@ export default class DiagramNode {
     return dx * dx + dy * dy <= r * r; // circles & scalar
   }
 
-  /** Port positions follow FlowDirection convention. */
-  getInputPort(index) {
-    const spacing = 24;
-    const totalW = (this.inputs - 1) * spacing;
-    const startX = this.x - totalW / 2;
-    const { inputYOffset } = portOffsets(this.radius);
-    return { x: startX + index * spacing, y: this.y + inputYOffset };
-  }
+  /** Z and X spiders: their legs are interchangeable (flexsymmetry). */
+  isSpider() { return this.type.key === 'z-spider' || this.type.key === 'x-spider'; }
 
-  getOutputPort(index) {
+  /**
+   * Port positions. Ports carrying a wire to another spider are "side legs":
+   * they sit on the node's edge facing the other spider (angles set by
+   * DiagramDocument.refreshLegs()). All other ports follow FlowDirection:
+   * inputs spread along the bottom, outputs along the top.
+   */
+  getInputPort(index) { return this._portPos('in', index); }
+  getOutputPort(index) { return this._portPos('out', index); }
+
+  _portPos(dir, index) {
+    const side = this._side ? this._side[dir] : null;
+    if (side && side.has(index)) {
+      const a = side.get(index), r = this.radius + 2;
+      return { x: this.x + r * Math.cos(a), y: this.y + r * Math.sin(a) };
+    }
+    const count = dir === 'in' ? this.inputs : this.outputs;
+    let rank = index, n = count;
+    if (side && side.size) {
+      rank = 0;
+      for (let i = 0; i < index; i++) if (!side.has(i)) rank++;
+      n = count - side.size;
+    }
     const spacing = 24;
-    const totalW = (this.outputs - 1) * spacing;
-    const startX = this.x - totalW / 2;
-    const { outputYOffset } = portOffsets(this.radius);
-    return { x: startX + index * spacing, y: this.y + outputYOffset };
+    const startX = this.x - ((n - 1) * spacing) / 2;
+    const { inputYOffset, outputYOffset } = portOffsets(this.radius);
+    return { x: startX + rank * spacing, y: this.y + (dir === 'in' ? inputYOffset : outputYOffset) };
   }
 
   draw(ctx) {

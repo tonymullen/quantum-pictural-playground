@@ -26,6 +26,10 @@ export function generatorTensor(node) {
   const nIn = node.totalIn, nOut = node.totalOut;
   const dim = 2; // qubit dimension
 
+  // Spider with a symbolic (non-numeric) phase has no concrete tensor
+  if ((node.kind === GenKind.Z_SPIDER || node.kind === GenKind.X_SPIDER) && node.phaseSymbolic)
+    return null;
+
   switch (node.kind) {
     case GenKind.Z_SPIDER:
       return zSpiderTensor(nIn, nOut, node.phase || Phase.ZERO);
@@ -59,8 +63,9 @@ function zSpiderTensor(nIn, nOut, phase) {
   const t = Tensor.zeros(dOut, dIn);
   // |0...0⟩⟨0...0| entry: row 0, col 0
   t.set(0, 0, C.ONE);
-  // e^{iα}|1...1⟩⟨1...1| entry: row (dOut-1), col (dIn-1)
-  t.set(dOut - 1, dIn - 1, phase.toComplex());
+  // e^{iα}|1...1⟩⟨1...1| entry: row (dOut-1), col (dIn-1).
+  // Added (not overwritten) so a spider with no legs gives 1 + e^{iα}.
+  t.set(dOut - 1, dIn - 1, C.add(t.get(dOut - 1, dIn - 1), phase.toComplex()));
   return t;
 }
 

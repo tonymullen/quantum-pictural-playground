@@ -16,7 +16,7 @@ import contractIR from './ContractIR.js';
 import diagramToDirac from './DiagramToDirac.js';
 import { verify, verifyStatusDisplay } from './Verify.js';
 import parseDirac, { ParseError } from './DiracParser.js';
-import evalDirac from './DiracEval.js';
+import evalDirac, { DiracEvalError } from './DiracEval.js';
 
 /**
  * @typedef {'synced'|'stale-diagram'|'stale-dirac'|'not-equivalent'|'unavailable'} SyncState
@@ -61,7 +61,8 @@ export default class SyncController {
 
   /** Called when the diagram side changes. */
   _onDiagramChanged() {
-    if (this.state === 'synced' || this.state === 'not-equivalent') {
+    // Any previous result is now outdated (including "unavailable" ones)
+    if (this.lastVerifyResult || this.state === 'synced' || this.state === 'not-equivalent') {
       this.state = 'stale-diagram';
       this._notify();
     }
@@ -77,7 +78,8 @@ export default class SyncController {
       this.diracAuthored = true;
       this.diracGenerated = false;
     }
-    if (this.state === 'synced' || this.state === 'not-equivalent') {
+    // Any previous result is now outdated (including "unavailable" ones)
+    if (this.lastVerifyResult || this.state === 'synced' || this.state === 'not-equivalent') {
       this.state = 'stale-dirac';
       this._notify();
     }
@@ -108,14 +110,14 @@ export default class SyncController {
     }
 
     // Contract diagram to tensor
-    const { tensor: diagTensor, symbolic } = contractIR(ir);
+    const { tensor: diagTensor, symbolic, reason } = contractIR(ir);
 
     if (!diagTensor) {
       this.state = 'unavailable';
       this.lastVerifyResult = {
         status: 'unavailable',
         hint: symbolic ? 'Diagram contains symbolic generators — cannot verify numerically'
-                       : 'Could not evaluate diagram'
+                       : (reason || 'Could not evaluate diagram')
       };
       this._notify();
       return;
@@ -148,9 +150,11 @@ export default class SyncController {
         this._notify();
         return;
       }
-      // Other error
-      this.state = 'unavailable';
-      this.lastVerifyResult = { status: 'unavailable', hint: `Error: ${e.message}` };
+      // Concrete but ill-typed expression (e.g. dimension mismatch)
+      this.state = e instanceof DiracEvalError ? 'not-equivalent' : 'unavailable';
+      this.lastVerifyResult = e instanceof DiracEvalError
+        ? { status: 'not-equivalent', hint: e.message }
+        : { status: 'unavailable', hint: `Error: ${e.message}` };
       this._notify();
       return;
     }
@@ -185,16 +189,17 @@ export default class SyncController {
 
   /** Get display info for the current state. */
   getStatusDisplay() {
+    // Stale states take precedence over the (now outdated) last result
+    if (this.state === 'stale-diagram')
+      return { icon: '⟳', cls: 'verify-stale', text: 'Diagram changed — re-checking…' };
+    if (this.state === 'stale-dirac')
+      return { icon: '⟳', cls: 'verify-stale', text: 'Expression changed — re-checking…' };
     if (this.lastVerifyResult) {
       return verifyStatusDisplay(this.lastVerifyResult);
     }
     switch (this.state) {
       case 'synced':
         return { icon: '✓', cls: 'verify-ok', text: 'Synced' };
-      case 'stale-diagram':
-        return { icon: '⟳', cls: 'verify-stale', text: 'Diagram changed — re-verify' };
-      case 'stale-dirac':
-        return { icon: '⟳', cls: 'verify-stale', text: 'Expression changed — re-verify' };
       case 'not-equivalent':
         return { icon: '✗', cls: 'verify-fail', text: 'Not equivalent' };
       default:

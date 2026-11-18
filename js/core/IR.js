@@ -114,6 +114,9 @@ export class IRGraph {
     this.outputBoundary = [];
     /** Well-formedness diagnostics. */
     this.diagnostics = [];
+    /** Optional layout key per node (e.g. diagram x-position). Components are
+     *  ordered by their smallest key; nodes without a key use insertion order. */
+    this.layoutKey = new Map();
   }
 
   addNode(node) { this.nodes.set(node.id, node); return node; }
@@ -154,8 +157,11 @@ export class IRGraph {
 
   /**
    * Decompose into connected components.
-   * Returns an array of IRGraph, each a self-contained subgraph.
-   * Boundaries are recomputed per component.
+   * Returns an array of IRGraph, each a self-contained subgraph, sorted by
+   * layoutKey (left to right). Each component's boundary keeps the relative
+   * order of this graph's boundary, so when the parent boundary is grouped by
+   * component (as DiagramToIR produces it), the tensor product of the
+   * components in this order equals the parent's tensor.
    */
   connectedComponents() {
     if (this.nodes.size === 0) return [];
@@ -174,19 +180,41 @@ export class IRGraph {
       groups.get(r).push(id);
     }
 
+    // Order components by layout key (ties / missing keys → insertion order)
+    const insertion = new Map(Array.from(this.nodes.keys()).map((id, i) => [id, i]));
+    const keyOf = ids => {
+      let k = Infinity, ins = Infinity;
+      for (const id of ids) {
+        if (this.layoutKey.has(id)) k = Math.min(k, this.layoutKey.get(id));
+        ins = Math.min(ins, insertion.get(id));
+      }
+      return [k, ins];
+    };
+    const ordered = Array.from(groups.values())
+      .map(ids => ({ ids, key: keyOf(ids) }))
+      .sort((a, b) => a.key[0] - b.key[0] || a.key[1] - b.key[1]);
+
     // Build sub-graphs
     const components = [];
-    for (const nodeIds of groups.values()) {
+    for (const { ids: nodeIds } of ordered) {
       const idSet = new Set(nodeIds);
       const sub = new IRGraph();
-      for (const id of nodeIds) sub.nodes.set(id, this.nodes.get(id));
+      for (const id of nodeIds) {
+        sub.nodes.set(id, this.nodes.get(id));
+        if (this.layoutKey.has(id)) sub.layoutKey.set(id, this.layoutKey.get(id));
+      }
       for (const e of this.edges) {
         if (idSet.has(e.srcNodeId) && idSet.has(e.tgtNodeId)) sub.edges.push(e);
       }
-      // Recompute boundaries for this component
+      // Inherit boundary order from the parent when it covers this component
       const open = sub.openPorts();
-      sub.inputBoundary = open.inputs.map(p => ({ nodeId: p.nodeId, portIndex: p.portIndex }));
-      sub.outputBoundary = open.outputs.map(p => ({ nodeId: p.nodeId, portIndex: p.portIndex }));
+      const strip = p => ({ nodeId: p.nodeId, portIndex: p.portIndex });
+      const inh = (list, n) => {
+        const f = list.filter(b => idSet.has(b.nodeId)).map(strip);
+        return f.length === n ? f : null;
+      };
+      sub.inputBoundary = inh(this.inputBoundary, open.inputs.length) || open.inputs.map(strip);
+      sub.outputBoundary = inh(this.outputBoundary, open.outputs.length) || open.outputs.map(strip);
       components.push(sub);
     }
     return components;

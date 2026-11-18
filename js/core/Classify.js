@@ -6,6 +6,7 @@ import C from './Complex.js';
 import Tensor from './Tensor.js';
 import Config from './Config.js';
 import { recognise } from './KnownGates.js';
+import { generatorTensor } from './Interpret.js';
 
 /**
  * @typedef {'A'|'B'|'C'|'D'|'E'|'F'|'G'} Category
@@ -18,14 +19,29 @@ import { recognise } from './KnownGates.js';
  * @param {Tensor|null} tensor — contracted tensor
  * @param {boolean} symbolic — true if some generators were symbolic
  * @param {import('./IR.js').IRGraph} ir — the source IR
+ * @param {string} [contractReason] — why contraction produced no tensor
  * @returns {ClassifyResult}
  */
-export default function classify(tensor, symbolic, ir) {
-  // Category F: symbolic / interpretation-dependent
+export default function classify(tensor, symbolic, ir, contractReason = '') {
+  // Too large to contract (concrete, but over the size limit)
+  if (!tensor && !symbolic) {
+    return { category: 'D', reason: contractReason || 'Too large to evaluate',
+      structural: { tooLarge: true } };
+  }
+
+  // Symbolic: generators without matrices
   if (symbolic || !tensor) {
-    return {
-      category: 'F', reason: 'Contains generic boxes without matrices — result is symbolic'
-    };
+    // Describe which generators are symbolic
+    const symNames = [];
+    for (const n of ir.nodes.values()) {
+      if (generatorTensor(n)) continue;
+      const isSpider = n.kind === 'z-spider' || n.kind === 'x-spider';
+      symNames.push(isSpider ? `phase ${n.label}` : (n.label || n.kind));
+    }
+    const desc = symNames.length
+      ? `Symbolic: no matrix given for ${symNames.join(', ')}`
+      : 'Contains symbolic generators';
+    return { category: 'F', reason: desc };
   }
 
   const rows = tensor.rows, cols = tensor.cols;

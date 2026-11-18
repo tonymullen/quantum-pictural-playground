@@ -4,7 +4,7 @@
  * Supports multiple diagrams via DiagramDocumentStore.
  */
 import DiagramCanvas from './DiagramCanvas.js';
-import DiagramToolbar, { TOOLS } from './DiagramToolbar.js';
+import DiagramToolbar from './DiagramToolbar.js';
 import { NODE_TYPES } from './DiagramNode.js';
 import DiagramWire from './DiagramWire.js';
 import DiagramDocumentStore from './DiagramDocumentStore.js';
@@ -20,7 +20,6 @@ export default class DiagramEditor {
 
     // Toolbar (includes diagram selector on the left)
     this.toolbar = new DiagramToolbar(this.el, {
-      setTool: (t) => this.canvas.setTool(t),
       addNode: (t) => this.canvas.addNode(t),
       togglePalette: () => this._togglePalette(),
       deleteSelected: () => this.canvas.deleteSelected(),
@@ -49,15 +48,20 @@ export default class DiagramEditor {
     this.currentDocId = doc.id;
 
     // Canvas — pass the shared document
-    this.canvas = new DiagramCanvas(this.canvasWrap, doc);
+    this.canvas = new DiagramCanvas(this.canvasWrap, doc, {
+      onSelectionChange: () => this._refreshInspector(),
+      onEditLabel: () => { this._refreshInspector(); this.inspLabel.focus(); this.inspLabel.select(); },
+    });
 
     // Load default content into the first-ever document
     if (this._needsDefault) {
       this._loadDefaultDiagram();
+      doc._undoStack = []; doc._redoStack = [];  // the example is the starting point
       this._needsDefault = false;
     }
 
     this._refreshDocSelect();
+    this._refreshInspector();
   }
 
   /* ---- Document selector ---- */
@@ -91,11 +95,105 @@ export default class DiagramEditor {
     newBtn.addEventListener('click', () => this._createNewDiagram());
     this.docBarEl.appendChild(newBtn);
 
+    this._buildInspector();
     this.el.appendChild(this.docBarEl);
 
     // Listen for store changes (other editors may create/delete docs)
     this._onStoreChange = () => this._refreshDocSelect();
     DiagramDocumentStore.onListChange(this._onStoreChange);
+  }
+
+  /* ---- Inspector: label + leg counts of the selected node ---- */
+
+  _buildInspector() {
+    const el = document.createElement('div');
+    el.className = 'diagram-inspector';
+    this.inspector = el;
+
+    this.inspType = document.createElement('span');
+    this.inspType.className = 'insp-type';
+    el.appendChild(this.inspType);
+
+    this.inspLabelWrap = document.createElement('label');
+    this.inspLabelWrap.className = 'insp-field';
+    this.inspLabelWrap.append('Label');
+    this.inspLabel = document.createElement('input');
+    this.inspLabel.type = 'text';
+    this.inspLabel.spellcheck = false;
+    this.inspLabel.addEventListener('change', () => {
+      const n = this._inspNode();
+      if (n) this.canvas.setLabel(n, this.inspLabel.value.trim());
+    });
+    this.inspLabel.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { this.inspLabel.blur(); this.canvas.canvas.focus(); }
+      if (e.key === 'Escape') {
+        const n = this._inspNode(); this.inspLabel.value = n ? n.label : '';
+        this.inspLabel.blur(); this.canvas.canvas.focus();
+      }
+    });
+    this.inspLabelWrap.appendChild(this.inspLabel);
+    el.appendChild(this.inspLabelWrap);
+
+    const stepper = (name, get, set) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'insp-field insp-stepper';
+      wrap.append(name);
+      const minus = document.createElement('button'); minus.textContent = '−';
+      const val = document.createElement('span'); val.className = 'insp-count';
+      const plus = document.createElement('button'); plus.textContent = '+';
+      minus.title = `Remove ${name.toLowerCase()} leg`; plus.title = `Add ${name.toLowerCase()} leg`;
+      minus.addEventListener('click', () => { const n = this._inspNode(); if (n) set(n, get(n) - 1); });
+      plus.addEventListener('click', () => { const n = this._inspNode(); if (n) set(n, get(n) + 1); });
+      wrap.append(minus, val, plus);
+      el.appendChild(wrap);
+      return { wrap, val, minus, plus };
+    };
+    const MAX_LEGS = 8;
+    this.inspIn = stepper('In', n => n.inputs,
+      (n, v) => this.canvas.setArity(n, Math.min(v, MAX_LEGS), n.outputs));
+    this.inspOut = stepper('Out', n => n.outputs,
+      (n, v) => this.canvas.setArity(n, n.inputs, Math.min(v, MAX_LEGS)));
+    this._maxLegs = MAX_LEGS;
+
+    this.docBarEl.appendChild(el);
+  }
+
+  /** The single selected node (or the node of a selected leg), or null. */
+  _inspNode() {
+    if (!this.canvas) return null;
+    const sel = this.canvas.selectedNodes();
+    if (sel.length === 1) return sel[0];
+    const sp = this.canvas.selectedPort;
+    return sel.length === 0 && sp ? this.canvas.nodes.get(sp.nodeId) || null : null;
+  }
+
+  _refreshInspector() {
+    if (!this.inspector || !this.canvas) return;
+    const sel = this.canvas.selectedNodes();
+    const n = this._inspNode();
+    const sp = this.canvas.selectedPort;
+    this.inspLabelWrap.hidden = !n;
+    this.inspIn.wrap.hidden = this.inspOut.wrap.hidden = !(n && n.type.variableArity);
+    if (!n) {
+      this.inspType.textContent = sel.length > 1 ? `${sel.length} nodes selected` : '';
+      return;
+    }
+    this.inspType.textContent = sp && sel.length === 0
+      ? `${n.type.label} — ${sp.dir === 'in' ? 'input' : 'output'} leg selected (🗑 to remove)`
+      : n.type.label;
+    if (document.activeElement !== this.inspLabel || this._inspNodeId !== n.id) {
+      this.inspLabel.value = n.label;
+    }
+    this._inspNodeId = n.id;
+    const isSpider = n.type.key === 'z-spider' || n.type.key === 'x-spider';
+    this.inspLabel.placeholder = isSpider ? 'phase: π/2, α, …' : 'name';
+    this.inspIn.val.textContent = n.inputs;
+    this.inspOut.val.textContent = n.outputs;
+    this.inspIn.minus.disabled = n.inputs === 0;
+    this.inspOut.minus.disabled = n.outputs === 0;
+    this.inspIn.plus.disabled = n.inputs >= this._maxLegs;
+    this.inspOut.plus.disabled = n.outputs >= this._maxLegs;
   }
 
   _refreshDocSelect() {
@@ -134,18 +232,19 @@ export default class DiagramEditor {
    */
   _loadDefaultDiagram() {
     const NT = NODE_TYPES;
-    // CNOT gate from ZX-calculus: Z-spider (1→2) wired to X-spider (2→1)
-    // This has a concrete tensor (Category B: "This is CNOT")
-    const z1 = this.canvas.addNode(NT.Z_SPIDER, 200, 100);
+    // CNOT gate from ZX-calculus: Z-spider (control, left) and X-spider
+    // (target, right) side by side, joined by a horizontal leg.
+    // Wire order follows port positions, so this reads as CNOT (Category B).
+    const z1 = this.canvas.addNode(NT.Z_SPIDER, 200, 170);
     z1.inputs = 1; z1.outputs = 2;
-    const x1 = this.canvas.addNode(NT.X_SPIDER, 200, 250);
+    const x1 = this.canvas.addNode(NT.X_SPIDER, 270, 170);
     x1.inputs = 2; x1.outputs = 1;
 
-    // Wire: z1 out0 → x1 in0 (control path)
-    this.canvas.wires.push(new DiagramWire(z1.id, 0, x1.id, 0));
+    // Leg: z1's right output → x1's left input
+    this.canvas.wires.push(new DiagramWire(z1.id, 1, x1.id, 0));
 
     // Bell state: a cup produces |00⟩+|11⟩
-    const cup1 = this.canvas.addNode(NT.CUP, 380, 170);
+    const cup1 = this.canvas.addNode(NT.CUP, 400, 170);
 
     // Hadamard gate
     const h1 = this.canvas.addNode(NT.HADAMARD, 520, 170);

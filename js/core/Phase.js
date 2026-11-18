@@ -19,30 +19,28 @@ export default class Phase {
   static HALF = new Phase(1, 2);
   static QUARTER = new Phase(1, 4);
 
-  /** Parse a label string into a Phase, or return null. */
+  /**
+   * Parse a spider label into a Phase, or return null if it is not a
+   * rational multiple of π (e.g. "α" — a symbolic phase).
+   * Accepts: "", "0", "π", "-π", "2π", "π/2", "3π/4", "2*π/3", "\\pi/4",
+   * "pi/4", and "N/M" (implicit π, e.g. "1/2" = π/2).
+   */
   static parse(s) {
-    if (!s || !s.trim()) return Phase.ZERO;
-    s = s.trim().replace(/\s/g, '');
-    // "0" → 0
-    if (s === '0') return Phase.ZERO;
-    // "π" or "pi"
-    if (s === 'π' || s === 'pi') return Phase.PI;
-    if (s === '-π' || s === '-pi') return new Phase(-1);
-    // "π/N" or "pi/N"
-    let m = s.match(/^(-?)(?:(\d+))?[πpi]+(?:\/(\d+))?$/);
+    if (s === null || s === undefined) return Phase.ZERO;
+    s = String(s).replace(/\s+/g, '').replace(/\\pi/g, 'π').replace(/pi/g, 'π');
+    if (s === '' || s === '0') return Phase.ZERO;
+    let m = s.match(/^([+-]?)(\d*)\*?π(?:\/(\d+))?$/);
     if (m) {
-      const sign = m[1] === '-' ? -1 : 1;
-      const num = m[2] ? parseInt(m[2]) : 1;
-      const den = m[3] ? parseInt(m[3]) : 1;
-      return new Phase(sign * num, den);
+      const num = (m[1] === '-' ? -1 : 1) * (m[2] ? parseInt(m[2], 10) : 1);
+      const den = m[3] ? parseInt(m[3], 10) : 1;
+      return den === 0 ? null : new Phase(num, den);
     }
-    // "N*π/M" or "Nπ/M"
-    m = s.match(/^(-?\d+)\*?[πpi]+(?:\/(\d+))?$/);
-    if (m) return new Phase(parseInt(m[1]), m[2] ? parseInt(m[2]) : 1);
-    // "N/M" (implicit π)
-    m = s.match(/^(-?\d+)\/(\d+)$/);
-    if (m) return new Phase(parseInt(m[1]), parseInt(m[2]));
-    return null; // unparseable
+    m = s.match(/^([+-]?\d+)\/(\d+)$/);
+    if (m) {
+      const den = parseInt(m[2], 10);
+      return den === 0 ? null : new Phase(parseInt(m[1], 10), den);
+    }
+    return null;
   }
 
   /** Convert to radians. */

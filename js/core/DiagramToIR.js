@@ -13,6 +13,8 @@ import Phase from './Phase.js';
 export default function diagramToIR(doc) {
   const graph = new IRGraph();
   const nodeIdMap = new Map(); // diagram nodeId → IR nodeId
+  // Port positions (used for boundary order) depend on which ports are spider legs
+  if (typeof doc.refreshLegs === 'function') doc.refreshLegs();
 
   // --- 1. Convert nodes to IR generators ---
   for (const dNode of doc.nodes.values()) {
@@ -28,10 +30,12 @@ export default function diagramToIR(doc) {
     irNode.label = dNode.label || '';
     irNode.provenance = { editorType: 'diagram', elementId: dNode.id };
 
-    // Parse phase from label for spiders
+    // Parse phase from label for spiders. An unparseable label (e.g. "α")
+    // is a symbolic phase: the spider then has no concrete tensor.
     if (kind === GenKind.Z_SPIDER || kind === GenKind.X_SPIDER) {
       const parsed = Phase.parse(dNode.label);
-      irNode.phase = parsed || Phase.ZERO;
+      irNode.phase = parsed;
+      irNode.phaseSymbolic = parsed === null;
     }
 
     graph.addNode(irNode);
@@ -98,9 +102,32 @@ export default function diagramToIR(doc) {
     }
   }
 
-  // --- 4. Compute boundary ordering via through-wire tracing ---
-  const open = graph.openPorts();
-  const { orderedInputs, orderedOutputs } = _orderBoundaries(graph, open, doc, nodeIdMap);
+  // --- 4. Boundary ordering (planar, grouped by component) ---
+  // Components are ordered left-to-right by their leftmost node; within a
+  // component, open ports are ordered by their on-screen position (x, then y).
+  // Grouping by component keeps Generate (⊗ of components) and Verify
+  // (whole-graph contraction) on the same wire order.
+  const irToDiagram = new Map();
+  for (const [dId, irId] of nodeIdMap) irToDiagram.set(irId, doc.nodes.get(dId));
+  const insertion = new Map(Array.from(graph.nodes.keys()).map((id, i) => [id, i]));
+  for (const [irId, dNode] of irToDiagram) graph.layoutKey.set(irId, dNode.x);
+
+  const portPos = (p, dir) => {
+    const dNode = irToDiagram.get(p.nodeId);
+    return dir === 'in' ? dNode.getInputPort(p.portIndex) : dNode.getOutputPort(p.portIndex);
+  };
+  const planar = dir => (a, b) => {
+    const pa = portPos(a, dir), pb = portPos(b, dir);
+    return (pa.x - pb.x) || (pa.y - pb.y)
+      || (insertion.get(a.nodeId) - insertion.get(b.nodeId)) || (a.portIndex - b.portIndex);
+  };
+  const strip = p => ({ nodeId: p.nodeId, portIndex: p.portIndex });
+  const orderedInputs = [], orderedOutputs = [];
+  for (const comp of graph.connectedComponents()) {
+    const open = comp.openPorts();
+    orderedInputs.push(...open.inputs.sort(planar('in')).map(strip));
+    orderedOutputs.push(...open.outputs.sort(planar('out')).map(strip));
+  }
   graph.inputBoundary = orderedInputs;
   graph.outputBoundary = orderedOutputs;
 
@@ -119,111 +146,4 @@ export default function diagramToIR(doc) {
   }));
 
   return graph;
-}
-
-/**
- * Order boundaries by through-wire identity.
- * A through-wire is a path from an open input port to an open output port
- * through the graph. Paired input/output get the same position index.
- * Through-wires are ordered by x-position of their output end.
- * Unpaired ports are appended in x-position order.
- */
-function _orderBoundaries(graph, open, doc, nodeIdMap) {
-  // Trace each open output port backwards to find its paired open input
-  const pairs = [];       // { input, output, outX }
-  const pairedInputs = new Set();
-  const pairedOutputs = new Set();
-
-  for (const outPort of open.outputs) {
-    const inPort = _traceBackToInput(graph, outPort, open.inputs);
-    const dNode = _findDiagramNode(doc, nodeIdMap, outPort.nodeId);
-    const outX = dNode ? dNode.x + outPort.portIndex * 24 : 0;
-
-    if (inPort) {
-      const key = `${inPort.nodeId}:${inPort.portIndex}`;
-      if (!pairedInputs.has(key)) {
-        pairs.push({ input: inPort, output: outPort, outX });
-        pairedInputs.add(key);
-        pairedOutputs.add(`${outPort.nodeId}:${outPort.portIndex}`);
-      }
-    }
-  }
-
-  // Sort pairs by output x-position
-  pairs.sort((a, b) => a.outX - b.outX);
-
-  // Collect paired boundaries in order
-  const orderedInputs = pairs.map(p => ({ nodeId: p.input.nodeId, portIndex: p.input.portIndex }));
-  const orderedOutputs = pairs.map(p => ({ nodeId: p.output.nodeId, portIndex: p.output.portIndex }));
-
-  // Append unpaired inputs (sorted by x)
-  for (const inp of open.inputs) {
-    const key = `${inp.nodeId}:${inp.portIndex}`;
-    if (!pairedInputs.has(key)) {
-      const dNode = _findDiagramNode(doc, nodeIdMap, inp.nodeId);
-      orderedInputs.push({ nodeId: inp.nodeId, portIndex: inp.portIndex, _x: dNode ? dNode.x : 0 });
-    }
-  }
-  // Append unpaired outputs (sorted by x)
-  for (const outp of open.outputs) {
-    const key = `${outp.nodeId}:${outp.portIndex}`;
-    if (!pairedOutputs.has(key)) {
-      const dNode = _findDiagramNode(doc, nodeIdMap, outp.nodeId);
-      orderedOutputs.push({ nodeId: outp.nodeId, portIndex: outp.portIndex, _x: dNode ? dNode.x : 0 });
-    }
-  }
-
-  return { orderedInputs, orderedOutputs };
-}
-
-/**
- * Trace backwards from an open output port through the graph to find
- * which open input port it connects to (if any).
- * Follows: output port ← edge ← node ← edge ← ... ← input port.
- */
-function _traceBackToInput(graph, outPort, openInputs) {
-  // The open output port is on a node. We trace backwards:
-  // find the edge that feeds into this node's input that is on
-  // the "same wire" (port 0 ↔ port 0 for simple 1-in/1-out nodes).
-  const openInSet = new Set(openInputs.map(p => `${p.nodeId}:${p.portIndex}`));
-
-  let currentNodeId = outPort.nodeId;
-  let currentPortIdx = outPort.portIndex;
-  const visited = new Set();
-
-  for (let step = 0; step < 100; step++) { // safety limit
-    const node = graph.nodes.get(currentNodeId);
-    if (!node) return null;
-    const visitKey = `${currentNodeId}:out:${currentPortIdx}`;
-    if (visited.has(visitKey)) return null; // cycle
-    visited.add(visitKey);
-
-    // For the output port, find the corresponding input port on the same node.
-    // For 1-in/1-out nodes (H, spiders with 1-1), port 0 maps to port 0.
-    // For multi-port nodes, use the same index if available.
-    const inIdx = Math.min(currentPortIdx, node.totalIn - 1);
-    if (node.totalIn === 0) return null; // no inputs (state/cup) — no through-wire
-
-    // Check if this input port is an open input
-    const inKey = `${currentNodeId}:${inIdx}`;
-    if (openInSet.has(inKey)) {
-      return { nodeId: currentNodeId, portIndex: inIdx };
-    }
-
-    // Follow the edge into this input port
-    const edges = graph.edgesAt(currentNodeId, 'in', inIdx);
-    if (edges.length === 0) return null; // dangling
-    const edge = edges[0];
-    currentNodeId = edge.srcNodeId;
-    currentPortIdx = edge.srcPort;
-  }
-  return null;
-}
-
-/** Reverse-lookup: find the diagram node corresponding to an IR node id. */
-function _findDiagramNode(doc, nodeIdMap, irNodeId) {
-  for (const [dId, irId] of nodeIdMap) {
-    if (irId === irNodeId) return doc.nodes.get(dId);
-  }
-  return null;
 }

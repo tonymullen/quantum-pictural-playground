@@ -1,27 +1,14 @@
 /**
- * DiagramToolbar — Toolbar with tool selection and palette toggle.
+ * DiagramToolbar — Node quick-add buttons, palette toggle, delete-selected.
+ * There are no tool modes: wiring is done by dragging port handles.
  */
 import { NODE_TYPES } from './DiagramNode.js';
-
-export const TOOLS = {
-  SELECT: 'select',
-  WIRE:   'wire',
-  DELETE: 'delete',
-};
 
 export default class DiagramToolbar {
   constructor(containerEl, callbacks) {
     this.el = document.createElement('div');
     this.el.className = 'diagram-toolbar';
     this.callbacks = callbacks;
-    this.activeTool = TOOLS.SELECT;
-
-    // Tool group
-    const toolGroup = this._group();
-    this._addToolBtn(toolGroup, '⇱', 'Select', TOOLS.SELECT);
-    this._addToolBtn(toolGroup, '⟶', 'Wire', TOOLS.WIRE);
-    this._addToolBtn(toolGroup, '✕', 'Delete', TOOLS.DELETE);
-    this.el.appendChild(toolGroup);
 
     // Node group — quick-add buttons with shape-specific icons
     const nodeGroup = this._group();
@@ -46,7 +33,7 @@ export default class DiagramToolbar {
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'diagram-tool-btn';
-    deleteBtn.title = 'Delete Selected';
+    deleteBtn.title = 'Delete selected (Del)';
     deleteBtn.textContent = '🗑';
     deleteBtn.addEventListener('click', () => callbacks.deleteSelected());
     utilGroup.appendChild(deleteBtn);
@@ -59,26 +46,6 @@ export default class DiagramToolbar {
     const g = document.createElement('div');
     g.className = 'tool-group';
     return g;
-  }
-
-  _addToolBtn(group, icon, label, tool) {
-    const btn = document.createElement('button');
-    btn.className = 'diagram-tool-btn' + (tool === this.activeTool ? ' active' : '');
-    btn.title = label;
-    btn.textContent = icon;
-    btn.addEventListener('click', () => {
-      this.setActiveTool(tool);
-      this.callbacks.setTool(tool);
-    });
-    btn.dataset.tool = tool;
-    group.appendChild(btn);
-  }
-
-  setActiveTool(tool) {
-    this.activeTool = tool;
-    for (const btn of this.el.querySelectorAll('[data-tool]')) {
-      btn.classList.toggle('active', btn.dataset.tool === tool);
-    }
   }
 
   _swatchHTML(t) {

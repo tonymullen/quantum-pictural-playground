@@ -49,14 +49,21 @@ function roundTrip(doc, name) {
     `${name}: Round-trip exact (status=${v.status}, scalar=${v.scalar ? C.str(v.scalar) : 'none'})`);
 }
 
+/** Standard ZX CNOT: Z spider (control) left, X spider (target) right,
+ *  joined by a leg. Wire order follows port positions, so this is CNOT. */
+function addCNOT(doc, x = 100, y = 100) {
+  const z = addN(doc, NT.Z_SPIDER, x, y, {inputs:1, outputs:2});
+  const xs = addN(doc, NT.X_SPIDER, x + 70, y, {inputs:2, outputs:1});
+  w(doc, z, 1, xs, 0);
+  return { z, x: xs };
+}
+
 // ===== NEW FIXTURE SET =====
 
 // Helper: build the example diagram (Z-X CNOT + cap + H)
 function makeExample() {
   const doc = new DiagramDocument('example');
-  const z = addN(doc, NT.Z_SPIDER, 100, 50, {inputs:1, outputs:2});
-  const x = addN(doc, NT.X_SPIDER, 100, 150, {inputs:2, outputs:1});
-  w(doc, z, 0, x, 0);
+  const { z, x } = addCNOT(doc);
   const cap = addN(doc, NT.CAP, 300, 100);
   const h = addN(doc, NT.HADAMARD, 500, 100);
   return { doc, z, x, cap, h };
@@ -125,9 +132,7 @@ log('\n=== F5: Round-trip (generate → parse → eval → verify exact) ===');
 {
   // CNOT
   const d1 = new DiagramDocument('rt1');
-  const z=addN(d1,NT.Z_SPIDER,100,50,{inputs:1,outputs:2});
-  const x=addN(d1,NT.X_SPIDER,100,150,{inputs:2,outputs:1});
-  w(d1,z,0,x,0);
+  const { z, x } = addCNOT(d1);
   roundTrip(d1, 'CNOT');
   // Cap alone
   const d2 = new DiagramDocument('rt2'); addN(d2,NT.CAP,100,100);
@@ -147,9 +152,7 @@ log('\n=== F5: Round-trip (generate → parse → eval → verify exact) ===');
 log('\n=== 1: Z-X pair + cap + H ===');
 {
   const doc = new DiagramDocument('t1');
-  const z = addN(doc, NT.Z_SPIDER, 100, 50, {inputs:1, outputs:2});
-  const x = addN(doc, NT.X_SPIDER, 100, 150, {inputs:2, outputs:1});
-  w(doc, z, 0, x, 0);
+  const { z, x } = addCNOT(doc);
   addN(doc, NT.CAP, 300, 100);
   addN(doc, NT.HADAMARD, 500, 100);
   const r = diagramToDirac(doc);
@@ -165,9 +168,7 @@ log('\n=== 1: Z-X pair + cap + H ===');
 log('\n=== 2: CNOT alone ===');
 {
   const doc = new DiagramDocument('t2');
-  const z = addN(doc, NT.Z_SPIDER, 100, 50, {inputs:1, outputs:2});
-  const x = addN(doc, NT.X_SPIDER, 100, 150, {inputs:2, outputs:1});
-  w(doc, z, 0, x, 0);
+  const { z, x } = addCNOT(doc);
   const ir = diagramToIR(doc);
   const { tensor } = contractIR(ir);
   const CNOT = Tensor.fromRows([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]);
@@ -234,9 +235,7 @@ log('\n=== 5: Hadamard alone ===');
 log('\n=== 6: Generated latex parses without error ===');
 {
   const doc = new DiagramDocument('t6');
-  const z = addN(doc, NT.Z_SPIDER, 100, 50, {inputs:1, outputs:2});
-  const x = addN(doc, NT.X_SPIDER, 100, 150, {inputs:2, outputs:1});
-  w(doc, z, 0, x, 0);
+  const { z, x } = addCNOT(doc);
   addN(doc, NT.CAP, 300, 100);
   addN(doc, NT.HADAMARD, 500, 100);
   const r = diagramToDirac(doc);
@@ -271,9 +270,7 @@ log('\n=== 7: Verify H diagram against generated Dirac ===');
 log('\n=== 8: No false symbolic warning on concrete diagram ===');
 {
   const doc = new DiagramDocument('t8');
-  const z = addN(doc, NT.Z_SPIDER, 100, 50, {inputs:1, outputs:2});
-  const x = addN(doc, NT.X_SPIDER, 100, 150, {inputs:2, outputs:1});
-  w(doc, z, 0, x, 0);
+  const { z, x } = addCNOT(doc);
   addN(doc, NT.CUP, 300, 100);
   const r = diagramToDirac(doc);
   assert(!r.reason.includes('symbolic'), 'No symbolic warning');
@@ -297,10 +294,11 @@ log('\n=== 9: Morphism f (symbolic) + H (concrete) ===');
   assert(r.info.includes('Symbolic') || r.info.includes('symbolic')
     || r.reason.includes('symbolic') || r.category === 'F',
     'Reports symbolic component');
-  // The concrete H component should still be mentioned somewhere
-  assert(r.info.includes('Hadamard') || r.reason.includes('Hadamard')
-    || r.latex.includes('H'),
+  // The concrete H component should still appear in the latex
+  assert(r.latex.includes('H') || r.info.includes('Hadamard'),
     'Concrete H component still appears');
+  // Symbolic f should also appear in latex
+  assert(r.latex.includes('f'), 'Symbolic f appears in latex');
 }
 
 // === 10: One large component next to small ones ===
@@ -367,6 +365,358 @@ log('\n=== 12: Pure snake → Tr(I) = 2 ===');
     const v = tensor.get(0,0);
     assert(Math.abs(v[0] - 2) < 0.01, `Tr(I) = 2 (got ${C.str(v)})`);
   }
+}
+
+// ===== SYMBOLIC GENERATOR TESTS =====
+
+// --- S1: Lone state → |φ⟩ ---
+log('\n=== S1: Lone state φ → |φ⟩ ===');
+{
+  const doc = new DiagramDocument('s1');
+  addN(doc, NT.STATE, 100, 100, { label: 'φ' });
+  const r = diagramToDirac(doc);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex.includes('rangle'), 'Contains ket (rangle)');
+  assert(r.latex.includes('φ') || r.latex.includes('phi'), 'Contains label φ');
+  assert(r.latex !== '', 'Non-empty output');
+}
+
+// --- S2: Lone effect φ → ⟨φ| ---
+log('\n=== S2: Lone effect φ → ⟨φ| ===');
+{
+  const doc = new DiagramDocument('s2');
+  addN(doc, NT.EFFECT, 100, 100, { label: 'φ' });
+  const r = diagramToDirac(doc);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex.includes('langle'), 'Contains bra (langle)');
+  assert(r.latex.includes('φ') || r.latex.includes('phi'), 'Contains label φ');
+}
+
+// --- S3: State ψ below effect φ → ⟨φ|ψ⟩ ---
+log('\n=== S3: State ψ + effect φ wired → ⟨φ|ψ⟩ ===');
+{
+  const doc = new DiagramDocument('s3');
+  const st = addN(doc, NT.STATE, 100, 150, { label: 'ψ' });
+  const ef = addN(doc, NT.EFFECT, 100, 50, { label: 'φ' });
+  w(doc, st, 0, ef, 0);
+  const r = diagramToDirac(doc);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex.includes('langle'), 'Contains bra');
+  assert(r.latex.includes('rangle') || r.latex.includes('ψ'), 'Contains state ref');
+  assert(r.latex !== '', 'Non-empty');
+}
+
+// --- S4: State ψ below box f → f|ψ⟩ ---
+log('\n=== S4: State ψ + box f → f|ψ⟩ ===');
+{
+  const doc = new DiagramDocument('s4');
+  const st = addN(doc, NT.STATE, 100, 150, { label: 'ψ' });
+  const f = addN(doc, NT.MORPHISM, 100, 50, { label: 'f' });
+  w(doc, st, 0, f, 0);
+  const r = diagramToDirac(doc);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex.includes('f'), 'Contains f');
+  assert(r.latex.includes('rangle') || r.latex.includes('ψ'), 'Contains ket/state');
+  assert(r.latex !== '', 'Non-empty');
+}
+
+// --- S5: Mixed symbolic ψ ⊗ concrete H → |ψ⟩ ⊗ H ---
+log('\n=== S5: Symbolic state ⊗ concrete H ===');
+{
+  const doc = new DiagramDocument('s5');
+  addN(doc, NT.STATE, 100, 100, { label: 'ψ' });
+  addN(doc, NT.HADAMARD, 300, 100);
+  const r = diagramToDirac(doc);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex !== '', 'Non-empty');
+  assert(r.latex.includes('otimes'), 'Contains ⊗');
+  assert(r.latex.includes('rangle') || r.latex.includes('ψ'), 'Contains state');
+  assert(r.latex.includes('H'), 'Contains H');
+}
+
+// --- S6: No "[Category F]" in user-facing text ---
+log('\n=== S6: No internal codes in user text ===');
+{
+  const doc = new DiagramDocument('s6');
+  addN(doc, NT.MORPHISM, 100, 100, { label: 'f' });
+  const r = diagramToDirac(doc);
+  assert(!r.reason.includes('[Category'), 'No [Category] in reason');
+  assert(!r.info.includes('[Category'), 'No [Category] in info');
+  assert(!r.reason.includes('generic boxes'), 'No "generic boxes" for a morphism');
+}
+
+
+// ===== REGRESSION: WIRE ORDER, CONTRACTION, PHASES, PARSER =====
+
+const CNOT_T = Tensor.fromRows([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]);
+const diagTensor = doc => contractIR(diagramToIR(doc)).tensor;
+const evalStr = s => evalDirac(parseDirac(s));
+
+// --- R1: Result does not depend on node creation order ---
+log('\n=== R1: CNOT independent of creation order ===');
+{
+  const d = new DiagramDocument('r1');
+  const x = addN(d, NT.X_SPIDER, 170, 100, {inputs:2, outputs:1});  // target created first
+  const z = addN(d, NT.Z_SPIDER, 100, 100, {inputs:1, outputs:2});
+  w(d, z, 1, x, 0);
+  const t = diagTensor(d);
+  assert(t && Tensor.equalUpToPhase(CNOT_T, t).equal, 'X-first CNOT is still CNOT up to scalar (control on the left)');
+}
+
+// --- R2: Generate verifies against its own diagram with interleaved creation ---
+log('\n=== R2: Interleaved components round-trip ===');
+{
+  const d = new DiagramDocument('r2');
+  const z = addN(d, NT.Z_SPIDER, 100, 100, {inputs:1, outputs:2});
+  addN(d, NT.HADAMARD, 400, 100);
+  const x = addN(d, NT.X_SPIDER, 170, 100, {inputs:2, outputs:1});
+  w(d, z, 1, x, 0);
+  roundTrip(d, 'CNOT, H, interleaved creation');
+}
+
+// --- R3: Tensor order follows left-to-right position ---
+log('\n=== R3: Z(π) left, H right → Z ⊗ H ===');
+{
+  const d = new DiagramDocument('r3');
+  addN(d, NT.HADAMARD, 300, 100);                 // created first, but on the right
+  addN(d, NT.Z_SPIDER, 100, 100, {label: 'π'});
+  const r = diagramToDirac(d);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex === 'Z \\otimes H', 'Prints Z ⊗ H');
+  roundTrip(d, 'Z ⊗ H');
+}
+
+// --- R4: Boundary markers agree with tensor order ---
+log('\n=== R4: Boundary markers follow tensor order ===');
+{
+  const d = new DiagramDocument('r4');
+  const h = addN(d, NT.HADAMARD, 300, 100);
+  const zs = addN(d, NT.Z_SPIDER, 100, 100, {label: 'π'});
+  diagramToIR(d);
+  assert(d.inputBoundary[0].nodeId === zs.id && d.inputBoundary[1].nodeId === h.id,
+    'in0 is the left wire, in1 the right wire');
+}
+
+// --- R5: Symbolic spider phase is not treated as 0 ---
+log('\n=== R5: Z spider with phase α is symbolic ===');
+{
+  const d = new DiagramDocument('r5');
+  addN(d, NT.Z_SPIDER, 100, 100, {label: 'α'});
+  assert(diagTensor(d) === null, 'No concrete tensor');
+  const r = diagramToDirac(d);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.category === 'F', 'Category F (symbolic)');
+  assert(r.latex.includes('alpha'), 'Phase α appears in latex');
+  assert(r.info.includes('α'), 'Info names the symbolic phase');
+}
+
+// --- R6: Phase parsing ---
+log('\n=== R6: Phase labels ===');
+{
+  const ok = (lbl, deg) => {
+    const d = new DiagramDocument('r6');
+    addN(d, NT.Z_SPIDER, 100, 100, {label: lbl});
+    const t = diagTensor(d);
+    return t && C.eq(t.get(1, 1), C.phase(deg * Math.PI / 180));
+  };
+  assert(ok('π/2', 90) && ok('pi/4', 45) && ok('-3π/4', -135) && ok('1/2', 90) && ok('', 0),
+    'π/2, pi/4, -3π/4, 1/2, empty');
+  const sym = lbl => { const d = new DiagramDocument('r6'); addN(d, NT.Z_SPIDER, 100, 100, {label: lbl}); return diagTensor(d) === null; };
+  assert(sym('i') && sym('2p') && sym('θ'), '"i", "2p", "θ" are symbolic, not multiples of π');
+}
+
+// --- R7: Spider with no legs is 1 + e^{iα} ---
+log('\n=== R7: 0-leg spiders ===');
+{
+  const d = new DiagramDocument('r7');
+  addN(d, NT.Z_SPIDER, 100, 100, {inputs:0, outputs:0, label: 'π'});
+  const t = diagTensor(d);
+  assert(t && C.isZero(t.get(0, 0)), 'Z(π) with no legs = 0');
+  const d2 = new DiagramDocument('r7b');
+  addN(d2, NT.X_SPIDER, 100, 100, {inputs:0, outputs:0});
+  assert(C.eq(diagTensor(d2).get(0, 0), [2, 0]), 'X(0) with no legs = 2');
+}
+
+// --- R8: Long circuits contract quickly ---
+log('\n=== R8: Contraction scales with circuit length ===');
+{
+  const d = new DiagramDocument('r8');
+  let cPrev = null, tPrev = null;
+  for (let k = 0; k < 12; k++) {
+    const { z, x } = addCNOT(d, 100, 400 - k * 60);
+    if (cPrev) { w(d, cPrev, 0, z, 0); w(d, tPrev, 0, x, 1); }
+    cPrev = z; tPrev = x;
+  }
+  const t0 = performance.now();
+  const t = diagTensor(d);
+  const ms = performance.now() - t0;
+  log(`  12 chained CNOTs: ${ms.toFixed(1)} ms`, 'info');
+  assert(t && Tensor.equalUpToPhase(Tensor.identity(4), t).equal, 'CNOT^12 = identity up to scalar');
+  assert(ms < 200, 'Under 200 ms (old brute force ran out of memory at 5)');
+}
+
+// --- R9: Sums are parenthesised before ⊗ ---
+log('\n=== R9: Multi-term component ⊗ H ===');
+{
+  const d = new DiagramDocument('r9');
+  const a = addN(d, NT.Z_SPIDER, 100, 100, {inputs:2, outputs:2});
+  const b = addN(d, NT.X_SPIDER, 100, 40, {inputs:2, outputs:2});
+  w(d, a, 0, b, 0); w(d, a, 1, b, 1);
+  addN(d, NT.HADAMARD, 300, 100);
+  const r = diagramToDirac(d);
+  log(`  latex: ${r.latex}`, 'info');
+  assert(r.latex.startsWith('('), 'Sum wrapped in parentheses');
+  roundTrip(d, 'Sum ⊗ H');
+}
+
+// --- R10: Unprintable component blanks the output ---
+log('\n=== R10: Category D component → no partial latex ===');
+{
+  const d = new DiagramDocument('r10');
+  const z3 = addN(d, NT.Z_SPIDER, 100, 100, {inputs:3, outputs:3});
+  [50, 100, 150].forEach((x, i) => w(d, addN(d, NT.HADAMARD, x, 160), 0, z3, i));
+  addN(d, NT.HADAMARD, 400, 100);
+  const r = diagramToDirac(d);
+  log(`  category: ${r.category}, info: ${r.info}`, 'info');
+  if (r.category === 'D') assert(r.latex === '', 'No latex that silently drops the big component');
+  else assert(true, `(component was category ${r.category}; nothing to check)`);
+}
+
+// --- R11: Zero component keeps its shape ---
+log('\n=== R11: Zero operator keeps shape ===');
+{
+  const d = new DiagramDocument('r11');
+  const s = addN(d, NT.Z_SPIDER, 100, 140, {inputs:1, outputs:1, label: 'π'});
+  const a = addN(d, NT.X_SPIDER, 100, 80, {inputs:1, outputs:0});
+  const b = addN(d, NT.X_SPIDER, 100, 200, {inputs:0, outputs:1, label: 'π'});
+  // ⟨+| Z |−⟩... wired as effect ∘ Z ∘ state → scalar; then H beside it
+  w(d, b, 0, s, 0); w(d, s, 0, a, 0);
+  addN(d, NT.HADAMARD, 300, 100);
+  roundTrip(d, 'scalar · H');
+}
+
+// --- R12: Parser precedence and new syntax ---
+log('\n=== R12: Parser ===');
+{
+  const same = (a, b) => { const A = evalStr(a), B = evalStr(b); return A && B && Tensor.equal(A, B); };
+  let ok;
+  try { ok = Tensor.equal(evalStr('|0\\rangle\\langle 0| \\otimes I + |1\\rangle\\langle 1| \\otimes X'), CNOT_T); }
+  catch (e) { ok = false; log('  ' + e.message, 'fail'); }
+  assert(ok, '|0⟩⟨0| ⊗ I + |1⟩⟨1| ⊗ X = CNOT');
+  assert(same('H|0\\rangle \\otimes |0\\rangle', '|+\\rangle \\otimes |0\\rangle'), 'H|0⟩ ⊗ |0⟩ = |+⟩⊗|0⟩');
+  assert(same('(H \\otimes I)|00\\rangle', '|+0\\rangle'), '(H⊗I)|00⟩ = |+0⟩');
+  assert(same('|0\\rangle - |1\\rangle', '\\sqrt{2}|-\\rangle'), '|0⟩ − |1⟩ = √2|−⟩');
+  const t3 = evalStr('\\frac{1}{\\sqrt{3}}|0\\rangle');
+  assert(t3 && Math.abs(t3.get(0, 0)[0] - 1 / Math.sqrt(3)) < 1e-12, '\\frac{1}{\\sqrt{3}} is 1/√3 (was 1)');
+  const ti = evalStr('\\frac{i}{2}|0\\rangle');
+  assert(ti && C.eq(ti.get(0, 0), [0, 0.5]), '\\frac{i}{2} is i/2 (was 1)');
+  assert(same('e^{i\\pi/4}|1\\rangle', 'T|1\\rangle'), 'e^{iπ/4}|1⟩ = T|1⟩');
+  assert(same('\\frac{|0\\rangle + |1\\rangle}{\\sqrt{2}}', '|+\\rangle'), '\\frac{|0⟩+|1⟩}{√2} = |+⟩');
+  assert(same('|0\\rangle^{\\otimes 2}', '|00\\rangle') && same('H^{\\otimes 2}', 'H \\otimes H'), 'Tensor powers');
+  assert(same('\\langle 0|+\\rangle', '\\frac{1}{\\sqrt{2}}'), '⟨0|+⟩ braket');
+  assert(evalStr('\\frac{1}{\\sqrt{n}}|0\\rangle') === null, 'Symbolic \\frac → null, not a wrong number');
+  assert(same('|\\Phi^-\\rangle', '\\frac{1}{\\sqrt{2}}(|00\\rangle - |11\\rangle)'), 'Bell state Φ⁻');
+  let threw = false;
+  try { evalStr('|0\\rangle |1\\rangle'); } catch (e) { threw = e.message.includes("don't match"); }
+  assert(threw, 'Dimension mismatch gives a readable error');
+}
+
+
+// ===== SPIDER LEGS =====
+
+// --- L1: Spider–spider wires are side legs; open ports re-centre ---
+log('\n=== L1: CNOT leg drawn from the side ===');
+{
+  const d = new DiagramDocument('l1');
+  const { z, x } = addCNOT(d, 100, 100);
+  d.refreshLegs();
+  const legZ = z.getOutputPort(1), legX = x.getInputPort(0);
+  assert(Math.abs(legZ.y - z.y) < 1 && legZ.x > z.x, 'Z leg leaves from its right side');
+  assert(Math.abs(legX.y - x.y) < 1 && legX.x < x.x, 'X leg enters on its left side');
+  assert(z.getOutputPort(0).x === z.x && x.getInputPort(1).x === x.x, 'Open ports centred above/below');
+  const t = diagTensor(d);
+  assert(t && Tensor.equalUpToPhase(CNOT_T, t).equal, 'Still CNOT');
+}
+
+// --- L2: Stacked layout now also reads as CNOT ---
+log('\n=== L2: Stacked Z-over-X with a leg ===');
+{
+  const d = new DiagramDocument('l2');
+  const z = addN(d, NT.Z_SPIDER, 100, 50, {inputs:1, outputs:2});
+  const x = addN(d, NT.X_SPIDER, 100, 150, {inputs:2, outputs:1});
+  w(d, z, 0, x, 0);
+  const t = diagTensor(d);
+  assert(t && Tensor.equalUpToPhase(CNOT_T, t).equal, 'Z above X, joined by a leg = CNOT');
+}
+
+// --- L3: Removing a spider–spider wire removes both legs ---
+log('\n=== L3: Removing a leg wire prunes the legs ===');
+{
+  const d = new DiagramDocument('l3');
+  const { z, x } = addCNOT(d, 100, 100);
+  const h = addN(d, NT.HADAMARD, 100, 30);
+  w(d, z, 0, h, 0);                                   // Z.out0 → H (non-spider, kept)
+  d.removeWires(d.wires.filter(wr => wr.toNodeId === x.id));
+  assert(z.outputs === 1 && x.inputs === 1, 'Z back to 1→1, X back to 1→1');
+  assert(d.wires.length === 1 && d.wires[0].fromPort === 0, 'Z→H wire kept, index intact');
+}
+
+// --- L4: Port renumbering after removing an earlier leg ---
+log('\n=== L4: Later ports renumber ===');
+{
+  const d = new DiagramDocument('l4');
+  const a = addN(d, NT.Z_SPIDER, 100, 100, {inputs:0, outputs:3});
+  const b = addN(d, NT.X_SPIDER, 200, 100, {inputs:1, outputs:0});
+  const h = addN(d, NT.HADAMARD, 100, 30);
+  w(d, a, 0, b, 0); w(d, a, 2, h, 0);
+  d.removeWires([d.wires[0]]);
+  assert(a.outputs === 2 && d.wires[0].fromPort === 1, 'Wire on out2 moved to out1');
+}
+
+// --- L5: Non-spider wires do not prune ports ---
+log('\n=== L5: Box wires keep their ports ===');
+{
+  const d = new DiagramDocument('l5');
+  const z = addN(d, NT.Z_SPIDER, 100, 100);
+  const h = addN(d, NT.HADAMARD, 100, 30);
+  w(d, z, 0, h, 0);
+  d.removeWires([d.wires[0]]);
+  assert(z.outputs === 1 && h.inputs === 1, 'Ports unchanged');
+}
+
+
+// --- L6: dropLeg prefers an unconnected port ---
+log('\n=== L6: Inspector − removes an open leg first ===');
+{
+  const d = new DiagramDocument('l6');
+  const { z, x } = addCNOT(d, 100, 100);         // Z.out1 is the leg to X; Z.out0 is open
+  d.dropLeg(z, 'out');
+  assert(z.outputs === 1 && d.wires.length === 1 && d.wires[0].fromPort === 0,
+    'Open output removed; the leg survives and is renumbered to out0');
+  assert(x.inputs === 2, 'X unchanged');
+}
+
+// --- L7: dropLeg on a connected spider leg removes the partner leg too ---
+log('\n=== L7: Removing a connected leg also removes the partner leg ===');
+{
+  const d = new DiagramDocument('l7');
+  const { z, x } = addCNOT(d, 100, 100);
+  d.dropLeg(z, 'out');                            // removes open out0
+  d.dropLeg(z, 'out');                            // now only the leg is left
+  assert(z.outputs === 0 && x.inputs === 1 && d.wires.length === 0, 'Leg and partner leg removed');
+}
+
+// --- L8: removeLeg on a specific open port ---
+log('\n=== L8: Remove a specific leg ===');
+{
+  const d = new DiagramDocument('l8');
+  const a = addN(d, NT.Z_SPIDER, 100, 100, {inputs:3, outputs:0});
+  const h = addN(d, NT.HADAMARD, 100, 160);
+  w(d, h, 0, a, 2);
+  d.removeLeg(a, 'in', 0);
+  assert(a.inputs === 2 && d.wires[0].toPort === 1, 'in0 removed; wire on in2 now on in1');
+  d.removeLeg(a, 'in', 1);
+  assert(a.inputs === 1 && d.wires.length === 0 && h.outputs === 1, 'Connected leg to a box: wire removed, box port kept');
 }
 
 // === Summary ===

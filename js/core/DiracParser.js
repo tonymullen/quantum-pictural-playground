@@ -1,19 +1,31 @@
 /**
  * DiracParser — Parse Dirac-notation LaTeX into an AST.
  *
+ * Grammar (loosest binding first):
+ *   sum     := tensor (('+' | '-') tensor)*
+ *   tensor  := product ('\otimes' product)*
+ *   product := postfix (['\cdot'] postfix | '/' postfix)*       (juxtaposition = composition)
+ *   postfix := atom ('^\dagger' | '^{\dagger}' | '^{\otimes N}')*
+ *   atom    := '(' sum ')' | '\left(' sum '\right)' | ket | bra | braket
+ *            | \ket{…} | \bra{…} | \braket{a|b}
+ *            | \frac{sum}{sum} | \sqrt{sum} | e^{sum} | number | i | \pi
+ *            | '-' atom | named symbol | letter | \text{…} | \operatorname{…} | …
+ *
+ * So `|0⟩⟨0| ⊗ I + |1⟩⟨1| ⊗ X` reads as (|0⟩⟨0|)⊗I + (|1⟩⟨1|)⊗X, and
+ * `H|0⟩ ⊗ |0⟩` as (H|0⟩)⊗|0⟩. Write (H ⊗ I)|00⟩ for a tensor of operators
+ * applied to a state.
+ *
  * AST node types:
- *   { type:'ket', label }
- *   { type:'bra', label }
+ *   { type:'ket', label }               { type:'bra', label }
  *   { type:'braket', braLabel, ketLabel }
  *   { type:'scalar', value:[re,im] }
  *   { type:'sum', terms:[{sign,node}] }
- *   { type:'product', factors:[] }
- *   { type:'tensor', factors:[] }     // ⊗
- *   { type:'dagger', operand }
+ *   { type:'product', factors:[] }      { type:'tensor', factors:[] }
+ *   { type:'dagger', operand }          { type:'tensorpow', operand, n }
+ *   { type:'frac', num, den }           { type:'recip', operand }
+ *   { type:'sqrt', operand }            { type:'exp', operand }
  *   { type:'operator', name }
  */
-
-import C from './Complex.js';
 
 export class ParseError {
   constructor(message, pos) { this.message = message; this.pos = pos; }
@@ -28,166 +40,202 @@ export default function parseDirac(latex) {
   return ast;
 }
 
+const GREEK = { alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', theta: 'θ',
+  phi: 'φ', varphi: 'φ', psi: 'ψ', lambda: 'λ', mu: 'μ', omega: 'ω' };
+const SPACING = ['\\quad', '\\qquad', '\\,', '\\;', '\\:', '\\!', '\\ '];
+
 class Parser {
   constructor(src) { this.src = src.trim(); this.pos = 0; }
 
+  skipWS() {
+    for (;;) {
+      while (this.pos < this.src.length && ' \t\n\r'.includes(this.src[this.pos])) this.pos++;
+      const sp = SPACING.find(s => this.src.startsWith(s, this.pos)
+        && !(s === '\\quad' && this.src.startsWith('\\qquad', this.pos)));
+      if (!sp) return;
+      this.pos += sp.length;
+    }
+  }
   peek() { this.skipWS(); return this.pos < this.src.length ? this.src[this.pos] : ''; }
-  advance(n=1) { this.pos += n; }
+  advance(n = 1) { this.pos += n; }
   at(s) { this.skipWS(); return this.src.startsWith(s, this.pos); }
+  /** At a LaTeX command `\name` exactly (not a longer command with the same prefix). */
+  atCmd(name) { return this.at(name) && !this._isAlpha(this.src[this.pos + name.length]); }
   eat(s) {
     this.skipWS();
     if (!this.src.startsWith(s, this.pos))
       throw new ParseError(`Expected '${s}' at position ${this.pos}`, this.pos);
     this.pos += s.length;
   }
-  tryEat(s) { this.skipWS(); if (this.src.startsWith(s, this.pos)) { this.pos += s.length; return true; } return false; }
-  skipWS() { while (this.pos < this.src.length && ' \t\n\r'.includes(this.src[this.pos])) this.pos++; }
+  tryEat(s) { if (this.at(s)) { this.pos += s.length; return true; } return false; }
 
   parseExpr() { return this.parseSum(); }
 
   parseSum() {
-    const first = this.parseProduct();
-    const terms = [{ sign: 1, node: first }];
-    while (true) {
-      if (this.tryEat('+')) { terms.push({ sign: 1, node: this.parseProduct() }); }
-      else if (this.at('-') && !this.at('-\\rangle')) {
-        this.eat('-'); terms.push({ sign: -1, node: this.parseProduct() });
-      } else break;
+    const terms = [{ sign: 1, node: this.parseTensor() }];
+    for (;;) {
+      if (this.tryEat('+')) terms.push({ sign: 1, node: this.parseTensor() });
+      else if (this.tryEat('-')) terms.push({ sign: -1, node: this.parseTensor() });
+      else break;
     }
-    if (terms.length === 1 && terms[0].sign === 1) return terms[0].node;
+    if (terms.length === 1) return terms[0].node;
     return { type: 'sum', terms };
   }
 
+  parseTensor() {
+    const factors = [this.parseProduct()];
+    while (this.tryEat('\\otimes')) factors.push(this.parseProduct());
+    return factors.length === 1 ? factors[0] : { type: 'tensor', factors };
+  }
+
   parseProduct() {
-    const factors = [this.parseTensorProduct()];
-    while (true) {
-      this._skipCdot(); // consume optional \cdot between factors
+    const factors = [this.parsePostfix()];
+    for (;;) {
+      if (this.atCmd('\\cdot')) { this.eat('\\cdot'); factors.push(this.parsePostfix()); continue; }
+      if (this.atCmd('\\times')) { this.eat('\\times'); factors.push(this.parsePostfix()); continue; }
+      if (this.tryEat('/')) { factors.push({ type: 'recip', operand: this.parsePostfix() }); continue; }
       if (!this._canStartFactor()) break;
-      factors.push(this.parseTensorProduct());
+      factors.push(this.parsePostfix());
     }
-    if (factors.length === 1) return factors[0];
-    return { type: 'product', factors };
+    return factors.length === 1 ? factors[0] : { type: 'product', factors };
   }
 
-  parseTensorProduct() {
-    const first = this.parseFactor();
-    if (this.tryEat('\\otimes')) {
-      const factors = [first, this.parseFactor()];
-      while (this.tryEat('\\otimes')) factors.push(this.parseFactor());
-      return { type: 'tensor', factors };
-    }
-    return first;
-  }
-
-  /** Skip \cdot — treated as implicit multiplication (already handled by juxtaposition). */
-  _skipCdot() { this.tryEat('\\cdot'); }
-
-  parseFactor() {
+  parsePostfix() {
     let node = this.parseAtom();
-    if (this.tryEat('^{\\dagger}') || this.tryEat('^\\dagger'))
-      node = { type: 'dagger', operand: node };
-    return node;
+    for (;;) {
+      if (this.tryEat('^{\\dagger}') || this.tryEat('^\\dagger')) {
+        node = { type: 'dagger', operand: node }; continue;
+      }
+      const m = this.src.slice(this.pos).match(/^\s*\^\{\s*\\otimes\s*(\d+)\s*\}/);
+      if (m) { this.pos += m[0].length; node = { type: 'tensorpow', operand: node, n: parseInt(m[1], 10) }; continue; }
+      if (this.at('^')) throw new ParseError(`Unsupported superscript at position ${this.pos}`, this.pos);
+      return node;
+    }
   }
 
   parseAtom() {
     this.skipWS();
-    if (this.pos >= this.src.length) throw new ParseError('Unexpected end', this.pos);
+    if (this.pos >= this.src.length) throw new ParseError('Unexpected end of expression', this.pos);
     if (this.tryEat('(')) { const e = this.parseExpr(); this.eat(')'); return e; }
-    if (this.tryEat('\\left(')) { const e = this.parseExpr(); this.eat('\\right)'); return e; }
-    if (this.at('\\langle')) return this.parseBraOrBraket();
+    if (this.atCmd('\\left')) {
+      this.eat('\\left'); this.eat('('); const e = this.parseExpr();
+      this.eat('\\right'); this.eat(')'); return e;
+    }
+    if (this.atCmd('\\langle')) return this.parseBraOrBraket();
     if (this.peek() === '|') return this.parseKet();
-    if (this.at('\\frac')) return this.parseFrac();
-    if (this.at('\\sqrt')) return this.parseSqrt();
-    if (this.at('\\hat{')) return this._parseCmd('\\hat{');
-    if (this.at('\\text{')) return this._parseCmd('\\text{');
-    if (this.at('\\mathbb{')) return this._parseCmd('\\mathbb{');
-    if (this.at('\\operatorname{')) return this._parseCmd('\\operatorname{');
-    if (this.peek() === 'i' && !this._isAlpha(this.src[this.pos+1])) { this.advance(); return { type:'scalar', value:[0,1] }; }
-    // Negative number or negative prefix
+    if (this.atCmd('\\ket')) { this.eat('\\ket'); return { type: 'ket', label: this._braced().trim() }; }
+    if (this.atCmd('\\bra')) { this.eat('\\bra'); return { type: 'bra', label: this._braced().trim() }; }
+    if (this.atCmd('\\braket')) {
+      this.eat('\\braket'); const [a, b] = this._braced().split('|');
+      if (b === undefined) throw new ParseError('\\braket needs the form {a|b}', this.pos);
+      return { type: 'braket', braLabel: a.trim(), ketLabel: b.trim() };
+    }
+    if (this.atCmd('\\frac') || this.atCmd('\\dfrac') || this.atCmd('\\tfrac')) return this.parseFrac();
+    if (this.atCmd('\\sqrt')) return this.parseSqrt();
+    if (this.atCmd('\\exp')) {
+      this.eat('\\exp'); this.eat('('); const e = this.parseExpr(); this.eat(')');
+      return { type: 'exp', operand: e };
+    }
+    if (this.atCmd('\\pi')) { this.eat('\\pi'); return { type: 'scalar', value: [Math.PI, 0] }; }
+    for (const cmd of ['\\hat', '\\text', '\\mathrm', '\\mathbb', '\\operatorname', '\\mathbf'])
+      if (this.atCmd(cmd)) { this.eat(cmd); return { type: 'operator', name: this._braced().trim() }; }
+    if (this.peek() === 'e' && this.src[this.pos + 1] === '^') {
+      this.advance(2);
+      const operand = this.peek() === '{' ? this._parseBracedExpr() : this.parseAtom();
+      return { type: 'exp', operand };
+    }
+    if (this.peek() === 'i' && !this._isAlpha(this.src[this.pos + 1])) {
+      this.advance(); return { type: 'scalar', value: [0, 1] };
+    }
     if (this.peek() === '-') {
       this.advance();
       const inner = this.parseAtom();
-      if (inner.type === 'scalar') return { type: 'scalar', value: C.neg(inner.value) };
-      return { type: 'product', factors: [{ type: 'scalar', value: C.NEG1 }, inner] };
+      if (inner.type === 'scalar') return { type: 'scalar', value: [-inner.value[0], -inner.value[1]] };
+      return { type: 'product', factors: [{ type: 'scalar', value: [-1, 0] }, inner] };
     }
-    if (this._isDigit()) return this.parseNumber();
-    if (this.peek() === '\\' && this._isAlpha(this.src[this.pos+1])) return this.parseNamedSymbol();
+    if (this._isDigit() || (this.peek() === '.' && /\d/.test(this.src[this.pos + 1] || '')))
+      return this.parseNumber();
+    if (this.peek() === '\\' && this._isAlpha(this.src[this.pos + 1])) return this.parseNamedSymbol();
     const ch = this.peek();
-    if (ch >= 'A' && ch <= 'Z') { this.advance(); return { type:'operator', name:ch }; }
-    if (ch >= 'a' && ch <= 'z') { this.advance(); return { type:'operator', name:ch }; }
+    if (this._isAlpha(ch)) { this.advance(); return { type: 'operator', name: ch }; }
     throw new ParseError(`Unexpected '${ch}' at position ${this.pos}`, this.pos);
   }
 
   parseKet() {
     this.eat('|');
     const label = this._readUntil('\\rangle');
+    if (this.pos >= this.src.length) throw new ParseError("Ket is missing '\\rangle'", this.pos);
     this.eat('\\rangle');
-    return { type:'ket', label: label.trim() };
+    return { type: 'ket', label: label.trim() };
   }
 
   parseBraOrBraket() {
     this.eat('\\langle');
     const label1 = this._readUntil('|');
+    if (this.pos >= this.src.length) throw new ParseError("Bra is missing '|'", this.pos);
     this.eat('|');
+    // ⟨a|b⟩ when what follows up to \rangle is a single plain label
     const saved = this.pos;
-    try {
-      const label2 = this._readUntil('\\rangle');
-      if (label2.trim() && !/[|+]/.test(label2)) {
-        this.eat('\\rangle');
-        return { type:'braket', braLabel: label1.trim(), ketLabel: label2.trim() };
-      }
-    } catch { /* not a braket */ }
+    const label2 = this._readUntil('\\rangle');
+    if (this.pos < this.src.length && /^[^|\s\\]+$|^\\[a-zA-Z]+(\^\{?[+-]\}?)?$/.test(label2.trim())
+        && !label2.includes('\\langle')) {
+      this.eat('\\rangle');
+      return { type: 'braket', braLabel: label1.trim(), ketLabel: label2.trim() };
+    }
     this.pos = saved;
-    return { type:'bra', label: label1.trim() };
+    return { type: 'bra', label: label1.trim() };
   }
 
   parseFrac() {
-    this.eat('\\frac'); this.eat('{');
-    const num = this._readBalanced(); this.eat('}'); this.eat('{');
-    const den = this._readBalanced(); this.eat('}');
-    if (num.trim() === '1' && den.trim() === '\\sqrt{2}')
-      return { type:'scalar', value:[1/Math.sqrt(2), 0] };
-    const nv = parseFloat(num), dv = parseFloat(den);
-    if (!isNaN(nv) && !isNaN(dv) && dv !== 0) return { type:'scalar', value:[nv/dv, 0] };
-    return { type:'scalar', value:[1,0] };
+    this.advance(this.src.startsWith('\\frac', this.pos) ? 5 : 6);
+    const num = this._parseBracedExpr();
+    const den = this._parseBracedExpr();
+    return { type: 'frac', num, den };
   }
 
   parseSqrt() {
-    this.eat('\\sqrt'); this.eat('{');
-    const c = this._readBalanced(); this.eat('}');
-    const v = parseFloat(c);
-    return { type:'scalar', value: isNaN(v) ? [1,0] : [Math.sqrt(v), 0] };
-  }
-
-  _parseCmd(cmd) {
-    this.eat(cmd); const n = this._readBalanced(); this.eat('}');
-    return { type:'operator', name: n.trim() };
+    this.eat('\\sqrt');
+    if (this.peek() === '{') return { type: 'sqrt', operand: this._parseBracedExpr() };
+    if (this._isDigit()) {  // \sqrt2
+      const v = parseInt(this.src[this.pos], 10); this.advance();
+      return { type: 'sqrt', operand: { type: 'scalar', value: [v, 0] } };
+    }
+    throw new ParseError(`Expected '{' after \\sqrt at position ${this.pos}`, this.pos);
   }
 
   parseNamedSymbol() {
+    const start = this.pos;
     this.eat('\\'); let name = '';
     while (this.pos < this.src.length && this._isAlpha(this.src[this.pos]))
       { name += this.src[this.pos]; this.advance(); }
-    const g = {alpha:'α',beta:'β',gamma:'γ',pi:'π',phi:'φ',psi:'ψ',theta:'θ'};
-    return { type:'operator', name: g[name] || name };
+    if (['otimes', 'rangle', 'right', 'cdot', 'times'].includes(name))
+      throw new ParseError(`Unexpected '\\${name}' at position ${start}`, start);
+    return { type: 'operator', name: GREEK[name] || name };
   }
 
   parseNumber() {
     let s = '';
     while (this.pos < this.src.length && '0123456789.'.includes(this.src[this.pos]))
       { s += this.src[this.pos]; this.advance(); }
-    return { type:'scalar', value:[parseFloat(s), 0] };
+    const v = parseFloat(s);
+    if (isNaN(v)) throw new ParseError(`Bad number '${s}'`, this.pos);
+    return { type: 'scalar', value: [v, 0] };
+  }
+
+  _parseBracedExpr() {
+    this.eat('{'); const e = this.parseExpr(); this.eat('}'); return e;
   }
 
   _canStartFactor() {
     this.skipWS();
     if (this.pos >= this.src.length) return false;
     const ch = this.src[this.pos];
-    if ('+ ) }'.includes(ch)) return false;
-    if (this.at('\\right)') || this.at('\\rangle')) return false;
+    if ('+-)}/^'.includes(ch)) return false;
+    for (const stop of ['\\otimes', '\\right', '\\rangle', '\\cdot', '\\times'])
+      if (this.atCmd(stop)) return false;
     return true;
   }
-  _isAlpha(ch) { return ch && /[a-zA-Z]/.test(ch); }
+  _isAlpha(ch) { return !!ch && /[a-zA-Z]/.test(ch); }
   _isDigit() { const ch = this.peek(); return ch >= '0' && ch <= '9'; }
   _readUntil(stop) {
     let s = '';
@@ -195,13 +243,17 @@ class Parser {
       { s += this.src[this.pos]; this.advance(); }
     return s;
   }
-  _readBalanced() {
+  /** Read the raw text of a {...} group (balanced braces). */
+  _braced() {
+    this.eat('{');
     let depth = 0, s = '';
     while (this.pos < this.src.length) {
-      if (this.src[this.pos] === '{') depth++;
-      else if (this.src[this.pos] === '}') { if (depth === 0) break; depth--; }
-      s += this.src[this.pos]; this.advance();
+      const ch = this.src[this.pos];
+      if (ch === '{') depth++;
+      else if (ch === '}') { if (depth === 0) break; depth--; }
+      s += ch; this.advance();
     }
+    this.eat('}');
     return s;
   }
 }

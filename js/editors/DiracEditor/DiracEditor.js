@@ -87,6 +87,9 @@ export default class DiracEditor {
       if (doc) {
         this.syncController = new SyncController(doc);
         this.syncController.onStateChange(() => this._updateSyncBar());
+        // Start from whatever is already in the textarea (not student-authored)
+        const current = this.textarea ? this.textarea.value.trim() : '';
+        if (current) this.syncController.onDiracChanged(current, false);
       }
     }
     this._updateSyncBar();
@@ -131,8 +134,7 @@ export default class DiracEditor {
     if (!result) return;
 
     // Show category + reason in sync bar
-    const catText = `[Category ${result.category}] ${result.reason}`;
-    this.syncTextEl.textContent = catText;
+    this.syncTextEl.textContent = result.reason;
     this.syncIconEl.textContent = result.category === 'error' ? '✗' : '📝';
     this.syncIconEl.className = `sync-icon ${result.category === 'error' ? 'verify-fail' : 'verify-ok'}`;
 
@@ -178,7 +180,7 @@ export default class DiracEditor {
     const header = document.createElement('div');
     header.style.color = 'var(--text-secondary)';
     header.style.marginBottom = '4px';
-    header.textContent = `Generated [${result.category}]: ${result.reason}`;
+    header.textContent = `Generated: ${result.reason}`;
     this._genPreviewEl.appendChild(header);
 
     const preview = document.createElement('div');
@@ -266,10 +268,7 @@ export default class DiracEditor {
     this.textarea.placeholder = 'Enter LaTeX (Dirac notation)…';
     this.textarea.spellcheck = false;
     this.textarea.value = '\\alpha|0\\rangle + \\beta|1\\rangle';
-    this.textarea.addEventListener('input', () => {
-      this._render();
-      if (this.syncController) this.syncController.onDiracChanged(this.textarea.value.trim(), true);
-    });
+    this.textarea.addEventListener('input', () => this._onTextChanged());
     this.inputArea.appendChild(this.textarea);
     this.bodyEl.appendChild(this.inputArea);
 
@@ -309,7 +308,13 @@ export default class DiracEditor {
     ta.value = val.substring(0, start) + latex + val.substring(end);
     ta.selectionStart = ta.selectionEnd = start + latex.length;
     ta.focus();
+    this._onTextChanged();
+  }
+
+  /** The student changed the expression (typing, snippet, or loading a saved formula). */
+  _onTextChanged() {
     this._render();
+    if (this.syncController) this.syncController.onDiracChanged(this.textarea.value.trim(), true);
   }
 
   _render() {
@@ -323,7 +328,6 @@ export default class DiracEditor {
         katex.render(latex, this.renderEl, {
           displayMode: true,
           throwOnError: true,
-          trust: true,
         });
       } else {
         this.renderEl.textContent = latex;
@@ -366,7 +370,7 @@ export default class DiracEditor {
       preview.style.cursor = 'pointer';
       preview.addEventListener('click', () => {
         this.textarea.value = f;
-        this._render();
+        this._onTextChanged();
       });
 
       const del = document.createElement('span');
