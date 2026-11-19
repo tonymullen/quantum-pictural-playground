@@ -11,6 +11,7 @@ import diagramToIR from '../js/core/DiagramToIR.js';
 import parseDirac from '../js/core/DiracParser.js';
 import evalDirac from '../js/core/DiracEval.js';
 import Tensor from '../js/core/Tensor.js';
+import Phase from '../js/core/Phase.js';
 import C from '../js/core/Complex.js';
 import { verify } from '../js/core/Verify.js';
 import circuitToIR from '../js/core/CircuitToIR.js';
@@ -19,6 +20,12 @@ import { circuitTensor } from '../js/core/CircuitGates.js';
 import CircuitDocument from '../js/editors/CircuitEditor/CircuitDocument.js';
 import { derivedDiagram } from '../js/editors/CircuitEditor/CircuitDiagramLink.js';
 import SyncController from '../js/core/SyncController.js';
+import { checkStep, parsePhaseExpr } from '../js/core/ProofCheck.js';
+import { orientTensor } from '../js/core/Interpret.js';
+import ProofDocument from '../js/editors/EquationEditor/ProofDocument.js';
+import DocumentStore from '../js/editors/DocumentStore.js';
+import { captureWorkbook, openWorkbookDocuments, summaryText } from '../js/workbooks/Workbook.js';
+import { DemoStore, LocalWorkbookStore } from '../js/workbooks/WorkbookStores.js';
 
 const out = document.getElementById('out');
 let passed = 0, failed = 0;
@@ -946,6 +953,554 @@ log('\n=== E4: Sync follows the document\'s order ===');
   sc.onDiracChanged('|01\\rangle', true); sc.verifyNow();
   assert(sc.lastVerifyResult.status === 'equivalent', 'Little-endian: |01⟩ is right');
   sc.destroy();
+}
+
+
+// ===== PROOFS =====
+
+const fuseDocs = (la, lb, lc) => {
+  const a = new DiagramDocument('pa');
+  const z1 = addN(a, NT.Z_SPIDER, 100, 150, { label: la }), z2 = addN(a, NT.Z_SPIDER, 100, 60, { label: lb });
+  w(a, z1, 0, z2, 0);
+  const b = new DiagramDocument('pb'); addN(b, NT.Z_SPIDER, 100, 100, { label: lc });
+  return [a, b];
+};
+const step = (a, b, rel) => checkStep(a.toIR(), b.toIR(), rel);
+
+log('\n=== P1: Phase expressions ===');
+{
+  const e = parsePhaseExpr('2α-π/2+β/3');
+  assert(e && e.constant.equals(new Phase(-1, 2)) && e.symbols['α'].num === 2 && e.symbols['β'].den === 3, '2α − π/2 + β/3');
+  assert(parsePhaseExpr('\\alpha+\\beta') && Object.keys(parsePhaseExpr('\\alpha+\\beta').symbols).join() === 'α,β', 'LaTeX names');
+  assert(parsePhaseExpr('α-α').symbols['α'] === undefined, 'α − α cancels');
+  assert(parsePhaseExpr('2') === null && parsePhaseExpr('f(x)') === null, 'Non-expressions are opaque symbols');
+}
+
+log('\n=== P2: Spider fusion with symbolic phases ===');
+{
+  assert(step(...fuseDocs('α', 'β', 'α+β'), '=').status === 'ok', 'Z(α);Z(β) = Z(α+β)');
+  assert(step(...fuseDocs('α', 'β', 'β+α'), '=').status === 'ok', '… = Z(β+α)');
+  assert(step(...fuseDocs('α', '-α', ''), '=').status === 'ok', 'Z(α);Z(−α) = identity spider');
+  assert(step(...fuseDocs('α', 'β', 'α'), '=').status === 'fail', 'Z(α);Z(β) ≠ Z(α)');
+  assert(step(...fuseDocs('π/4', 'π/4', 'π/2'), '=').status === 'ok', 'Concrete: π/4 + π/4 = π/2');
+}
+
+log('\n=== P3: Boxes: same label = same symbol ===');
+{
+  const a = new DiagramDocument('box-a');
+  const f = addN(a, NT.MORPHISM, 100, 150, { label: 'f' }), g = addN(a, NT.MORPHISM, 100, 60, { label: 'g' });
+  w(a, f, 0, g, 0);
+  const b = new DiagramDocument('box-b');
+  const g2 = addN(b, NT.MORPHISM, 100, 150, { label: 'g' }), f2 = addN(b, NT.MORPHISM, 100, 60, { label: 'f' });
+  w(b, g2, 0, f2, 0);
+  const r = step(a, b, '≈');
+  assert(r.status === 'fail' && /f, g/.test(r.hint), 'g∘f ≠ f∘g for generic f, g');
+  const c = DiagramDocument.copyOf(a);
+  assert(step(a, c, '=').status === 'ok', 'A copy equals the original');
+  const ids = new Set([...a.nodes.keys()]);
+  assert([...c.nodes.keys()].every(id => !ids.has(id)), 'Copies get fresh node ids');
+}
+
+log('\n=== P4: = versus ≈ ===');
+{
+  // A plain wire vs the same wire beside a scalar 2: equal only up to the scalar
+  const a = new DiagramDocument('wire'); addN(a, NT.IDENTITY, 100, 100);
+  const b = new DiagramDocument('wire2'); addN(b, NT.IDENTITY, 100, 100);
+  const sc = addN(b, NT.SCALAR, 200, 100, { label: '2' }); sc.tensor = new Tensor(1, 1, [[2, 0]]);
+  const eq = step(a, b, '='), ap = step(a, b, '≈');
+  log(`  = : ${eq.hint} | ≈ : ${ap.hint}`, 'info');
+  assert(eq.status === 'fail' && /up to a scalar \(2\)/.test(eq.hint), "Wire vs wire ⊗ 2: not '='");
+  assert(ap.status === 'ok' && /up to 2/.test(ap.hint), "… but '≈' (up to 2)");
+  const s = step(a, new DiagramDocument('empty'), '≈');
+  assert(s.status === 'fail' && /Different shapes/.test(s.hint), 'Shape mismatch is explained');
+}
+
+log('\n=== P5: ProofDocument ===');
+{
+  const p = DocumentStore.add(new ProofDocument('T'));
+  const [a, b] = fuseDocs('α', 'β', 'α+β');
+  DocumentStore.add(a);
+  p.insertDiagram(a);
+  p.insertDiagram(b);
+  p.setRelation(1, '=');
+  let r = p.checkAll();
+  assert(r.status === 'ok' && r.relation === '=', 'Two-step proof checks (=)');
+  assert(p.steps[0].diagram !== a && p.steps[0].source.id === a.id, 'Steps are copies that remember their source');
+  a.nodes.values().next().value.label = 'γ'; a.commit();
+  assert(p.checkAll().status === 'ok', 'Editing the source does not change the proof');
+  const i = p.duplicateStep(1);
+  assert(i === 2 && p.steps.length === 3 && p.checkAll().status === 'ok', 'Duplicate a step: D₂ ≈ D₃ trivially');
+  const d3 = p.steps[2].diagram;
+  d3.nodes.values().next().value.label = 'α'; d3.commit();
+  r = p.checkAll();
+  assert(r.status === 'fail' && r.firstBad === 2, 'A wrong step is reported at its position');
+  p.removeStep(2);
+  assert(p.steps.length === 2 && !DocumentStore.get(d3.id), 'Removing a step removes its diagram');
+  p.undo();
+  assert(p.steps.length === 3 && DocumentStore.get(d3.id) === d3, 'Undo brings the step (and its diagram) back');
+  assert(DocumentStore.displayName(d3) === 'T — step D3', 'Steps are named after their proof');
+  p.updateFromSource(0);
+  assert(p.steps[0].diagram.nodes.values().next().value.label === 'γ', 'Update from source re-copies the source');
+}
+
+
+log('\n=== P6: Deliberate transfers between a step and its source ===');
+{
+  const src = DocumentStore.add(new DiagramDocument('Src'));
+  addN(src, NT.HADAMARD, 100, 100);
+  const p = DocumentStore.add(new ProofDocument('Transfers'));
+  p.insertDiagram(src);
+  const step = p.steps[0].diagram;
+  addN(step, NT.Z_SPIDER, 200, 100); step.commit();
+  assert(src.nodes.size === 1 && step.nodes.size === 2, 'Editing the step leaves the source alone');
+  assert(p.applyToSource(0) && src.nodes.size === 2, 'Apply to source copies the step into the source');
+  assert(src.undo() && src.nodes.size === 1, '… as one undoable edit of the source');
+  const d = p.saveAsNewDiagram(0);
+  assert(d && DocumentStore.get(d.id) === d && d.nodes.size === 2 && !d.ownerProof, 'Save as new diagram makes a standalone copy');
+  assert(p.sourceOf(0) === d, '… which becomes the step\'s source');
+  addN(d, NT.X_SPIDER, 300, 100); d.commit();
+  assert(step.nodes.size === 2, 'The new diagram is independent of the step');
+  const c = DocumentStore.add(new CircuitDocument('Gen', 1));
+  c.setCell(0, 0, { gate: 'H' });
+  p.insertDiagram(derivedDiagram(c));
+  assert(!p.canApplyToSource(1), 'A circuit\'s generated diagram cannot be overwritten');
+}
+
+
+// ===== WORKBOOKS =====
+
+log('\n=== W1: Workbook round trip keeps every document and link ===');
+{
+  DocumentStore.clear();
+  const ex = DocumentStore.add(new DiagramDocument('Ex'));
+  addCNOT(ex); ex.setTensorOrder('little-endian');
+  const c = DocumentStore.add(new CircuitDocument('Bell', 2));
+  c.setCell(0, 0, { gate: 'H' }); c.setCell(1, 0, { gate: 'ctrl' }); c.setCell(1, 1, { gate: 'X' });
+  c.setInput(0, '0'); c.setInput(1, '0');
+  const gen = derivedDiagram(c);
+  const p = DocumentStore.add(new ProofDocument('Pf'));
+  p.insertDiagram(gen);
+  p.duplicateStep(0); p.setNote(1, 'same'); p.setRelation(1, '=');
+  const layout = { type: 'split', direction: 'vertical', ratio: 0.5, children: [
+    { type: 'leaf', editorType: 'Diagram Editor', state: { docId: ex.id, orientation: 'algebraic' } },
+    { type: 'leaf', editorType: 'Diagram Equation Editor', state: { proofId: p.id, selected: 1 } }] };
+  const before = { ex: diagTensor(ex), c: circuitTensor(c), check: p.checkAll().status };
+  const wb = JSON.parse(JSON.stringify(captureWorkbook({ name: 'RT', description: 'd' }, layout)));
+  assert(summaryText(wb.summary) === '1 circuit · 1 diagram · 1 proof', `Summary: ${summaryText(wb.summary)}`);
+
+  const { layout: lay2, idMap } = openWorkbookDocuments(wb);
+  const ex2 = DocumentStore.list('diagram').find(d => d.name === 'Ex');
+  const c2 = DocumentStore.list('circuit')[0], p2 = DocumentStore.list('proof')[0];
+  assert(ex2 && ex2 !== ex && ex2.id !== ex.id && ex2.tensorOrder === 'little-endian', 'Diagram restored as a new document, order kept');
+  assert(Tensor.equal(diagTensor(ex2), before.ex), 'Same diagram tensor');
+  assert(Tensor.equal(circuitTensor(c2), before.c) && c2.inputs.join() === '0,0', 'Same circuit');
+  const gen2 = DocumentStore.list('diagram').find(d => d.derivedFrom === c2.id);
+  assert(gen2 && derivedDiagram(c2) === gen2, 'Generated diagram re-linked to its circuit');
+  c2.setCell(2, 1, { gate: 'Z' });
+  assert(Tensor.equal(contractIR(diagramToIR(gen2)).tensor, circuitTensor(c2)), '… and still follows it');
+  assert(p2.steps.length === 2 && p2.steps[1].note === 'same' && p2.steps[1].relation === '=', 'Proof steps, notes, relations');
+  assert(p2.steps.every(s => s.diagram.ownerProof === p2.id), 'Steps owned by the restored proof');
+  assert(p2.steps[0].source.id === gen2.id, 'Step source remapped to the restored generated diagram');
+  assert(lay2.children[0].state.docId === ex2.id && lay2.children[1].state.proofId === p2.id, 'Panel states point at the restored documents');
+  assert(lay2.children[0].state.orientation === 'algebraic', 'Other panel state kept');
+  assert(idMap.get(ex.id) === ex2.id, 'Id map exposed');
+}
+
+log('\n=== W2: Bad input is rejected clearly ===');
+{
+  let msg = '';
+  try { openWorkbookDocuments({ format: 'other' }); } catch (e) { msg = e.message; }
+  assert(msg === 'Not a workbook', 'Not a workbook');
+  try { openWorkbookDocuments({ format: 'qpp-workbook', version: 99, documents: [] }); } catch (e) { msg = e.message; }
+  assert(/newer version/.test(msg), 'Newer format version');
+}
+
+log('\n=== W3: My Workbooks store (browser storage stand-in) ===');
+{
+  const mem = new Map();
+  const storage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  const store = new LocalWorkbookStore({ storage });
+  const wb = { format: 'qpp-workbook', version: 1, name: 'A', summary: { circuits: 1, diagrams: 0, proofs: 0 }, savedAt: '2026-01-01', documents: [] };
+  const id = await store.save(wb);
+  await store.save({ ...wb, name: 'B', savedAt: '2026-02-01' });
+  let list = await store.list();
+  assert(list.length === 2 && list[0].name === 'B', 'Two saved, newest first');
+  await store.save({ ...wb, name: 'A2', savedAt: '2026-03-01' }, id);
+  list = await store.list();
+  assert(list.length === 2 && list[0].name === 'A2' && (await store.load(id)).name === 'A2', 'Save with an id overwrites');
+  await store.remove(id);
+  assert((await store.list()).length === 1, 'Remove');
+  let threw = false; try { await store.load(id); } catch { threw = true; }
+  assert(threw, 'Loading a removed workbook fails clearly');
+}
+
+log('\n=== W4: Every demo opens, and its proofs check ===');
+{
+  // In Node read the files directly; in the browser test page, fetch them
+  const inNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+  const demos = inNode
+    ? new DemoStore({ base: new URL('../demos/', import.meta.url).pathname,
+        fetchJSON: async p => JSON.parse(await (await import('node:fs/promises')).readFile(p, 'utf8')) })
+    : new DemoStore({ base: new URL('../demos/', import.meta.url).href });
+  const list = await demos.list();
+  assert(list.length >= 4 && list[0].id === 'getting-started', `${list.length} demos listed, Getting started first`);
+  for (const item of list) {
+    const wb = await demos.load(item.id);
+    const { layout } = openWorkbookDocuments(wb);
+    const proofs = DocumentStore.list('proof');
+    const ok = proofs.every(p => p.checkAll().status === 'ok');
+    assert(ok && layout && wb.name === item.name, `${item.name}: opens; ${proofs.length} proof(s) check`);
+  }
+  // Getting started: every panel is about the same state, and its saved formulas all check
+  openWorkbookDocuments(await demos.load('getting-started'));
+  const bell = DocumentStore.list('circuit')[0];
+  const dirac = (function find(n) { return n.type === 'leaf' ? (n.editorType === 'Dirac Formula Editor' ? n : null) : find(n.children[0]) || find(n.children[1]); })((await demos.load('getting-started')).layout);
+  const want = circuitTensor(bell);
+  assert(dirac.state.formulas.length >= 2 && dirac.state.formulas.every(f => Tensor.equal(evalStr(f), want)),
+    `Getting started: all ${dirac.state.formulas.length} saved formulas are the circuit's state`);
+  const pf = DocumentStore.list('proof')[0];
+  assert(pf.sourceOf(0) && pf.sourceOf(0).derivedFrom === bell.id, 'Its proof starts from the circuit\'s own diagram');
+
+  let threw = false; try { await demos.save({}); } catch { threw = true; }
+  assert(threw, 'Demos are read-only');
+  threw = false; try { await demos.load('../secret'); } catch { threw = true; }
+  assert(threw, 'Demo ids cannot escape the demos folder');
+}
+
+
+// ===== ORIENTATION AND SLIDING (PQP §4.3) =====
+
+const M3 = Tensor.fromRows([[C.of(1, 2), C.of(3, -1)], [C.of(0, 1), C.of(-2, 0)]]);
+const same = (A, B) => Tensor.equal(A, B);
+
+log('\n=== O1: Orientation transforms a concrete matrix ===');
+{
+  const T = orientTensor(M3, { v: true, h: true }), A = orientTensor(M3, { v: true, h: false }), B = orientTensor(M3, { v: false, h: true });
+  assert(C.eq(T.get(0, 1), M3.get(1, 0)) && C.eq(T.get(1, 0), M3.get(0, 1)), 'Both flips = transpose');
+  assert(C.eq(A.get(0, 1), C.conj(M3.get(1, 0))), 'Top↔bottom = adjoint');
+  assert(C.eq(B.get(0, 0), C.conj(M3.get(0, 0))) && C.eq(B.get(0, 1), C.conj(M3.get(0, 1))), 'Left↔right = conjugate');
+  const d = new DiagramDocument('o1');
+  const box = addN(d, NT.MORPHISM, 100, 100); box.tensor = M3;
+  d.flipNode(box, 'T');
+  assert(same(diagTensor(d), T), 'A flipped box evaluates to the transformed matrix');
+  d.flipNode(box, 'adj'); d.flipNode(box, 'adj'); d.flipNode(box, 'T');
+  assert(same(diagTensor(d), M3) && !box.flip.v && !box.flip.h, 'Flips compose (and undo themselves)');
+}
+
+// f on the left leg of a cup (cup.out0 → f), right leg open; and the mirror image
+const cupWithBox = (onLeft, flip) => {
+  const d = new DiagramDocument('cupbox');
+  const cup = addN(d, NT.CUP, 150, 200);
+  const f = addN(d, NT.MORPHISM, onLeft ? 138 : 162, 120, { label: 'f' });
+  if (flip) f.flip = { ...flip };
+  w(d, cup, onLeft ? 0 : 1, f, 0);
+  return { d, cup, f };
+};
+
+log('\n=== O2: Proposition 4.30 (boxes slide round bends as transposes) ===');
+{
+  const L = cupWithBox(true), R = cupWithBox(false, { v: true, h: true });
+  assert(step(L.d, R.d, '=').status === 'ok', 'f on the left leg of a cup = fᵀ on the right leg (random f)');
+  const Rwrong = cupWithBox(false);
+  assert(step(L.d, Rwrong.d, '≈').status === 'fail', '… but plain f on the right leg is different');
+  const Radj = cupWithBox(false, { v: true, h: false });
+  assert(step(L.d, Radj.d, '≈').status === 'fail', '… and so is f† (it is the transpose, not the adjoint)');
+}
+
+log('\n=== O3: Sliding is a rewrite that keeps the map ===');
+{
+  const { d, cup, f } = cupWithBox(true);
+  const top = addN(d, NT.MORPHISM, 138, 40, { label: 'g' }); w(d, f, 0, top, 0);
+  const before = DiagramDocument.copyOf(d);
+  const opts = d.slideOptions(f);
+  assert(opts.length === 1 && opts[0].via === cup && opts[0].side === 'in', 'A box on a cup leg can slide');
+  const g2 = d.slide(f, opts[0]);
+  assert(g2.flip.v && g2.flip.h, 'It arrives transposed');
+  assert(g2.x === cup.getOutputPort(1).x, '… on the other leg');
+  assert(d.wireOnPort(cup.id, 'out', 0).toNodeId === top.id, 'What was above it is now joined straight to the cup');
+  assert(step(before, d, '=').status === 'ok', 'Same map before and after (random f, g)');
+  const back = d.slide(g2, d.slideOptions(g2)[0]);
+  assert(!back.flip.v && !back.flip.h && step(before, d, '=').status === 'ok', 'Sliding back restores f');
+
+  // through a cap: f's output goes into cap.in1
+  const c = new DiagramDocument('capbox');
+  const cap = addN(c, NT.CAP, 150, 60);
+  const h = addN(c, NT.MORPHISM, 162, 140, { label: 'h' });
+  w(c, h, 0, cap, 1);
+  const c0 = DiagramDocument.copyOf(c);
+  const o = c.slideOptions(h);
+  assert(o.length === 1 && o[0].side === 'out', 'A box under a cap can slide');
+  c.slide(h, o[0]);
+  assert(step(c0, c, '=').status === 'ok', 'Same map after sliding through the cap');
+}
+
+log('\n=== O4: The necklace (PQP: beads on a snake) ===');
+{
+  // f1 → cap → f2 … : a box chain bent by caps and cups; sliding every bead onto one strand keeps the map
+  const d = new DiagramDocument('necklace');
+  const f1 = addN(d, NT.MORPHISM, 100, 200, { label: 'a' });
+  const cap1 = addN(d, NT.CAP, 112, 120);
+  const f2 = addN(d, NT.MORPHISM, 124, 200, { label: 'b' });
+  const cup1 = addN(d, NT.CUP, 136, 280);
+  const f3 = addN(d, NT.MORPHISM, 148, 200, { label: 'c' });
+  w(d, f1, 0, cap1, 0);           // a's output into the cap
+  w(d, cup1, 0, f2, 0); w(d, f2, 0, cap1, 1);   // b: from the cup, up into the cap
+  w(d, cup1, 1, f3, 0);           // c on the cup's other leg, output open
+  const before = DiagramDocument.copyOf(d);
+  let n = 0;
+  for (let k = 0; k < 6; k++) {
+    const node = [...d.nodes.values()].find(x => x.type.key === 'morphism' && d.slideOptions(x).length);
+    if (!node) break;
+    d.slide(node, d.slideOptions(node)[0]); n++;
+    assert(step(before, d, '=').status === 'ok', `After slide ${n}: same map`);
+  }
+}
+
+log('\n=== O5: States and effects ===');
+{
+  const a = new DiagramDocument('s'); const st = addN(a, NT.STATE, 100, 200, { label: 'ψ' });
+  const ef = addN(a, NT.STATE, 100, 100, { label: 'ψ' }); a.flipNode(ef, 'adj');
+  assert(ef.type === NT.EFFECT && ef.inputs === 1 && ef.outputs === 0, 'The adjoint of a state is an effect');
+  w(a, st, 0, ef, 0);
+  const lat = diagramToDirac(a).latex;
+  log(`  latex: ${lat}`, 'info');
+  assert(/\\langle\s*\\psi\s*\|\s*\\psi\\rangle|\\langle \\psi\|\\psi\\rangle/.test(lat) || lat.includes('\\langle \\psi|'), 'Prints ⟨ψ|ψ⟩');
+  // ⟨ψ|ψ⟩ is a positive number for random ψ: compare with |ψ⟩ then ⟨ψ̄| transposed (= ⟨ψ|ψ⟩* = same)
+  const b = new DiagramDocument('s2'); const st2 = addN(b, NT.STATE, 100, 200, { label: 'ψ' });
+  const ef2 = addN(b, NT.STATE, 100, 100, { label: 'ψ' }); b.flipNode(ef2, 'adj'); b.flipNode(ef2, 'conj');
+  w(b, st2, 0, ef2, 0);
+  assert(step(a, b, '=').status === 'fail', '⟨ψ|ψ⟩ ≠ ⟨ψ̄|ψ⟩ in general');
+}
+
+log('\n=== O6: Orientation survives copies and workbooks ===');
+{
+  const { d, f } = cupWithBox(false, { v: true, h: true });
+  const c = DiagramDocument.copyOf(d);
+  assert([...c.nodes.values()].some(n => n.flip.v && n.flip.h), 'copyOf keeps the flip');
+  assert(step(d, c, '=').status === 'ok', 'and the map');
+  d.pushUndo(); d.flipNode(f, 'conj'); d.undo();
+  assert([...d.nodes.values()].find(n => n.type.key === 'morphism').flip.h === true, 'Undo restores the orientation');
+}
+
+
+// ===== THE DOUBLED PICTURE (PQP ch. 6–8) =====
+
+const thickN = (d, type, x, y, o = {}) => { const n = addN(d, type, x, y, o); n.thick = true; return n; };
+const dot = (d, x, y, ins, outs) => {   // ins/outs: arrays of 'thin' | 'thick'
+  const n = addN(d, NT.DOT, x, y, { inputs: ins.length, outputs: outs.length });
+  n.legThick = { in: ins.map(t => t === 'thick'), out: outs.map(t => t === 'thick') };
+  return n;
+};
+
+log('\n=== Q1: Discarding a doubled pure state gives ⟨ψ|ψ⟩ (Born rule) ===');
+{
+  const a = new DiagramDocument('q1a');
+  const st = thickN(a, NT.STATE, 100, 200, { label: 'ψ' }), ds = addN(a, NT.DISCARD, 100, 110);
+  w(a, st, 0, ds, 0);
+  const b = new DiagramDocument('q1b');
+  const s2 = addN(b, NT.STATE, 100, 200, { label: 'ψ' }), e2 = addN(b, NT.STATE, 100, 110, { label: 'ψ' });
+  b.flipNode(e2, 'adj'); w(b, s2, 0, e2, 0);
+  assert(step(a, b, '=').status === 'ok', 'ψ̂ then ⏚  =  ⟨ψ|ψ⟩ (random ψ)');
+}
+
+log('\n=== Q2: Measurement and encoding (white dots with thin and thick legs) ===');
+{
+  // measure (thick in, thin out) then delete (thin in, no out)  =  discard
+  const a = new DiagramDocument('q2a');
+  const m = dot(a, 100, 200, ['thick'], ['thin']), del = dot(a, 100, 120, ['thin'], []);
+  w(a, m, 0, del, 0);
+  const b = new DiagramDocument('q2b'); addN(b, NT.DISCARD, 100, 160);
+  assert(step(a, b, '=').status === 'ok', 'measure, then delete  =  discard');
+  // encode (thin in, thick out) then discard  =  delete
+  const c = new DiagramDocument('q2c');
+  const enc = dot(c, 100, 200, ['thin'], ['thick']), dis = addN(c, NT.DISCARD, 100, 120);
+  w(c, enc, 0, dis, 0);
+  const dd = new DiagramDocument('q2d'); dot(dd, 100, 160, ['thin'], []);
+  assert(step(c, dd, '=').status === 'ok', 'encode, then discard  =  delete');
+  // measure then encode  =  decoherence (a white dot, thick to thick)
+  const e = new DiagramDocument('q2e');
+  const m2 = dot(e, 100, 200, ['thick'], ['thin']), en2 = dot(e, 100, 120, ['thin'], ['thick']);
+  w(e, m2, 0, en2, 0);
+  const f = new DiagramDocument('q2f'); dot(f, 100, 160, ['thick'], ['thick']);
+  assert(step(e, f, '=').status === 'ok', 'measure, then encode  =  decoherence');
+  // decoherence is not the identity on a quantum wire
+  const g = new DiagramDocument('q2g'); thickN(g, NT.IDENTITY, 100, 160);
+  assert(step(f, g, '≈').status === 'fail', '… which is not a plain thick wire');
+}
+
+log('\n=== Q3: Doubling ===');
+{
+  const fuse = (la, lb, lc) => {
+    const a = new DiagramDocument('q3a');
+    const z1 = thickN(a, NT.Z_SPIDER, 100, 200, { label: la }), z2 = thickN(a, NT.Z_SPIDER, 100, 110, { label: lb });
+    w(a, z1, 0, z2, 0);
+    const b = new DiagramDocument('q3b'); thickN(b, NT.Z_SPIDER, 100, 150, { label: lc });
+    return [a, b];
+  };
+  assert(step(...fuse('α', 'β', 'α+β'), '=').status === 'ok', 'Doubled spiders fuse: Ẑ(α);Ẑ(β) = Ẑ(α+β)');
+  assert(step(...fuse('α', 'β', 'α-β'), '≈').status === 'fail', '… and not to Ẑ(α−β)');
+  // a doubled unitary is causal; a general process is not
+  const a = new DiagramDocument('q3c');
+  const h = thickN(a, NT.HADAMARD, 100, 200), ds = addN(a, NT.DISCARD, 100, 120); w(a, h, 0, ds, 0);
+  const b = new DiagramDocument('q3d'); addN(b, NT.DISCARD, 100, 160);
+  assert(step(a, b, '=').status === 'ok', 'Ĥ then ⏚  =  ⏚ (a doubled unitary is causal)');
+  const c = new DiagramDocument('q3e');
+  const phi = thickN(c, NT.MORPHISM, 100, 200, { label: 'Φ' }); phi.process = true;
+  const ds2 = addN(c, NT.DISCARD, 100, 120); w(c, phi, 0, ds2, 0);
+  assert(step(c, b, '≈').status === 'fail', 'A general process Φ is not causal without assuming it');
+  // a pure (doubled) box is f̄ ⊗ f: discarding after it gives Tr(f†f · ) — equal to discard only for isometries
+  const d = new DiagramDocument('q3f');
+  const fb = thickN(d, NT.MORPHISM, 100, 200, { label: 'f' }), ds3 = addN(d, NT.DISCARD, 100, 120); w(d, fb, 0, ds3, 0);
+  assert(step(d, b, '≈').status === 'fail', 'f̂ then ⏚ ≠ ⏚ for a generic f');
+}
+
+log('\n=== Q4: Sliding a doubled box round a doubled cup ===');
+{
+  const d = new DiagramDocument('q4');
+  const cup = thickN(d, NT.CUP, 150, 200);
+  const f = thickN(d, NT.MORPHISM, 138, 120, { label: 'f' });
+  w(d, cup, 0, f, 0);
+  const before = DiagramDocument.copyOf(d);
+  d.slide(f, d.slideOptions(f)[0]);
+  assert(step(before, d, '=').status === 'ok', 'f̂ slides round the thick cup as f̂ᵀ');
+}
+
+log('\n=== Q5: Strict typing ===');
+{
+  const a = new DiagramDocument('q5a');
+  const st = thickN(a, NT.STATE, 100, 200, { label: 'ρ' }); st.process = true;
+  addN(a, NT.Z_SPIDER, 200, 150);
+  const ir = diagramToIR(a);
+  assert(!ir.isValid && /thin wires are classical/.test(ir.diagnostics[0].message), 'A thin Z spider in a doubled diagram is an error');
+  const b = new DiagramDocument('q5b');
+  const ts = thickN(b, NT.STATE, 100, 200, { label: 'ψ' }), thin = addN(b, NT.MORPHISM, 100, 110, { label: 'g' });
+  w(b, ts, 0, thin, 0);
+  const ir2 = diagramToIR(b);
+  assert(!ir2.isValid && /cannot be joined/.test(ir2.diagnostics.map(x => x.message).join()), 'A thick wire into a thin port is an error');
+  const c = new DiagramDocument('q5c');
+  const ts2 = thickN(c, NT.STATE, 100, 200, { label: 'ψ' }); addN(c, NT.MORPHISM, 200, 110, { label: 'g' });
+  assert(diagramToIR(c).isValid, 'A thin box (a classical process) is allowed');
+  assert(c.generateDirac().latex === '' && /not available yet/.test(c.generateDirac().info), 'Dirac generation says plainly it does not handle thick wires');
+}
+
+log('\n=== Q6: Thick and leg types survive saving ===');
+{
+  const d = DocumentStore.add(new DiagramDocument('q6'));
+  const m = dot(d, 100, 200, ['thick'], ['thin']); const p2 = thickN(d, NT.MORPHISM, 200, 200, { label: 'Ψ' });
+  p2.process = true; p2.inputs = 2; p2.legThick = { in: [true, false], out: [true] };
+  const c = DiagramDocument.fromJSON(JSON.parse(JSON.stringify(d.toJSON())));
+  const [m2, q2] = [...c.nodes.values()];
+  assert(m2.portIsThick('in', 0) && !m2.portIsThick('out', 0), 'White dot leg types restored');
+  assert(q2.isMixed() && q2.portIsThick('in', 0) && !q2.portIsThick('in', 1) && q2.portIsThick('out', 0), 'Process leg types restored');
+  d.removePort(p2, 'in', 0);
+  assert(p2.inputs === 1 && !p2.portIsThick('in', 0), 'Removing a leg keeps the others\' types');
+}
+
+
+// ===== ASSUMPTIONS AND SUMS (phase 3) =====
+
+const stepA = (a, b, rel, assumptions) => checkStep(a.toIR(), b.toIR(), rel, { assumptions });
+const proc = (d, x, y, label, ins, outs) => {      // a general process with leg types ('q' thick / 'c' thin)
+  const n = addN(d, NT.MORPHISM, x, y, { label, inputs: ins.length, outputs: outs.length });
+  n.thick = true; n.process = true;
+  n.legThick = { in: ins.map(t => t === 'q'), out: outs.map(t => t === 'q') };
+  return n;
+};
+
+log('\n=== A1: Sequential composition of causal cq-maps is causal (PQP 8.16) ===');
+{
+  // D1: Φ (q in → q, c out), Ψ on Φ's quantum output, then ⏚ and delete
+  const d1 = new DiagramDocument('a1');
+  const phi = proc(d1, 100, 300, 'Φ', ['q'], ['q', 'c']);
+  const psi = proc(d1, 88, 200, 'Ψ', ['q'], ['q']);
+  const ds = addN(d1, NT.DISCARD, 88, 120), del = dot(d1, 140, 200, ['c'], []);
+  w(d1, phi, 0, psi, 0); w(d1, psi, 0, ds, 0); w(d1, phi, 1, del, 0);
+  // D2: Ψ discarded away (Ψ causal)
+  const d2 = new DiagramDocument('a2');
+  const phi2 = proc(d2, 100, 300, 'Φ', ['q'], ['q', 'c']);
+  const ds2 = addN(d2, NT.DISCARD, 88, 200), del2 = dot(d2, 140, 200, ['c'], []);
+  w(d2, phi2, 0, ds2, 0); w(d2, phi2, 1, del2, 0);
+  // D3: Φ discarded away (Φ causal)
+  const d3 = new DiagramDocument('a3'); addN(d3, NT.DISCARD, 100, 250);
+  const A = { 'Φ': 'causal', 'Ψ': 'causal' };
+  assert(stepA(d1, d2, '=', A).status === 'ok', 'D₁ = D₂ assuming Ψ causal');
+  assert(stepA(d2, d3, '=', A).status === 'ok', 'D₂ = D₃ assuming Φ causal');
+  assert(/assuming Φ causal, Ψ causal|assuming Ψ causal/.test(stepA(d1, d2, '=', A).hint), 'The hint says what was assumed');
+  assert(stepA(d1, d2, '=', {}).status === 'fail', 'Without the assumption the step fails');
+  assert(stepA(d2, d3, '=', { 'Ψ': 'causal' }).status === 'fail', 'Assuming only Ψ causal is not enough for D₂ = D₃');
+}
+
+log('\n=== A2: Unitaries, isometries, normalised states ===');
+{
+  const chain = (label, ins, outs) => {    // V then V†
+    const d = new DiagramDocument('ch');
+    const v = addN(d, NT.MORPHISM, 100, 220, { label, inputs: ins, outputs: outs });
+    const vd = addN(d, NT.MORPHISM, 100, 120, { label, inputs: ins, outputs: outs }); d.flipNode(vd, 'adj');   // V, flipped: V†
+    for (let k = 0; k < outs; k++) w(d, v, k, vd, k);
+    return d;
+  };
+  const wire1 = new DiagramDocument('w'); addN(wire1, NT.IDENTITY, 100, 170);
+  assert(stepA(chain('U', 1, 1), wire1, '=', { U: 'unitary' }).status === 'ok', 'U then U† = wire, assuming U unitary');
+  assert(stepA(chain('U', 1, 1), wire1, '=', {}).status === 'fail', '… false without the assumption');
+  assert(stepA(chain('V', 1, 2), wire1, '=', { V: 'isometry' }).status === 'ok', 'V then V† = wire for an isometry V (1 → 2 wires)');
+  const r = stepA(chain('V', 1, 2), wire1, '=', { V: 'unitary' });
+  assert(r.status === 'unavailable' && /assumed unitary/.test(r.hint), 'Assuming a non-square box unitary is reported');
+  const a = new DiagramDocument('n');
+  const st = addN(a, NT.STATE, 100, 200, { label: 'ψ' }), ef = addN(a, NT.STATE, 100, 100, { label: 'ψ' });
+  a.flipNode(ef, 'adj'); w(a, st, 0, ef, 0);
+  assert(stepA(a, new DiagramDocument('empty'), '=', { 'ψ': 'isometry' }).status === 'ok', '⟨ψ|ψ⟩ = 1 for a normalised ψ');
+  // a doubled pure f is causal exactly when f is an isometry
+  const b = new DiagramDocument('fh');
+  const fb = thickN(b, NT.MORPHISM, 100, 200, { label: 'f' }), d0 = addN(b, NT.DISCARD, 100, 120); w(b, fb, 0, d0, 0);
+  const disc = new DiagramDocument('disc'); addN(disc, NT.DISCARD, 100, 160);
+  assert(stepA(b, disc, '=', { f: 'causal' }).status === 'ok', 'f̂ then ⏚ = ⏚ assuming f causal (an isometry)');
+}
+
+log('\n=== A3: Basis labels and Σ over a basis (PQP 8.14 → 8.6 → 5.37) ===');
+{
+  const z = new DiagramDocument('b');
+  const s0 = addN(z, NT.STATE, 100, 200, { label: '0' }), e1 = addN(z, NT.EFFECT, 100, 100, { label: '1' }); w(z, s0, 0, e1, 0);
+  assert(Tensor.equal(diagTensor(z), Tensor.fromRows([[0]])), '⟨1|0⟩ = 0 (basis labels are basis vectors)');
+  // D1: measure, then delete
+  const d1 = new DiagramDocument('m1');
+  const m = dot(d1, 100, 220, ['thick'], ['thin']), del = dot(d1, 100, 140, ['thin'], []); w(d1, m, 0, del, 0);
+  // D2: Σ_i measure, then the classical effect i
+  const d2 = new DiagramDocument('m2'); d2.sumIndices = ['i'];
+  const m2 = dot(d2, 100, 220, ['thick'], ['thin']), ei = addN(d2, NT.EFFECT, 100, 140, { label: 'i' }); w(d2, m2, 0, ei, 0);
+  // D3: Σ_i the doubled effect i
+  const d3 = new DiagramDocument('m3'); d3.sumIndices = ['i']; thickN(d3, NT.EFFECT, 100, 180, { label: 'i' });
+  // D4: discard
+  const d4 = new DiagramDocument('m4'); addN(d4, NT.DISCARD, 100, 180);
+  assert(stepA(d1, d2, '=').status === 'ok', 'delete = Σᵢ ⟨i|  (8.14)');
+  assert(stepA(d2, d3, '=').status === 'ok', 'Σᵢ ⟨i| after measuring = Σᵢ doubled ⟨i|  (8.6)');
+  assert(stepA(d3, d4, '=').status === 'ok', 'Σᵢ doubled ⟨i| = ⏚  (5.37)');
+  const d3wrong = DiagramDocument.copyOf(d3); d3wrong.sumIndices = [];
+  assert(stepA(d3wrong, d4, '≈').status === 'fail', 'Without the Σ, a single doubled ⟨i| is not the discard');
+  // Σ_i |i⟩⟨i| = identity
+  const r = new DiagramDocument('res'); r.sumIndices = ['i'];
+  addN(r, NT.EFFECT, 100, 220, { label: 'i' }); addN(r, NT.STATE, 100, 120, { label: 'i' });
+  const id = new DiagramDocument('id'); addN(id, NT.IDENTITY, 100, 170);
+  assert(stepA(r, id, '=').status === 'ok', 'Σᵢ |i⟩⟨i| = the identity (resolution of the identity)');
+  const c = DiagramDocument.copyOf(r);
+  assert(c.sumIndices.join() === 'i', 'Σ survives copying (and so saving)');
+}
+
+log('\n=== A4: Proofs carry their assumptions ===');
+{
+  const p = DocumentStore.add(new ProofDocument('Causal'));
+  const d1 = new DiagramDocument('p1');
+  const f = proc(d1, 100, 200, 'Φ', ['q'], ['q']), ds = addN(d1, NT.DISCARD, 100, 120); w(d1, f, 0, ds, 0);
+  const d2 = new DiagramDocument('p2'); addN(d2, NT.DISCARD, 100, 160);
+  p.insertDiagram(d1); p.insertDiagram(d2); p.setRelation(1, '=');
+  assert(p.checkAll().status === 'fail', 'Unassumed: fails');
+  assert(p.symbols().join() === 'Φ', 'The proof knows its symbols: Φ');
+  p.setAssumption('Φ', 'causal');
+  assert(p.checkAll().status === 'ok', 'Assume Φ causal: checks');
+  p.undo();
+  assert(!p.assumptions['Φ'] && p.checkAll().status === 'fail', 'Undo drops the assumption');
+  p.redo();
+  const q = ProofDocument.fromJSON(JSON.parse(JSON.stringify(p.toJSON())), new Map(p.steps.map(s => [s.diagram.id, s.diagram])));
+  assert(q.assumptions['Φ'] === 'causal', 'Assumptions are saved with the proof');
 }
 
 // === Summary ===

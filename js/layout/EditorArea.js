@@ -11,8 +11,14 @@ export default class EditorArea {
    * @param {string} editorType  — initial editor type name
    * @param {object} layoutManager — reference to LayoutManager
    */
-  constructor(editorType, layoutManager) {
+  /**
+   * @param {string} editorType
+   * @param {object} layoutManager
+   * @param {object|null} [state] — saved panel state for the editor (workbooks)
+   */
+  constructor(editorType, layoutManager, state = null) {
     this.id = `area-${_areaIdCounter++}`;
+    this._initialState = state;
     this.layoutManager = layoutManager;
     this.editorType = editorType;
     this.editorInstance = null;
@@ -99,15 +105,65 @@ export default class EditorArea {
   _onTypeChange() {
     const newType = this.selectEl.value;
     if (newType === this.editorType) return;
+    this.setEditorType(newType);
+  }
+
+  /** Editor types that only visit a panel (e.g. the Workbook Browser). */
+  _isTransient(type) {
+    const cls = EditorRegistry.get(type);
+    return !!(cls && cls.transient);
+  }
+
+  /** Switch this panel to another editor type (e.g. the app bar's Workbooks button). */
+  /**
+   * Switch this panel to another editor type. A transient editor (the
+   * Workbook Browser) only visits: the panel remembers the editor it covered,
+   * saves that one in workbooks, and showing or closing the visitor is not
+   * an edit.
+   */
+  setEditorType(type, state = null) {
+    if (type === this.editorType) return;
+    const visiting = this._isTransient(type) || this._isTransient(this.editorType);
+    if (this._isTransient(type) && !this._isTransient(this.editorType)) {
+      this._underlying = { editorType: this.editorType, state: this.getState() };
+    } else if (!this._isTransient(type)) {
+      this._underlying = null;
+    }
     this._destroyEditor();
-    this.editorType = newType;
+    this.editorType = type;
+    this.selectEl.value = type;
+    this._initialState = state;
     this._mountEditor();
+    if (!visiting) this.layoutManager._changed();
+  }
+
+  /** Put back the editor a visiting editor covered. Returns false if there is none. */
+  closeTransient() {
+    if (!this._isTransient(this.editorType) || !this._underlying) return false;
+    const { editorType, state } = this._underlying;
+    this.setEditorType(editorType, state);
+    return true;
+  }
+
+  /** What this panel should be saved as in a workbook. */
+  specForSave() {
+    if (this._isTransient(this.editorType) && this._underlying) return { ...this._underlying };
+    return { editorType: this.editorType, state: this.getState() };
+  }
+
+  /** The editor's state, for saving in a workbook. */
+  getState() {
+    const ed = this.editorInstance;
+    try { return ed && typeof ed.getState === 'function' ? ed.getState() : null; }
+    catch { return null; }
   }
 
   _mountEditor() {
     this.bodyEl.innerHTML = '';
     try {
-      this.editorInstance = EditorRegistry.create(this.editorType, this.bodyEl);
+      this.editorInstance = EditorRegistry.create(this.editorType, this.bodyEl,
+        { state: this._initialState || undefined });
+      this._initialState = null;
     } catch (err) {
       this.bodyEl.textContent = `Error: ${err.message}`;
     }

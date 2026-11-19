@@ -42,10 +42,11 @@ const DT = 58, DQ = 56, LEFT = 112, RIGHT = 84, TOP = 16, GATE = 38, DRAG_THRESH
 export default class CircuitEditor {
   static get typeName() { return 'Circuit Editor'; }
 
-  constructor(containerEl) {
+  constructor(containerEl, options = {}) {
+    const st = options.state || {};
     this.container = containerEl;
     this.selection = null;      // { kind:'cell', t, q } | { kind:'qubit', q }
-    this.orientation = 'circuit';
+    this.orientation = st.orientation === 'algebraic' ? 'algebraic' : 'circuit';
     this.drag = null;
 
     this.el = document.createElement('div');
@@ -55,8 +56,8 @@ export default class CircuitEditor {
     this._buildDocBar();
     this._buildStage();
 
-    let doc = DocumentStore.list('circuit')[0];
-    if (!doc) doc = this._createExample();
+    let doc = (st.docId && DocumentStore.get(st.docId)) || DocumentStore.list('circuit')[0];
+    if (!doc) doc = DocumentStore.add(new CircuitDocument('Circuit 1', 2));
     this._onDocChange = () => this.render();
     this._setDoc(doc);
 
@@ -68,17 +69,8 @@ export default class CircuitEditor {
 
   /* ---------------- Documents ---------------- */
 
-  _createExample() {
-    const c = new CircuitDocument('Bell', 2);
-    c.setCell(0, 0, { gate: 'H' });
-    c.setCell(1, 0, { gate: CONTROL });
-    c.setCell(1, 1, { gate: 'X' });
-    c.setInput(0, '0'); c.setInput(1, '0');
-    c._undoStack = [];                     // the example is the starting point
-    DocumentStore.add(c);
-    derivedDiagram(c);
-    return c;
-  }
+  /** Panel state for workbooks. */
+  getState() { return { docId: this.doc && this.doc.id, orientation: this.orientation }; }
 
   _setDoc(doc) {
     if (this.doc) this.doc.offChange(this._onDocChange);
@@ -187,7 +179,7 @@ export default class CircuitEditor {
     this.inspParamEl.addEventListener('change', () => this._setParam(this.inspParamEl.value.trim()));
     this.inspParamEl.addEventListener('keydown', e => {
       e.stopPropagation();
-      if (e.key === 'Enter' || e.key === 'Escape') { this.inspParamEl.blur(); this.stageWrap.focus(); }
+      if (e.key === 'Enter' || e.key === 'Escape') { this.inspParamEl.blur(); this.stageWrap.focus({ preventScroll: true }); }
     });
     this.inspParamWrap.appendChild(this.inspParamEl);
     this.inspectorEl.append(this.inspTextEl, this.inspParamWrap);
@@ -305,7 +297,7 @@ export default class CircuitEditor {
       lab.title = 'Click to select this qubit (🗑 removes it)';
       const sel = this.selection;
       if (sel && sel.kind === 'qubit' && sel.q === q) lab.classList.add('selected');
-      lab.addEventListener('mousedown', e => { e.stopPropagation(); this._select({ kind: 'qubit', q }); this.stageWrap.focus(); });
+      lab.addEventListener('mousedown', e => { e.stopPropagation(); this._select({ kind: 'qubit', q }); this.stageWrap.focus({ preventScroll: true }); });
       place(lab, 88, y, 28, 20);
       place(this._picker(EFFECT_LABELS, doc.outputs[q], v => doc.setOutput(q, v), `Output of qubit ${q}`),
         wireEnd + 40, y, 58, 22);
@@ -386,7 +378,7 @@ export default class CircuitEditor {
   _startDrag(e, info) {
     if (e.button !== 0) return;
     e.preventDefault(); e.stopPropagation();
-    this.stageWrap.focus();
+    this.stageWrap.focus({ preventScroll: true });
     const ghost = document.createElement('div');
     ghost.className = 'circuit-ghost';
     ghost.appendChild(this._cellFace(info.cell));

@@ -70,9 +70,11 @@ export default class DiagramWire {
   draw(ctx, nodesMap) {
     const pts = this.curve(nodesMap);
     if (!pts) return;
+    // PQP: quantum wires in the doubled picture are thick
+    const thick = nodesMap.get(this.fromNodeId).portIsThick('out', this.fromPort);
     ctx.save();
     ctx.strokeStyle = this.selected ? '#4fc1ff' : '#b0b0b0';
-    ctx.lineWidth = this.selected ? 3 : 2;
+    ctx.lineWidth = (thick ? 5 : 2) + (this.selected ? 1 : 0);
     strokeCurve(ctx, pts);
     ctx.restore();
   }

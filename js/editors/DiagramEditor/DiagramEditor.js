@@ -6,16 +6,30 @@
 import DiagramCanvas from './DiagramCanvas.js';
 import DiagramToolbar from './DiagramToolbar.js';
 import { NODE_TYPES } from './DiagramNode.js';
-import DiagramWire from './DiagramWire.js';
 import DocumentStore from '../DocumentStore.js';
 import { ORIENTATIONS } from '../../core/FlowDirection.js';
 import { TENSOR_ORDERS } from '../../core/IR.js';
 
+/** How an oriented symbol reads: f, fᵀ, f†, f̄ (for states: the adjoint is ⟨ψ|). */
+function orientedName(n) {
+  const lbl = n.label || '?', f = n.flip || {};
+  if (f.v && f.h) return lbl + 'ᵀ';
+  if (f.v) return lbl + '†';
+  if (f.h) return lbl + '\u0305';     // combining overline: f̄
+  return lbl;
+}
+
 export default class DiagramEditor {
   static get typeName() { return 'Diagram Editor'; }
 
-  constructor(containerEl) {
+  /**
+   * @param {HTMLElement} containerEl
+   * @param {{ doc?: object, embedded?: boolean }} [options] — embedded: shown
+   *   inside another editor (e.g. a proof step): edits `doc`, no document picker.
+   */
+  constructor(containerEl, options = {}) {
     this.container = containerEl;
+    this.embedded = !!options.embedded;
     this.el = document.createElement('div');
     this.el.className = 'diagram-editor';
     this.container.appendChild(this.el);
@@ -40,34 +54,41 @@ export default class DiagramEditor {
 
     // Palette sidebar
     this._buildPalette();
+    this.canvasWrap.appendChild(this.inspector);
 
-    // Get or create the initial document
-    let doc = DocumentStore.list('diagram')[0];
-    if (!doc) {
-      doc = DocumentStore.createDiagram('Example');
-      this._needsDefault = true; // flag to load example content
-    }
+    // The document to show: given, saved in the panel state, the first
+    // diagram, or a new empty one
+    const st = options.state || {};
+    let doc = options.doc || (st.docId && DocumentStore.get(st.docId))
+      || DocumentStore.list('diagram').find(d => !d.ownerProof);
+    if (!doc) doc = DocumentStore.createDiagram(`Diagram ${DocumentStore.list('diagram').filter(d => !d.ownerProof).length + 1}`);
     this.currentDocId = doc.id;
 
     // Canvas — pass the shared document
     this.canvas = new DiagramCanvas(this.canvasWrap, doc, {
       onSelectionChange: () => { this._refreshInspector(); this._refreshDerivedNote(); },
-      onEditLabel: () => { this._refreshInspector(); this.inspLabel.focus(); this.inspLabel.select(); },
+      onEditLabel: () => { this._refreshInspector(); this.inspLabel.focus({ preventScroll: true }); this.inspLabel.select(); },
     });
 
-    // Load default content into the first-ever document
-    if (this._needsDefault) {
-      this._loadDefaultDiagram();
-      doc._undoStack = []; doc._redoStack = [];  // the example is the starting point
-      this._needsDefault = false;
+    // Restore the saved view (orientation, then pan/zoom or "fit to content")
+    if (st.orientation && ORIENTATIONS[st.orientation]) {
+      this.canvas.orientation = ORIENTATIONS[st.orientation];
+      this.viewSelectEl.value = st.orientation;
+    }
+    if (st.view) {
+      if (st.view.fitted) this.canvas._fitted = true;      // fits as soon as it has a size
+      else Object.assign(this.canvas, { panX: st.view.panX, panY: st.view.panY, zoom: st.view.zoom });
     }
 
     this._refreshDocSelect();
     this._refreshInspector();
+    if (this.embedded) {
+      this._docLabelEl.hidden = this.docSelectEl.hidden = this._newBtnEl.hidden = true;
+    }
 
     // A circuit editor asked to show its diagram: the first Diagram Editor takes it
     this._onShowCircuit = e => {
-      if (e.detail.diagramHandled) return;
+      if (this.embedded || e.detail.diagramHandled) return;
       e.detail.diagramHandled = true;
       const doc = DocumentStore.get(e.detail.diagramId);
       if (!doc) return;
@@ -89,6 +110,7 @@ export default class DiagramEditor {
     this.docBarEl.className = 'diagram-toolbar doc-bar';
 
     const label = document.createElement('span');
+    this._docLabelEl = label;
     label.textContent = 'Diagram:';
     label.style.color = 'var(--text-secondary)';
     this.docBarEl.appendChild(label);
@@ -107,6 +129,7 @@ export default class DiagramEditor {
     newBtn.title = 'Create new diagram';
     newBtn.addEventListener('click', () => this._createNewDiagram());
     this.docBarEl.appendChild(newBtn);
+    this._newBtnEl = newBtn;
 
     // View orientation (this panel only) and tensor order (the document's setting)
     const mkSelect = (labelText, options, title, onChange) => {
@@ -133,6 +156,20 @@ export default class DiagramEditor {
       order => { const d = DocumentStore.get(this.currentDocId); if (d) d.setTensorOrder(order); });
     this.orderSelectEl.title = Object.values(TENSOR_ORDERS).join('\n');
 
+    // Σ over basis indices (PQP's sums): a diagram setting
+    const sumLab = document.createElement('label');
+    sumLab.className = 'diagram-bar-field';
+    sumLab.title = 'Sum the diagram over a basis index: states and effects labelled with it range over |0⟩, |1⟩ (PQP: Σᵢ)';
+    sumLab.append('Σ over');
+    this.sumInputEl = document.createElement('input');
+    this.sumInputEl.type = 'text'; this.sumInputEl.className = 'diagram-sum-input'; this.sumInputEl.placeholder = '—';
+    this.sumInputEl.spellcheck = false;
+    const applySum = () => { const d = DocumentStore.get(this.currentDocId); if (d) d.setSumIndices(this.sumInputEl.value.split(/[\s,]+/)); this._refreshDerivedNote(); };
+    this.sumInputEl.addEventListener('change', applySum);
+    this.sumInputEl.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') this.sumInputEl.blur(); });
+    sumLab.appendChild(this.sumInputEl);
+    this.docBarEl.appendChild(sumLab);
+
     this.derivedNoteEl = document.createElement('span');
     this.derivedNoteEl.className = 'diagram-derived-note';
     this.docBarEl.appendChild(this.derivedNoteEl);
@@ -143,6 +180,22 @@ export default class DiagramEditor {
     // Listen for store changes (other editors may create/delete docs)
     this._onStoreChange = () => this._refreshDocSelect();
     DocumentStore.onListChange(this._onStoreChange);
+  }
+
+  /** Panel state for workbooks. */
+  getState() {
+    const c = this.canvas;
+    return { docId: this.currentDocId, orientation: c.orientation.id,
+      view: { panX: c.panX, panY: c.panY, zoom: c.zoom, fitted: !!c._fitted } };
+  }
+
+  /** Show and edit another document (used when embedded). */
+  showDocument(doc) {
+    if (!doc || doc.id === this.currentDocId) return;
+    this.currentDocId = doc.id;
+    this.canvas.setDocument(doc);
+    this._refreshDocSelect();
+    this._refreshInspector();
   }
 
   /* ---- Inspector: label + leg counts of the selected node ---- */
@@ -168,10 +221,10 @@ export default class DiagramEditor {
     });
     this.inspLabel.addEventListener('keydown', e => {
       e.stopPropagation();
-      if (e.key === 'Enter') { this.inspLabel.blur(); this.canvas.canvas.focus(); }
+      if (e.key === 'Enter') { this.inspLabel.blur(); this.canvas.canvas.focus({ preventScroll: true }); }
       if (e.key === 'Escape') {
         const n = this._inspNode(); this.inspLabel.value = n ? n.label : '';
-        this.inspLabel.blur(); this.canvas.canvas.focus();
+        this.inspLabel.blur(); this.canvas.canvas.focus({ preventScroll: true });
       }
     });
     this.inspLabelWrap.appendChild(this.inspLabel);
@@ -198,7 +251,57 @@ export default class DiagramEditor {
       (n, v) => this.canvas.setArity(n, n.inputs, Math.min(v, MAX_LEGS)));
     this._maxLegs = MAX_LEGS;
 
-    this.docBarEl.appendChild(el);
+    // Orientation (PQP's asymmetric shapes) and sliding round bends
+    this.inspOrient = document.createElement('span');
+    this.inspOrient.className = 'insp-field insp-orient';
+    const obtn = (text, title, fn) => {
+      const b = document.createElement('button'); b.textContent = text; b.title = title;
+      b.addEventListener('click', () => { const n = this._inspNode(); if (n) fn(n); });
+      this.inspOrient.appendChild(b); return b;
+    };
+    obtn('ᵀ', 'Transpose: rotate 180°', n => this.canvas.flip(n, 'T'));
+    obtn('†', 'Adjoint: reflect top↔bottom', n => this.canvas.flip(n, 'adj'));
+    obtn('‾', 'Conjugate: reflect left↔right', n => this.canvas.flip(n, 'conj'));
+    this.inspSlide = obtn('↷ Slide', 'Slide round the cup/cap it touches — it becomes its transpose (S)', n => {
+      const o = this.canvas.doc.slideOptions(n);
+      if (o.length) this.canvas.slide(n, o[0]);
+    });
+    el.appendChild(this.inspOrient);
+
+    // The doubled picture: thick (doubled) generators, pure vs general processes, leg types
+    this.inspThick = document.createElement('label');
+    this.inspThick.className = 'insp-field';
+    this.inspThickBox = document.createElement('input');
+    this.inspThickBox.type = 'checkbox';
+    this.inspThickBox.title = 'Doubled (thick): the quantum process f̂ = f̄ ⊗ f';
+    this.inspThickBox.addEventListener('change', () => { const n = this._inspNode(); if (n) this.canvas.setThick(n, this.inspThickBox.checked); });
+    this.inspThick.append(this.inspThickBox, 'Thick');
+    el.appendChild(this.inspThick);
+    this.inspProcess = document.createElement('select');
+    this.inspProcess.className = 'insp-select';
+    for (const [v, t] of [['pure', 'Pure (doubled)'], ['process', 'General process']]) {
+      const o = document.createElement('option'); o.value = v; o.textContent = t; this.inspProcess.appendChild(o);
+    }
+    this.inspProcess.title = 'Pure: the double of a symbol (f̄ ⊗ f). General: any quantum process, whose legs can be thin or thick';
+    this.inspProcess.addEventListener('change', () => { const n = this._inspNode(); if (n) this.canvas.setProcess(n, this.inspProcess.value === 'process'); });
+    el.appendChild(this.inspProcess);
+    this.inspLeg = document.createElement('span');
+    this.inspLeg.className = 'insp-field insp-orient';
+    this.inspLeg.append('Leg');
+    for (const [label, thick] of [['Thin', false], ['Thick', true]]) {
+      const b = document.createElement('button'); b.textContent = label; b.dataset.thick = thick;
+      b.title = thick ? 'A quantum leg (thick wire)' : 'A classical leg (thin wire)';
+      b.addEventListener('click', () => {
+        const sp = this.canvas.selectedPort, n = sp && this.canvas.nodes.get(sp.nodeId);
+        if (n) { const keep = { ...sp }; this.canvas.setLegThick(n, sp.dir, sp.port, thick); this.canvas.selectedPort = keep; this.canvas.draw(); this._refreshInspector(); }
+      });
+      this.inspLeg.appendChild(b);
+    }
+    el.appendChild(this.inspLeg);
+
+    // Floats over the canvas (mounted in the constructor), so selecting
+    // something never changes the toolbar layout or moves the canvas
+    el.classList.add('floating');
   }
 
   /** The single selected node (or the node of a selected leg), or null. */
@@ -217,13 +320,27 @@ export default class DiagramEditor {
     const sp = this.canvas.selectedPort;
     this.inspLabelWrap.hidden = !n;
     this.inspIn.wrap.hidden = this.inspOut.wrap.hidden = !(n && n.type.variableArity);
+    this.inspector.hidden = !n && sel.length < 2;
+    if (!n) this.inspOrient.hidden = this.inspThick.hidden = this.inspProcess.hidden = this.inspLeg.hidden = true;
     if (!n) {
       this.inspType.textContent = sel.length > 1 ? `${sel.length} nodes selected` : '';
       return;
     }
     this.inspType.textContent = sp && sel.length === 0
       ? `${n.type.label} — ${sp.dir === 'in' ? 'input' : 'output'} leg selected (🗑 to remove)`
-      : n.type.label;
+      : n.isOrientable() ? `${n.type.label} · ${orientedName(n)}` : n.type.label;
+    const legView = !!(sp && sel.length === 0);
+    this.inspOrient.hidden = !(n.isOrientable() && !legView);
+    this.inspSlide.hidden = !this.canvas.doc.slideOptions(n).length;
+    this.inspThick.hidden = !(n.isDoubleable() && !legView);
+    this.inspThickBox.checked = !!n.thick;
+    this.inspProcess.hidden = !(n.thick && n.isOrientable() && !legView);
+    this.inspProcess.value = n.process ? 'process' : 'pure';
+    this.inspLeg.hidden = !(legView && n.hasLegTypes());
+    if (!this.inspLeg.hidden) {
+      const t = n.portIsThick(sp.dir, sp.port);
+      for (const b of this.inspLeg.querySelectorAll('button')) b.classList.toggle('on', (b.dataset.thick === 'true') === t);
+    }
     if (document.activeElement !== this.inspLabel || this._inspNodeId !== n.id) {
       this.inspLabel.value = n.label;
     }
@@ -239,12 +356,14 @@ export default class DiagramEditor {
   }
 
   _refreshDocSelect() {
-    const docs = DocumentStore.list('diagram');
+    // Proof steps are edited in the equation editor; listing them here would
+    // let two panels edit one step at once (so they are left out)
+    const docs = DocumentStore.list('diagram').filter(d => !d.ownerProof || d.id === this.currentDocId);
     this.docSelectEl.innerHTML = '';
     for (const d of docs) {
       const opt = document.createElement('option');
       opt.value = d.id;
-      opt.textContent = d.name;
+      opt.textContent = DocumentStore.displayName(d);
       this.docSelectEl.appendChild(opt);
     }
     this.docSelectEl.value = this.currentDocId;
@@ -255,6 +374,7 @@ export default class DiagramEditor {
     const doc = DocumentStore.get(this.currentDocId);
     const src = doc && doc.derivedFrom ? DocumentStore.get(doc.derivedFrom) : null;
     if (doc) this.orderSelectEl.value = doc.tensorOrder || 'big-endian';
+    if (doc && document.activeElement !== this.sumInputEl) this.sumInputEl.value = (doc.sumIndices || []).join(', ');
     this.orderSelectEl.disabled = !!src;   // a generated diagram follows its circuit
     this.derivedNoteEl.textContent = src ? `Generated from circuit “${src.name}” — edits are replaced when it changes` : '';
     this.derivedNoteEl.hidden = !src;
@@ -279,32 +399,6 @@ export default class DiagramEditor {
     this._refreshDocSelect();
   }
 
-  /**
-   * Creates a small default CNOT-style diagram to provide immediate
-   * visual feedback that the editor is working.
-   */
-  _loadDefaultDiagram() {
-    const NT = NODE_TYPES;
-    // CNOT gate from ZX-calculus: Z-spider (control, left) and X-spider
-    // (target, right) side by side, joined by a horizontal leg.
-    // Wire order follows port positions, so this reads as CNOT (Category B).
-    const z1 = this.canvas.addNode(NT.Z_SPIDER, 200, 170);
-    z1.inputs = 1; z1.outputs = 2;
-    const x1 = this.canvas.addNode(NT.X_SPIDER, 270, 170);
-    x1.inputs = 2; x1.outputs = 1;
-
-    // Leg: z1's right output → x1's left input
-    this.canvas.wires.push(new DiagramWire(z1.id, 1, x1.id, 0));
-
-    // Bell state: a cup produces |00⟩+|11⟩
-    const cup1 = this.canvas.addNode(NT.CUP, 400, 170);
-
-    // Hadamard gate
-    const h1 = this.canvas.addNode(NT.HADAMARD, 520, 170);
-
-    this.canvas.draw();
-  }
-
   _buildPalette() {
     this.paletteEl = document.createElement('div');
     this.paletteEl.className = 'diagram-palette';
@@ -323,7 +417,11 @@ export default class DiagramEditor {
       swatch.style.borderColor = t.color;
       swatch.style.background = t.color;
       // Adjust swatch shape per type
-      if (t.shape === 'box' || t.shape === 'morphbox') swatch.style.borderRadius = '3px';
+      if (t.shape === 'box') swatch.style.borderRadius = '3px';
+      else if (t.shape === 'morphbox') {
+        swatch.style.borderRadius = '0'; swatch.style.border = 'none'; swatch.style.width = '22px'; swatch.style.height = '13px';
+        swatch.style.clipPath = 'polygon(0 0,100% 0,68% 100%,0 100%)';
+      }
       else if (t.shape === 'cup') {
         swatch.style.background = 'transparent';
         swatch.style.borderBottom = `2px solid ${t.color}`;
@@ -346,21 +444,19 @@ export default class DiagramEditor {
         swatch.style.textAlign = 'center';
         swatch.style.lineHeight = '18px';
         swatch.style.border = 'none';
+      } else if (t.shape === 'dot') {
+        swatch.style.width = '11px'; swatch.style.height = '11px'; swatch.style.margin = '0 4px';
+        swatch.style.background = '#f4f4f4'; swatch.style.borderColor = '#1e1e1e'; swatch.style.borderWidth = '1.5px';
+      } else if (t.shape === 'ground') {
+        swatch.style.border = 'none'; swatch.style.background = 'transparent';
+        swatch.textContent = '⏚'; swatch.style.color = t.color; swatch.style.fontSize = '16px'; swatch.style.lineHeight = '18px'; swatch.style.textAlign = 'center';
       } else if (t.shape === 'wire') {
         swatch.style.width = '2px'; swatch.style.borderRadius = '0';
         swatch.style.border = 'none'; swatch.style.margin = '0 8px';
       } else if (t.shape === 'triangle-down' || t.shape === 'triangle-up') {
-        swatch.style.width = '0'; swatch.style.height = '0';
-        swatch.style.background = 'transparent'; swatch.style.border = 'none';
-        if (t.shape === 'triangle-down') {
-          swatch.style.borderLeft = '9px solid transparent';
-          swatch.style.borderRight = '9px solid transparent';
-          swatch.style.borderTop = `14px solid ${t.color}`;
-        } else {
-          swatch.style.borderLeft = '9px solid transparent';
-          swatch.style.borderRight = '9px solid transparent';
-          swatch.style.borderBottom = `14px solid ${t.color}`;
-        }
+        swatch.style.border = 'none'; swatch.style.borderRadius = '0';
+        swatch.style.clipPath = t.shape === 'triangle-down'
+          ? 'polygon(0 0,100% 0,50% 100%,0 35%)' : 'polygon(0 100%,100% 100%,50% 0,0 65%)';
       }
       item.appendChild(swatch);
 

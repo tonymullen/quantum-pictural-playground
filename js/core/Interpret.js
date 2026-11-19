@@ -20,8 +20,8 @@ import Config from './Config.js';
  * @returns {Tensor|null} — null if symbolic (no concrete matrix)
  */
 export function generatorTensor(node) {
-  // If the node carries an explicit tensor, use it
-  if (node.tensor) return node.tensor;
+  // If the node carries an explicit tensor, use it — in the node's orientation
+  if (node.tensor) return orientTensor(node.tensor, node.flip);
 
   const nIn = node.totalIn, nOut = node.totalOut;
   const dim = 2; // qubit dimension
@@ -32,9 +32,9 @@ export function generatorTensor(node) {
 
   switch (node.kind) {
     case GenKind.Z_SPIDER:
-      return zSpiderTensor(nIn, nOut, node.phase || Phase.ZERO);
+      return zSpiderTensor(nIn, nOut, _phase(node));
     case GenKind.X_SPIDER:
-      return xSpiderTensor(nIn, nOut, node.phase || Phase.ZERO);
+      return xSpiderTensor(nIn, nOut, _phase(node));
     case GenKind.HADAMARD:
       return hadamardTensor();
     case GenKind.CUP:
@@ -46,7 +46,11 @@ export function generatorTensor(node) {
     case GenKind.IDENTITY:
       return Tensor.identity(2);
     case GenKind.STATE:
-    case GenKind.EFFECT:
+    case GenKind.EFFECT: {
+      // A basis label (0, 1, +, −) is that basis vector; anything else is symbolic
+      const b = basisTensor(node.label, node);
+      return b ? orientTensor(b, node.flip) : null;
+    }
     case GenKind.MORPHISM:
     case GenKind.SCALAR:
       // These are symbolic unless a tensor is attached
@@ -54,6 +58,12 @@ export function generatorTensor(node) {
     default:
       return null;
   }
+}
+
+/** A spider's phase; the conjugate copy of a doubled spider has the opposite phase. */
+function _phase(node) {
+  const p = node.phase || Phase.ZERO;
+  return node.conj ? p.neg() : p;
 }
 
 /**
@@ -110,4 +120,33 @@ function swapTensor() {
   ]);
 }
 
-export default { generatorTensor };
+const _s2 = Math.SQRT1_2;
+const BASIS = { '0': [1, 0], '1': [0, 1], '+': [_s2, _s2], '-': [_s2, -_s2], '−': [_s2, -_s2] };
+
+/**
+ * The basis vector for a state/effect label, in the node's canonical shape
+ * (a ket for a state, a bra for an effect; a flipped node is oriented after).
+ * Returns null if the label is not a basis label.
+ */
+export function basisTensor(label, node) {
+  const v = BASIS[(label || '').trim()];
+  if (!v) return null;
+  const canonicalIsState = (node.totalOut === 1) !== !!(node.flip && node.flip.v);
+  return canonicalIsState
+    ? Tensor.fromRows([[C.real(v[0])], [C.real(v[1])]])
+    : Tensor.fromRows([[C.real(v[0]), C.real(v[1])]]);
+}
+
+/**
+ * A symbol's matrix in a drawn orientation (PQP's asymmetric boxes):
+ *   reflected top↔bottom (v) → adjoint f†;  left↔right (h) → conjugate f̄;
+ *   both → transpose fᵀ.
+ */
+export function orientTensor(M, flip) {
+  if (!flip || (!flip.v && !flip.h)) return M;
+  if (flip.v && flip.h) return Tensor.dagger(new Tensor(M.rows, M.cols, M.d.map(C.conj)));   // transpose
+  if (flip.v) return Tensor.dagger(M);
+  return new Tensor(M.rows, M.cols, M.d.map(C.conj));
+}
+
+export default { generatorTensor, orientTensor };

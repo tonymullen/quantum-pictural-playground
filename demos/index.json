@@ -1,0 +1,74 @@
+{
+ "demos": [
+  {
+   "id": "getting-started",
+   "name": "Getting started: the Bell state",
+   "description": "One state, four ways. The circuit (H, then CNOT, on |00⟩) prepares the Bell state; the Diagram Editor shows the same circuit as a PQP diagram; the proof simplifies that diagram, one checked rewrite at a time, to a cup; and the Dirac editor writes it out — click a saved formula to check another way of writing the same state. Edit the circuit and its diagram and Dirac follow (the proof keeps its own copies).",
+   "summary": {
+    "circuits": 1,
+    "diagrams": 0,
+    "proofs": 1
+   }
+  },
+  {
+   "id": "spider-rules",
+   "name": "Spider rules",
+   "description": "The basic ZX rewrites as checked proofs: spider fusion, colour change, π-copy, and identity removal. Each uses symbolic phases, checked for random values.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 4
+   }
+  },
+  {
+   "id": "snake-equations",
+   "name": "Snake equations",
+   "description": "A cup followed by a cap straightens to a plain wire — the snake (yanking) equation — and a box f slides through the bend. f is symbolic: the check holds for random choices of f.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 2
+   }
+  },
+  {
+   "id": "sliding-round-bends",
+   "name": "Sliding round bends",
+   "description": "Proposition 4.30 of Picturing Quantum Processes: a box slides round a cup or a cap and comes out as its transpose (drawn rotated 180°). Each step here was made with the slide handle (select a box on a cup or cap leg and press S), and every step is checked for a random box. The necklace strings three boxes along a snake, slides them onto one strand, and yanks it straight.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 3
+   }
+  },
+  {
+   "id": "measurement-and-discarding",
+   "name": "Measurement and discarding",
+   "description": "The doubled picture of Picturing Quantum Processes: thick wires are quantum, thin wires classical. White dots with thin and thick legs measure (thick in, thin out), encode (thin in, thick out), copy and delete; ⏚ discards. The proofs: measuring then deleting is discarding, encoding then discarding is deleting, measuring then encoding is decoherence, discarding a pure state gives the Born rule, and a doubled unitary is causal.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 5
+   }
+  },
+  {
+   "id": "causality",
+   "name": "Causality",
+   "description": "Proofs that need assumptions and sums (PQP ch. 8). A proof can assume things about its symbols — Φ causal, U unitary — shown in the bar above the steps; every check then uses random values satisfying them. Composing causal processes is causal; measuring is causal (a sum over a basis, Σᵢ); a unitary undoes itself; a doubled isometry is causal; and Σᵢ |i⟩⟨i| is the identity.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 5
+   }
+  },
+  {
+   "id": "ghz-state",
+   "name": "GHZ state",
+   "description": "Three qubits: H, then a staircase of CNOTs, prepares (|000⟩ + |111⟩)/√2. Compare the circuit with its PQP diagram — each CNOT is a green and a red spider joined by a leg.",
+   "summary": {
+    "circuits": 1,
+    "diagrams": 0,
+    "proofs": 0
+   }
+  }
+ ]
+}

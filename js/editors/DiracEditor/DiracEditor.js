@@ -9,9 +9,10 @@ import SyncController from '../../core/SyncController.js';
 export default class DiracEditor {
   static get typeName() { return 'Dirac Formula Editor'; }
 
-  constructor(containerEl) {
+  constructor(containerEl, options = {}) {
+    const st = options.state || {};
     this.container = containerEl;
-    this.formulas = [];  // saved formulas
+    this.formulas = Array.isArray(st.formulas) ? [...st.formulas] : [];  // saved formulas
     this.syncController = null;
     this.linkedDocId = null;
     this.el = document.createElement('div');
@@ -22,7 +23,14 @@ export default class DiracEditor {
     this._buildSyncBar();
     this._buildToolbar();
     this._buildBody();
-    this._linkToFirstDoc();
+    this._renderList();
+    if (st.docId && DocumentStore.get(st.docId)) {
+      // A saved expression is restored as it was; otherwise generate one
+      this._linkToDoc(st.docId, st.text ? { text: st.text, authored: !!st.authored } : null);
+      this._refreshDocSelect();
+    } else {
+      this._linkToFirstDoc();
+    }
     this._render();
 
     // A circuit editor asked to be linked: the first Dirac editor takes it
@@ -67,16 +75,27 @@ export default class DiracEditor {
   }
 
   _refreshDocSelect() {
-    const docs = DocumentStore.list();
     const prev = this.docSelectEl.value;
     this.docSelectEl.innerHTML = '';
     const noneOpt = document.createElement('option');
     noneOpt.value = ''; noneOpt.textContent = '(none)';
     this.docSelectEl.appendChild(noneOpt);
-    for (const d of docs) {
-      const opt = document.createElement('option');
-      opt.value = d.id; opt.textContent = d.kind === 'circuit' ? `Circuit: ${d.name}` : d.name;
-      this.docSelectEl.appendChild(opt);
+    // Grouped: circuits first, then diagrams (generated ones say so)
+    const groups = [
+      ['Circuits', DocumentStore.list('circuit')],
+      ['Diagrams', DocumentStore.list('diagram').filter(d => !d.ownerProof)],
+      ['Proof steps', DocumentStore.list('diagram').filter(d => d.ownerProof)],
+    ];
+    for (const [label, docs] of groups) {
+      if (!docs.length) continue;
+      const group = document.createElement('optgroup');
+      group.label = label;
+      for (const d of docs) {
+        const opt = document.createElement('option');
+        opt.value = d.id; opt.textContent = DocumentStore.displayName(d);
+        group.appendChild(opt);
+      }
+      this.docSelectEl.appendChild(group);
     }
     this.docSelectEl.value = this.linkedDocId || prev || '';
   }
@@ -98,7 +117,18 @@ export default class DiracEditor {
    * saved-formula list rather than discarded. Re-linking the same document
    * does nothing (so it never replaces work on the current document).
    */
-  _linkToDoc(docId) {
+  /** Panel state for workbooks: what is linked, the expression, saved formulas. */
+  getState() {
+    return { docId: this.linkedDocId, text: this.textarea.value,
+      authored: !!(this.syncController && this.syncController.diracAuthored), formulas: [...this.formulas] };
+  }
+
+  /**
+   * @param {string|null} docId
+   * @param {{text: string, authored: boolean}|null} [restore] — a saved expression
+   *   to show instead of generating one
+   */
+  _linkToDoc(docId, restore = null) {
     if (docId && docId === this.linkedDocId && this.syncController) return;
     const prev = this.textarea ? this.textarea.value.trim() : '';
     const wasAuthored = !!(this.syncController && this.syncController.diracAuthored);
@@ -113,10 +143,19 @@ export default class DiracEditor {
         this._renderList();
       }
       this._updateSyncBar();
-      this._generateInto();   // its verify refreshes the bar
+      if (restore) this._restoreInto(restore);
+      else this._generateInto();   // its verify refreshes the bar
       return;
     }
     this._updateSyncBar();
+  }
+
+  /** Show a saved expression (from a workbook) and verify it now. */
+  _restoreInto({ text, authored }) {
+    const sc = this.syncController;
+    this.textarea.value = text;
+    this._render();
+    if (text) { sc.onDiracChanged(text.trim(), false); sc.diracAuthored = authored; sc.verifyNow(); }
   }
 
   /** Put the linked document's generated expression in the textarea and verify it now. */

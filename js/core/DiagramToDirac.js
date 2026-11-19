@@ -15,6 +15,8 @@ import diagramToIR from './DiagramToIR.js';
 import contractIR from './ContractIR.js';
 import classify from './Classify.js';
 import symbolicPrint from './SymbolicPrint.js';
+import Tensor from './Tensor.js';
+import { scalarLabel } from './CircuitToIR.js';
 
 /**
  * @param {import('../editors/DiagramEditor/DiagramDocument.js').default} doc
@@ -51,7 +53,6 @@ export function irToDirac(ir) {
 
     if (isScalar) {
       scalarPrefactor = C.mul(scalarPrefactor, tensor.get(0, 0));
-      infoParts.push('Scalar: ' + C.str(tensor.get(0, 0)));
       continue;
     }
 
@@ -63,6 +64,18 @@ export function irToDirac(ir) {
     parts.push(compResult);
     if (compResult.info) infoParts.push(compResult.info);
   }
+
+  // Fold a leftover scalar into a factor that is printed as a sum of basis
+  // terms, so √2·(½|00⟩⟨00| + …) becomes (1/√2)|00⟩⟨00| + …
+  const numeric = parts.find(p => p.tensor);
+  if (numeric && !C.eq(scalarPrefactor, C.ONE) && !C.isZero(scalarPrefactor)) {
+    const { latex, nTerms } = _tensorToLatex(Tensor.scale(scalarPrefactor, numeric.tensor));
+    numeric.latex = latex;
+    numeric.isSum = nTerms > 1;
+    scalarPrefactor = C.ONE;
+  }
+  if (!C.eq(scalarPrefactor, C.ONE) && parts.length > 0)
+    infoParts.push(`Overall scalar ${scalarLabel(scalarPrefactor)}`);
 
   const prefactorIsOne = C.eq(scalarPrefactor, C.ONE);
   const wrap = p => (p.isSum && (parts.length > 1 || !prefactorIsOne)) ? `(${p.latex})` : p.latex;
@@ -181,22 +194,18 @@ function _translateComponent(tensor, cl, comp) {
   }
   switch (cl.category) {
     case 'B': {
-      const scalar = cl.phase || C.ONE; // tensor = scalar · named form
-      let info = 'This is ' + cl.name;
-      if (!C.eq(scalar, C.ONE)) {
-        const isPhase = Math.abs(C.abs(scalar) - 1) < 1e-10;
-        info += isPhase ? ` (up to phase ${C.str(scalar)})` : ` (scalar ${C.str(scalar)})`;
-      }
-      return { latex: cl.latex, isSum: false, info, category: 'B', reason: info, scalar };
+      // tensor = scalar · named form; the scalar joins the overall prefactor
+      const info = 'This is ' + cl.name;
+      return { latex: cl.latex, isSum: false, info, category: 'B', reason: info, scalar: cl.phase || C.ONE };
     }
     case 'C': {
       const { latex, nTerms } = _tensorToLatex(tensor);
-      return { latex, isSum: nTerms > 1, info: cl.reason, category: 'C', reason: cl.reason };
+      return { latex, isSum: nTerms > 1, info: cl.reason, category: 'C', reason: cl.reason, tensor };
     }
     case 'A':
     default: {
       const { latex, nTerms } = _tensorToLatex(tensor);
-      return { latex, isSum: nTerms > 1, info: '', category: 'A', reason: cl.reason };
+      return { latex, isSum: nTerms > 1, info: '', category: 'A', reason: cl.reason, tensor };
     }
   }
 }

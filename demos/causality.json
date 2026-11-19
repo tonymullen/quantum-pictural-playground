@@ -1,0 +1,838 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "Causality",
+ "description": "Proofs that need assumptions and sums (PQP ch. 8). A proof can assume things about its symbols — Φ causal, U unitary — shown in the bar above the steps; every check then uses random values satisfying them. Composing causal processes is causal; measuring is causal (a sum over a basis, Σᵢ); a unitary undoes itself; a doubled isometry is causal; and Σᵢ |i⟩⟨i| is the identity.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 0,
+  "proofs": 5
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-94",
+   "data": {
+    "name": "Composing causal processes step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-30",
+    "nodes": [
+     {
+      "id": "node-239",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 330,
+      "label": "Φ",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true,
+      "process": true,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        true,
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-240",
+      "typeKey": "morphism",
+      "x": 188,
+      "y": 220,
+      "label": "Ψ",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true,
+      "process": true,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        true
+       ]
+      }
+     },
+     {
+      "id": "node-241",
+      "typeKey": "discard",
+      "x": 188,
+      "y": 130,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-242",
+      "typeKey": "dot",
+      "x": 250,
+      "y": 230,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-136",
+      "fromNodeId": "node-239",
+      "fromPort": 0,
+      "toNodeId": "node-240",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-137",
+      "fromNodeId": "node-240",
+      "fromPort": 0,
+      "toNodeId": "node-241",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-138",
+      "fromNodeId": "node-239",
+      "fromPort": 1,
+      "toNodeId": "node-242",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-95",
+   "data": {
+    "name": "Composing causal processes step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-30",
+    "nodes": [
+     {
+      "id": "node-243",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 330,
+      "label": "Φ",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true,
+      "process": true,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        true,
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-244",
+      "typeKey": "discard",
+      "x": 188,
+      "y": 230,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-245",
+      "typeKey": "dot",
+      "x": 250,
+      "y": 230,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-139",
+      "fromNodeId": "node-243",
+      "fromPort": 0,
+      "toNodeId": "node-244",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-140",
+      "fromNodeId": "node-243",
+      "fromPort": 1,
+      "toNodeId": "node-245",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-96",
+   "data": {
+    "name": "Composing causal processes step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-30",
+    "nodes": [
+     {
+      "id": "node-246",
+      "typeKey": "discard",
+      "x": 200,
+      "y": 280,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-97",
+   "data": {
+    "name": "Measuring is causal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-31",
+    "nodes": [
+     {
+      "id": "node-247",
+      "typeKey": "dot",
+      "x": 200,
+      "y": 240,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-248",
+      "typeKey": "dot",
+      "x": 200,
+      "y": 150,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-141",
+      "fromNodeId": "node-247",
+      "fromPort": 0,
+      "toNodeId": "node-248",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-98",
+   "data": {
+    "name": "Measuring is causal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [
+     "i"
+    ],
+    "derivedFrom": null,
+    "ownerProof": "proof-31",
+    "nodes": [
+     {
+      "id": "node-249",
+      "typeKey": "dot",
+      "x": 200,
+      "y": 240,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-250",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 150,
+      "label": "i",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-142",
+      "fromNodeId": "node-249",
+      "fromPort": 0,
+      "toNodeId": "node-250",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-99",
+   "data": {
+    "name": "Measuring is causal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [
+     "i"
+    ],
+    "derivedFrom": null,
+    "ownerProof": "proof-31",
+    "nodes": [
+     {
+      "id": "node-251",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 190,
+      "label": "i",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-100",
+   "data": {
+    "name": "Measuring is causal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-31",
+    "nodes": [
+     {
+      "id": "node-252",
+      "typeKey": "discard",
+      "x": 200,
+      "y": 190,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-101",
+   "data": {
+    "name": "A unitary undoes itself step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-32",
+    "nodes": [
+     {
+      "id": "node-253",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 240,
+      "label": "U",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-254",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 140,
+      "label": "U",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "flip": {
+       "v": true,
+       "h": false
+      }
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-143",
+      "fromNodeId": "node-253",
+      "fromPort": 0,
+      "toNodeId": "node-254",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-102",
+   "data": {
+    "name": "A unitary undoes itself step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-32",
+    "nodes": [
+     {
+      "id": "node-255",
+      "typeKey": "identity",
+      "x": 200,
+      "y": 190,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-103",
+   "data": {
+    "name": "A doubled isometry is causal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-33",
+    "nodes": [
+     {
+      "id": "node-256",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 240,
+      "label": "V",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-257",
+      "typeKey": "discard",
+      "x": 188,
+      "y": 140,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-258",
+      "typeKey": "discard",
+      "x": 212,
+      "y": 140,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-144",
+      "fromNodeId": "node-256",
+      "fromPort": 0,
+      "toNodeId": "node-257",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-145",
+      "fromNodeId": "node-256",
+      "fromPort": 1,
+      "toNodeId": "node-258",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-104",
+   "data": {
+    "name": "A doubled isometry is causal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-33",
+    "nodes": [
+     {
+      "id": "node-259",
+      "typeKey": "discard",
+      "x": 200,
+      "y": 190,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-105",
+   "data": {
+    "name": "Resolution of the identity step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [
+     "i"
+    ],
+    "derivedFrom": null,
+    "ownerProof": "proof-34",
+    "nodes": [
+     {
+      "id": "node-260",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 240,
+      "label": "i",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-261",
+      "typeKey": "state",
+      "x": 200,
+      "y": 140,
+      "label": "i",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-106",
+   "data": {
+    "name": "Resolution of the identity step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-34",
+    "nodes": [
+     {
+      "id": "node-262",
+      "typeKey": "identity",
+      "x": 200,
+      "y": 190,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-30",
+   "data": {
+    "name": "Composing causal processes",
+    "assumptions": {
+     "Φ": "causal",
+     "Ψ": "causal"
+    },
+    "steps": [
+     {
+      "diagram": "doc-94",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-95",
+      "relation": "=",
+      "note": "Ψ is causal",
+      "source": null
+     },
+     {
+      "diagram": "doc-96",
+      "relation": "=",
+      "note": "Φ is causal",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-31",
+   "data": {
+    "name": "Measuring is causal",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-97",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-98",
+      "relation": "=",
+      "note": "delete = Σᵢ ⟨i|  (8.14)",
+      "source": null
+     },
+     {
+      "diagram": "doc-99",
+      "relation": "=",
+      "note": "measuring then ⟨i| = doubled ⟨i|  (8.6)",
+      "source": null
+     },
+     {
+      "diagram": "doc-100",
+      "relation": "=",
+      "note": "Σᵢ doubled ⟨i| = ⏚  (5.37)",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-32",
+   "data": {
+    "name": "A unitary undoes itself",
+    "assumptions": {
+     "U": "unitary"
+    },
+    "steps": [
+     {
+      "diagram": "doc-101",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-102",
+      "relation": "=",
+      "note": "U†U = 1",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-33",
+   "data": {
+    "name": "A doubled isometry is causal",
+    "assumptions": {
+     "V": "isometry"
+    },
+    "steps": [
+     {
+      "diagram": "doc-103",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-104",
+      "relation": "=",
+      "note": "V̂ is causal since V†V = 1",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-34",
+   "data": {
+    "name": "Resolution of the identity",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-105",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-106",
+      "relation": "=",
+      "note": "Σᵢ |i⟩⟨i| = 1",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "leaf",
+  "editorType": "Diagram Equation Editor",
+  "state": {
+   "proofId": "proof-30",
+   "selected": 0
+  }
+ }
+}

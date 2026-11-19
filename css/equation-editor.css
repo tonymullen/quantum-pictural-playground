@@ -1,0 +1,107 @@
+/* ===== Diagram Equation Editor ===== */
+
+.equation-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.equation-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  min-height: 116px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  outline: none;
+}
+
+.equation-card {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.equation-card canvas { border-radius: 3px; display: block; }
+.equation-card:hover { border-color: var(--border-color); }
+.equation-card.selected { border-color: var(--accent); }
+.equation-card-caption {
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 112px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.equation-card.selected .equation-card-caption { color: var(--text-bright); }
+
+.equation-relation {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 74px;
+}
+.equation-rel-select {
+  font-size: 18px;
+  color: var(--text-bright);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+.equation-badge { font-size: 16px; font-weight: bold; line-height: 1; cursor: help; }
+.equation-badge.ok { color: #6a9955; }
+.equation-badge.fail { color: #f44747; }
+.equation-badge.unknown { color: #cca700; }
+.equation-note {
+  width: 70px;
+  font-size: 10px;
+  text-align: center;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+.equation-note:hover, .equation-note:focus { border-color: var(--border-color); outline: none; }
+
+.equation-step-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.equation-summary {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.equation-summary.ok { color: #6a9955; }
+.equation-summary.fail { color: #f44747; }
+.equation-summary.unknown { color: #cca700; }
+
+.equation-assumptions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 4px 10px; font-size: 11px;
+  background: var(--bg-tertiary); border-bottom: 1px solid var(--border-color);
+}
+.equation-dim { color: var(--text-secondary); font-style: italic; }
+.equation-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 4px 1px 8px; border-radius: 10px;
+  color: #cca700; border: 1px solid #6b5a10; background: rgba(204, 167, 0, 0.08);
+}
+.equation-chip button { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 10px; padding: 0 2px; }
+.equation-chip button:hover { color: #fff; }

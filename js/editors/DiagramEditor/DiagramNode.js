@@ -33,6 +33,12 @@ export function uprightText(ctx, text, x, y) {
 
 let _nodeId = 0;
 
+/** Node types with an orientation (see DiagramNode.flip). */
+export const ORIENTABLE = new Set(['morphism', 'state', 'effect']);
+/** Node types that can be doubled (drawn thick: PQP's double(f) = f̄ ⊗ f). */
+export const DOUBLEABLE = new Set(['z-spider', 'x-spider', 'hadamard', 'morphism', 'state', 'effect',
+  'cup', 'cap', 'swap', 'identity', 'scalar']);
+
 export const NODE_TYPES = {
   Z_SPIDER:  { key: 'z-spider',  label: 'Z Spider',  color: '#6a9955', shape: 'circle',   defIn: 1, defOut: 1, variableArity: true },
   X_SPIDER:  { key: 'x-spider',  label: 'X Spider',  color: '#ce4a4a', shape: 'circle',   defIn: 1, defOut: 1, variableArity: true },
@@ -45,6 +51,11 @@ export const NODE_TYPES = {
   EFFECT:    { key: 'effect',    label: 'Effect',     color: '#c586c0', shape: 'triangle-up',   defIn: 1, defOut: 0, defLabel: 'φ' },
   SCALAR:    { key: 'scalar',    label: 'Scalar',     color: '#c586c0', shape: 'scalar',   defIn: 0, defOut: 0, defLabel: 's' },
   IDENTITY:  { key: 'identity',  label: 'Wire',       color: '#b0b0b0', shape: 'wire',     defIn: 1, defOut: 1 },
+  // The doubled (CPM / cq) picture of PQP: a white dot is the classical spider
+  // (copy, delete, compare) — its legs may be thin (classical) or thick (quantum),
+  // which also gives measure (thick in, thin out) and encode (thin in, thick out).
+  DOT:       { key: 'dot',       label: 'White dot (classical spider)', color: '#f4f4f4', shape: 'dot', defIn: 1, defOut: 1, variableArity: true },
+  DISCARD:   { key: 'discard',   label: 'Discard (⏚)', color: '#e0e0e0', shape: 'ground', defIn: 1, defOut: 0 },
 };
 
 export default class DiagramNode {
@@ -63,6 +74,15 @@ export default class DiagramNode {
     this.tensor = null;        // Tensor instance: concrete complex matrix
     this.symbolicForm = null;  // string: symbolic expression for the IR
     this.provenance = null;    // string: opaque cross-highlighting tag
+    // Orientation (PQP's asymmetric shapes): v = reflected top↔bottom (adjoint †),
+    // h = reflected left↔right (conjugate); both = rotated 180° (transpose ᵀ).
+    this.flip = { v: false, h: false };
+    // The doubled picture: thick = doubled (quantum, f̂ = f̄ ⊗ f). A thick box,
+    // state or effect may instead be a general process (process = true), whose
+    // legs (like a white dot's) can each be thin or thick: legThick.in/out[i].
+    this.thick = false;
+    this.process = false;
+    this.legThick = { in: [], out: [] };
     this.portXOffsets = null;  // number[] | null: explicit x offset of port k (in & out),
                                // e.g. a circuit box whose ports sit on their qubits' wires
   }
@@ -74,6 +94,8 @@ export default class DiagramNode {
     if (s === 'swap') return 20;
     if (s === 'triangle-down' || s === 'triangle-up') return 18;
     if (s === 'scalar') return 14;
+    if (s === 'dot') return 8;
+    if (s === 'ground') return 12;
     if (s === 'wire') return 14;
     return 20; // spiders
   }
@@ -91,17 +113,56 @@ export default class DiagramNode {
     return dx * dx + dy * dy <= r * r; // circles & scalar
   }
 
+  /** Boxes, states and effects have an orientation (f, fᵀ, f†, f̄); spiders etc. are symmetric. */
+  isOrientable() { return ORIENTABLE.has(this.type.key); }
+
+  /**
+   * The node's symbol is "label + canonical shape": an adjoint or transpose
+   * swaps inputs and outputs, so a state drawn as the adjoint of an effect φ
+   * is the same symbol as the effect φ.
+   */
+  canonicalArity() {
+    return this.flip && this.flip.v ? { inputs: this.outputs, outputs: this.inputs } : { inputs: this.inputs, outputs: this.outputs };
+  }
+
   /** Width of a morphism box: wide enough for all its ports. */
   _boxWidth() {
     if (this.portXOffsets && this.portXOffsets.length) {
       const o = this.portXOffsets;
       return Math.max(36, 2 * Math.max(...o.map(Math.abs)) + 30);
     }
-    return Math.max(this.radius * 2, 36, (Math.max(this.inputs, this.outputs) - 1) * 24 + 20);
+    // PQP boxes are wider than tall
+    return Math.max(this.radius * 2.6, (Math.max(this.inputs, this.outputs) - 1) * 24 + 30);
   }
 
-  /** Z and X spiders: their legs are interchangeable (flexsymmetry). */
-  isSpider() { return this.type.key === 'z-spider' || this.type.key === 'x-spider'; }
+  /** Spiders (Z, X, and the white classical dot): their legs are interchangeable. */
+  isSpider() { return this.type.key === 'z-spider' || this.type.key === 'x-spider' || this.type.key === 'dot'; }
+
+  /** Is this port thick (a quantum system in the doubled picture)? */
+  portIsThick(dir, i) {
+    const k = this.type.key;
+    if (k === 'discard') return dir === 'in';
+    if (k === 'dot' || this.isMixed()) {
+      const v = this.legThick && this.legThick[dir] ? this.legThick[dir][i] : undefined;
+      return v === undefined || v === null ? k !== 'dot' : !!v;   // dots default thin, processes thick
+    }
+    return !!this.thick;
+  }
+
+  /** A general process (thick box/state/effect) — its legs can be thin or thick. */
+  isMixed() { return !!(this.thick && this.process && ORIENTABLE.has(this.type.key)); }
+
+  /** Can each leg be chosen thin or thick? (white dots, general processes) */
+  hasLegTypes() { return this.type.key === 'dot' || this.isMixed(); }
+
+  isDoubleable() { return DOUBLEABLE.has(this.type.key); }
+
+  /** Does any port carry a thick wire? */
+  hasThick() {
+    for (let i = 0; i < this.inputs; i++) if (this.portIsThick('in', i)) return true;
+    for (let i = 0; i < this.outputs; i++) if (this.portIsThick('out', i)) return true;
+    return false;
+  }
 
   /** Drawn with side legs when wired to another flexible node: spiders, and
    *  Hadamard boxes (H is symmetric, so e.g. the H on a CZ's leg sits in line). */
@@ -147,7 +208,7 @@ export default class DiagramNode {
       ctx.beginPath(); ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.fillStyle = this.type.color; ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 2; ctx.setLineDash([]);
+    ctx.lineWidth = this.thick ? 4 : 2; ctx.setLineDash([]);   // PQP: doubled things are drawn thick
 
     if (s === 'circle') {
       ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
@@ -156,21 +217,37 @@ export default class DiagramNode {
       if (!this.label) { ctx.fillStyle='#fff'; ctx.font='bold 14px sans-serif';
         ctx.textAlign='center'; ctx.textBaseline='middle'; uprightText(ctx,'H',this.x,this.y); }
     } else if (s === 'morphbox') {
-      const w=this._boxWidth(), h=r*2;
-      this._roundRect(ctx,this.x-w/2,this.y-h/2,w,h,5); ctx.fill(); ctx.stroke();
+      // PQP box: slanted right side, wider at the top (outputs); reflected per orientation
+      const w = this._boxWidth(), h = r * 2, sl = Math.min(h * 0.6, w * 0.4);
+      this._polygon(ctx, [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2 - sl, h / 2], [-w / 2, h / 2]]);
     } else if (s==='cup') { this._drawCup(ctx,r);
     } else if (s==='cap') { this._drawCap(ctx,r);
     } else if (s==='swap') { this._drawSwap(ctx,r);
-    } else if (s==='triangle-down') {
-      ctx.beginPath(); ctx.moveTo(this.x-r,this.y-r); ctx.lineTo(this.x+r,this.y-r);
-      ctx.lineTo(this.x,this.y+r); ctx.closePath(); ctx.fill(); ctx.stroke();
-    } else if (s==='triangle-up') {
-      ctx.beginPath(); ctx.moveTo(this.x-r,this.y+r); ctx.lineTo(this.x+r,this.y+r);
-      ctx.lineTo(this.x,this.y-r); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (s === 'triangle-down' || s === 'triangle-up') {
+      // PQP state/effect: a triangle with one corner clipped. Canonical state: flat
+      // top, clipped top-left; its canonical effect is that reflected top↔bottom.
+      // (An effect that is a flipped state uses the state's canonical shape.)
+      const canonicalState = (s === 'triangle-down') !== !!(this.flip && this.flip.v);
+      const st = [[-r, -r], [r, -r], [0, r], [-r, -r + 0.7 * r]];
+      this._polygon(ctx, canonicalState ? st : st.map(([x, y]) => [x, -y]));
     } else if (s==='wire') {
       const a = this.getInputPort(0), b = this.getOutputPort(0);
-      ctx.strokeStyle = this.type.color; ctx.lineWidth = 2;
+      ctx.strokeStyle = this.type.color; ctx.lineWidth = this.thick ? 5 : 2;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    } else if (s === 'dot') {
+      ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#f4f4f4'; ctx.fill();
+      ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(this.x, this.y, r + 1.2, 0, Math.PI * 2); ctx.stroke();
+    } else if (s === 'ground') {
+      // PQP discard: a thick stub from the input, capped by three shrinking bars
+      const a = this.getInputPort(0);
+      ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 5; ctx.lineCap = 'butt';
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(this.x, this.y + 2); ctx.stroke();
+      ctx.lineWidth = 2.5;
+      [[r, 2], [r * 0.62, -3.5], [r * 0.28, -9]].forEach(([hw, dy]) => {
+        ctx.beginPath(); ctx.moveTo(this.x - hw, this.y + dy); ctx.lineTo(this.x + hw, this.y + dy); ctx.stroke();
+      });
     } else if (s==='scalar') {
       ctx.beginPath(); ctx.arc(this.x,this.y,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.arc(this.x,this.y,r-4,0,Math.PI*2);
@@ -194,6 +271,17 @@ export default class DiagramNode {
     ctx.restore();
   }
 
+  /** Fill and stroke a polygon given in node-local coordinates, applying the orientation. */
+  _polygon(ctx, pts) {
+    const fv = this.flip && this.flip.v ? -1 : 1, fh = this.flip && this.flip.h ? -1 : 1;
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => {
+      const px = this.x + fh * x, py = this.y + fv * y;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+
   _roundRect(ctx, x, y, w, h, rad) {
     ctx.beginPath();
     ctx.moveTo(x+rad,y); ctx.lineTo(x+w-rad,y);
@@ -208,7 +296,7 @@ export default class DiagramNode {
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
     const outP0 = this.getOutputPort(0), outP1 = this.getOutputPort(1);
     const curveY = this.y + r; // curve bows downward
-    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
+    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=this.thick?5:2;
     ctx.beginPath(); ctx.moveTo(outP0.x, outP0.y);
     ctx.bezierCurveTo(outP0.x, curveY, outP1.x, curveY, outP1.x, outP1.y);
     ctx.stroke();
@@ -222,7 +310,7 @@ export default class DiagramNode {
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
     const inP0 = this.getInputPort(0), inP1 = this.getInputPort(1);
     const curveY = this.y - r; // curve bows upward
-    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
+    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=this.thick?5:2;
     ctx.beginPath(); ctx.moveTo(inP0.x, inP0.y);
     ctx.bezierCurveTo(inP0.x, curveY, inP1.x, curveY, inP1.x, inP1.y);
     ctx.stroke();
@@ -235,11 +323,11 @@ export default class DiagramNode {
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
     const outP0 = this.getOutputPort(0), inP0 = this.getInputPort(0);
     const top = Math.min(outP0.y, inP0.y), bot = Math.max(outP0.y, inP0.y);
-    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
+    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=this.thick?5:2;
     ctx.beginPath(); ctx.moveTo(lx,top); ctx.lineTo(rx,bot); ctx.stroke();
-    ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=6;
+    ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=this.thick?10:6;
     ctx.beginPath(); ctx.moveTo(rx,top); ctx.lineTo(this.x,this.y); ctx.stroke();
-    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=2;
+    ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=this.thick?5:2;
     ctx.beginPath(); ctx.moveTo(rx,top); ctx.lineTo(lx,bot); ctx.stroke();
     ctx.fillStyle='#e0e0e0';
     ctx.beginPath(); ctx.arc(lx,top,3,0,Math.PI*2); ctx.fill();

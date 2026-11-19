@@ -2,7 +2,9 @@
  * EditorRegistry — Global registry of available editor types.
  * Each editor type must implement:
  *   - static get typeName()   → string
- *   - constructor(containerEl) — mount into DOM element
+ *   - constructor(containerEl, options) — mount into DOM element;
+ *       options.state: a saved panel state (from getState()), or undefined
+ *   - getState()              — (optional) plain data to restore the panel
  *   - destroy()               — cleanup
  *   - onResize()              — handle container size changes
  */
@@ -43,10 +45,10 @@ const EditorRegistry = {
    * @param {HTMLElement} container
    * @returns {object} editor instance
    */
-  create(typeName, container) {
+  create(typeName, container, options = {}) {
     const EditorClass = _editors.get(typeName);
     if (!EditorClass) throw new Error(`Unknown editor type: ${typeName}`);
-    return new EditorClass(container);
+    return new EditorClass(container, options);
   }
 };
 

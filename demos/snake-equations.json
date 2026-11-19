@@ -1,0 +1,259 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "Snake equations",
+ "description": "A cup followed by a cap straightens to a plain wire — the snake (yanking) equation — and a box f slides through the bend. f is symbolic: the check holds for random choices of f.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 0,
+  "proofs": 2
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-34",
+   "data": {
+    "name": "Snake step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-10",
+    "nodes": [
+     {
+      "id": "node-102",
+      "typeKey": "cap",
+      "x": 100,
+      "y": 110,
+      "label": "",
+      "inputs": 2,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-103",
+      "typeKey": "cup",
+      "x": 160,
+      "y": 210,
+      "label": "",
+      "inputs": 0,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-50",
+      "fromNodeId": "node-103",
+      "fromPort": 0,
+      "toNodeId": "node-102",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-35",
+   "data": {
+    "name": "Snake step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-10",
+    "nodes": [
+     {
+      "id": "node-104",
+      "typeKey": "identity",
+      "x": 130,
+      "y": 160,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-36",
+   "data": {
+    "name": "A box through a snake step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-11",
+    "nodes": [
+     {
+      "id": "node-105",
+      "typeKey": "morphism",
+      "x": 88,
+      "y": 210,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-106",
+      "typeKey": "cap",
+      "x": 100,
+      "y": 110,
+      "label": "",
+      "inputs": 2,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-107",
+      "typeKey": "cup",
+      "x": 160,
+      "y": 280,
+      "label": "",
+      "inputs": 0,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-51",
+      "fromNodeId": "node-105",
+      "fromPort": 0,
+      "toNodeId": "node-106",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-52",
+      "fromNodeId": "node-107",
+      "fromPort": 0,
+      "toNodeId": "node-106",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-37",
+   "data": {
+    "name": "A box through a snake step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-11",
+    "nodes": [
+     {
+      "id": "node-108",
+      "typeKey": "morphism",
+      "x": 130,
+      "y": 190,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-10",
+   "data": {
+    "name": "Snake",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-34",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-35",
+      "relation": "=",
+      "note": "snake equation",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-11",
+   "data": {
+    "name": "A box through a snake",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-36",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-37",
+      "relation": "=",
+      "note": "yank the wire straight",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "vertical",
+  "ratio": 0.7,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-10",
+     "selected": 0
+    }
+   },
+   {
+    "type": "leaf",
+    "editorType": "Dirac Formula Editor",
+    "state": {
+     "docId": "doc-34"
+    }
+   }
+  ]
+ }
+}

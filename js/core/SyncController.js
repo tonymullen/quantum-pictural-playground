@@ -99,6 +99,20 @@ export default class SyncController {
   verifyNow() {
     clearTimeout(this._debounceTimer);
 
+    if (this.doc.sumIndices && this.doc.sumIndices.length) {
+      this.state = 'unavailable';
+      this.lastVerifyResult = { status: 'unavailable', hint: 'Checking Dirac expressions against a diagram with a sum (Σ) is not available yet' };
+      this._notify();
+      return;
+    }
+    if (typeof this.doc.hasThickWires === 'function' && this.doc.hasThickWires()) {
+      this.state = 'unavailable';
+      this.lastVerifyResult = { status: 'unavailable',
+        hint: 'Checking Dirac expressions against diagrams with thick (doubled) wires is not available yet' };
+      this._notify();
+      return;
+    }
+
     // Build IR from diagram
     const ir = docToIR(this.doc);
     this.lastIR = ir;

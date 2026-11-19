@@ -1,0 +1,304 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "GHZ state",
+ "description": "Three qubits: H, then a staircase of CNOTs, prepares (|000⟩ + |111⟩)/√2. Compare the circuit with its PQP diagram — each CNOT is a green and a red spider joined by a leg.",
+ "summary": {
+  "circuits": 1,
+  "diagrams": 0,
+  "proofs": 0
+ },
+ "documents": [
+  {
+   "kind": "circuit",
+   "id": "circ-2",
+   "data": {
+    "name": "GHZ",
+    "nQubits": 3,
+    "tensorOrder": "big-endian",
+    "inputs": [
+     "0",
+     "0",
+     "0"
+    ],
+    "outputs": [
+     "open",
+     "open",
+     "open"
+    ],
+    "columns": [
+     [
+      {
+       "gate": "H"
+      },
+      null,
+      null
+     ],
+     [
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      },
+      null
+     ],
+     [
+      null,
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-120",
+   "data": {
+    "name": "GHZ · diagram",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": "circ-2",
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-296",
+      "typeKey": "x-spider",
+      "x": 120,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-297",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-298",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-299",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 440,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-300",
+      "typeKey": "z-spider",
+      "x": 120,
+      "y": 360,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-301",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 360,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-302",
+      "typeKey": "z-spider",
+      "x": 230,
+      "y": 280,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-303",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 280,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-304",
+      "typeKey": "scalar",
+      "x": 450,
+      "y": 520,
+      "label": "1/√2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": {
+       "rows": 1,
+       "cols": 1,
+       "d": [
+        [
+         0.7071067811865475,
+         0
+        ]
+       ]
+      },
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-163",
+      "fromNodeId": "node-296",
+      "fromPort": 0,
+      "toNodeId": "node-299",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-164",
+      "fromNodeId": "node-299",
+      "fromPort": 0,
+      "toNodeId": "node-300",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-165",
+      "fromNodeId": "node-297",
+      "fromPort": 0,
+      "toNodeId": "node-301",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-166",
+      "fromNodeId": "node-300",
+      "fromPort": 1,
+      "toNodeId": "node-301",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-167",
+      "fromNodeId": "node-301",
+      "fromPort": 0,
+      "toNodeId": "node-302",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-168",
+      "fromNodeId": "node-298",
+      "fromPort": 0,
+      "toNodeId": "node-303",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-169",
+      "fromNodeId": "node-302",
+      "fromPort": 1,
+      "toNodeId": "node-303",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "vertical",
+  "ratio": 0.6,
+  "children": [
+   {
+    "type": "split",
+    "direction": "horizontal",
+    "ratio": 0.45,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Circuit Editor",
+      "state": {
+       "docId": "circ-2"
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-120",
+       "orientation": "pqp",
+       "view": {
+        "fitted": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "type": "leaf",
+    "editorType": "Dirac Formula Editor",
+    "state": {
+     "docId": "circ-2"
+    }
+   }
+  ]
+ }
+}

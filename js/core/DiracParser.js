@@ -24,6 +24,7 @@
  *   { type:'dagger', operand }          { type:'tensorpow', operand, n }
  *   { type:'frac', num, den }           { type:'recip', operand }
  *   { type:'sqrt', operand }            { type:'exp', operand }
+ *   { type:'transpose', operand }       { type:'conjugate', operand }   (^T, \overline{…})
  *   { type:'operator', name }
  */
 
@@ -108,6 +109,7 @@ class Parser {
       }
       const m = this.src.slice(this.pos).match(/^\s*\^\{\s*\\otimes\s*(\d+)\s*\}/);
       if (m) { this.pos += m[0].length; node = { type: 'tensorpow', operand: node, n: parseInt(m[1], 10) }; continue; }
+      if (this.tryEat('^{T}') || this.tryEat('^T')) { node = { type: 'transpose', operand: node }; continue; }
       if (this.at('^')) throw new ParseError(`Unsupported superscript at position ${this.pos}`, this.pos);
       return node;
     }
@@ -137,6 +139,8 @@ class Parser {
       return { type: 'exp', operand: e };
     }
     if (this.atCmd('\\pi')) { this.eat('\\pi'); return { type: 'scalar', value: [Math.PI, 0] }; }
+    for (const cmd of ['\\overline', '\\bar'])
+      if (this.atCmd(cmd)) { this.eat(cmd); return { type: 'conjugate', operand: this._parseBracedExpr() }; }
     for (const cmd of ['\\hat', '\\text', '\\mathrm', '\\mathbb', '\\operatorname', '\\mathbf'])
       if (this.atCmd(cmd)) { this.eat(cmd); return { type: 'operator', name: this._braced().trim() }; }
     if (this.peek() === 'e' && this.src[this.pos + 1] === '^') {

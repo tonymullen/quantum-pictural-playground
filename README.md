@@ -7,6 +7,8 @@ Features a **drag-and-drop diagram editor** and a **Dirac formula editor**
 with **bidirectional synchronisation**: diagrams generate Dirac expressions,
 and student-written expressions are verified against diagrams.
 
+![The Getting started workbook: a Bell-state circuit, its PQP diagram, a checked proof that it equals a cup, and its Dirac notation](docs/images/getting-started.png)
+
 The default layout shows a **Circuit Editor** and a **Diagram Editor** side by side above a **Dirac editor**.
 The interface uses a **Blender-style split-panel layout** where every panel
 can be split, merged, resized, and assigned an arbitrary editor type.
@@ -15,12 +17,39 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 
 ## Features
 
+### Workbooks
+- **A workbook** is what you save: its circuits, diagrams and proofs, the links between them, and the panel layout (with each panel's state)
+- **Workbook Browser** — **Demos** (shipped with the app, read-only) and **My Workbooks** in one tree; open, save, save a copy, rename, delete
+- **Demos** open with their own layout; edit freely, then **Save a copy** to keep your changes
+- **My Workbooks** are stored in this browser for now; the remote database will slot in behind the same interface
+
 ### Circuit Editor
 - **Quirk-style circuits** — drag gates onto wires; controls, anti-controls, swaps, phase gates
 - **Live PQP diagram** — each circuit keeps a generated ZX-style diagram (CNOT = spiders joined by a horizontal leg)
 - **Dirac** — written step by step, e.g. `CNOT (H ⊗ I)|00⟩`, and verified like any diagram
 
+![The GHZ circuit, its generated PQP diagram, and the Dirac expression, verified as equivalent](docs/images/ghz.png)
+
+### Diagram Equation Editor
+- **Diagrammatic proofs** — D₁ ≈ D₂ = D₃ …, each step a copy of a diagram (never a live link)
+- **＋ Step** duplicates the selected step (the usual way to make the next one); **Insert diagram…** copies in any diagram or a circuit's diagram
+- **Every step checked** against the previous one, live: `=` exactly, `≈` up to a nonzero scalar
+- **Symbolic diagrams** (boxes f, states ψ, phases α, α+β, 2α−π/2 …) checked by random substitution — a pass is overwhelming evidence, a fail is a definite counterexample
+- **Assumptions** — "for causal Φ", "U unitary", "V an isometry": the checker samples values satisfying them (causality is linear, so a random causal map is a random point of exactly that set)
+- **Sums** Σᵢ over a basis, drawn as in PQP
+
+<table><tr>
+<td><img src="docs/images/necklace.png" alt="The necklace proof: three boxes slid round the bends of a snake and yanked straight, every step checked"></td>
+<td><img src="docs/images/causal-compose.png" alt="Composing causal processes: with Φ and Ψ assumed causal, discarding Ψ∘Φ equals discarding the input"></td>
+</tr><tr>
+<td align="center"><em>Sliding boxes round bends (Prop. 4.30)</em></td>
+<td align="center"><em>Causal processes compose (thick wires, ⏚, assumptions)</em></td>
+</tr></table>
+
 ### Diagram Editor
+- **PQP shapes** — boxes with a slanted side and states/effects with a clipped corner, so f, fᵀ, f† and f̄ are drawn (and computed) distinctly: one symbol, transformed
+- **Sliding** — a box slides round a cup or cap and comes out as its transpose, as a single undoable rewrite
+- **The doubled picture** (PQP ch. 6–8) — thick quantum wires and thin classical ones; doubled generators, general processes, white dots (copy, delete, measure, encode, decoherence) and discard ⏚; strict PQP typing (thin wires in a doubled diagram are classical, so a thin phase spider there is flagged in red); fully checkable in proofs
 - **10 generator types** from ZX-calculus / categorical quantum mechanics:
   Z Spider, X Spider, Hadamard, Morphism box, Cup (η), Cap (ε), Swap (σ),
   State (ψ), Effect, Scalar
@@ -86,6 +115,12 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 | Edit label/phase | **Double-click** node, or the **Label** field in the inspector |
 | Change leg count | **In / Out ±** in the inspector (spiders, boxes); **−** removes an unconnected leg first |
 | Remove a specific leg | Click its dot to select it, then 🗑 (or **Delete**) |
+| Transpose / adjoint / conjugate | Select a box, state or effect: **ᵀ** (rotate 180°), **†** (reflect top↔bottom), **‾** (reflect left↔right) in the inspector |
+| Slide a box round a bend | Select a box on a cup or cap leg: click its **↷** handle (or press **S**) — it moves to the other leg as its transpose (PQP Prop. 4.30); the map is unchanged |
+| Doubled (thick) generator | Select it, tick **Thick** in the inspector — the quantum process f̂ = f̄ ⊗ f, drawn with thick lines |
+| General quantum process | A thick box/state/effect: choose **General process** (instead of *Pure (doubled)*) |
+| Measure, encode, copy, delete | A **white dot** (palette ◉) — select one of its legs and choose **Thin** (classical) or **Thick** (quantum) |
+| Discard | **⏚** in the palette (takes a thick wire) |
 | Select / move | Click; **Shift+click** multi; drag box-select; **Cmd+A** all; drag to move the selection |
 | Delete | 🗑 button (or **Delete**/**Backspace**) deletes the selection |
 | Pan / Zoom | **Alt+drag** or middle-mouse / **Scroll wheel** |
@@ -118,7 +153,11 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 
 ```
 js/
-├── app.js                            # Boot: register editors, create LayoutManager
+├── app.js                            # Boot: register editors, app bar, open the Getting started demo
+├── workbooks/
+│   ├── Workbook.js                   # Workbook format: capture / open (documents + layout)
+│   ├── WorkbookStores.js             # Demos (read-only), My Workbooks (browser storage; server stub)
+│   └── WorkbookSession.js            # The open workbook, unsaved changes, save / save a copy
 ├── core/                             # Sync engine (pure computation, no DOM)
 │   ├── FlowDirection.js              # Single source of truth for diagram convention
 │   ├── Complex.js                    # Complex arithmetic as [re,im] pairs
@@ -136,6 +175,7 @@ js/
 │   ├── CircuitGates.js               # Gate library, column operators, reference simulator
 │   ├── CircuitToIR.js                # Circuit → ZX-style IR (exact, scalars included)
 │   ├── CircuitToDirac.js             # Circuit → Dirac, column by column
+│   ├── ProofCheck.js                 # Step checks (= / ≈), random substitution for symbols
 │   ├── Verify.js                     # Tensor comparison with pedagogical hints
 │   ├── SyncController.js             # Sync state machine (stale/equivalent/etc.)
 │   └── Config.js                     # Thresholds and settings
@@ -149,6 +189,11 @@ js/
 │   │   ├── DiagramWire.js            # Bézier wires + hit-testing
 │   │   ├── DiagramToolbar.js         # Tool & node-add buttons
 │   │   └── DiagramDocument.js        # Shared data model + undo/redo + observer
+│   ├── WorkbookBrowser/
+│   │   └── WorkbookBrowser.js        # Demos + My Workbooks tree, details, open/save
+│   ├── EquationEditor/
+│   │   ├── EquationEditor.js         # Proof strip + embedded diagram editor
+│   │   └── ProofDocument.js          # Steps (owned diagram copies), relations, checks
 │   ├── CircuitEditor/
 │   │   ├── CircuitEditor.js          # Drag-and-drop circuit editor (no tool modes)
 │   │   ├── CircuitDocument.js        # Circuit model (Quirk-style columns) + undo/redo
@@ -207,6 +252,41 @@ Inputs can be open or |0⟩, |1⟩, |+⟩, |−⟩; outputs open or post-selecte
 
 ---
 
+### Diagram Equation Editor
+
+| Action | How |
+|---|---|
+| Next step | **＋ Step** — copies the selected step after it; then edit the copy below the strip |
+| Bring in a diagram | **Insert diagram…** — diagrams, circuits (their PQP diagram), steps of other proofs; **↻ Update from source** re-copies it |
+| Relation | The **= / ≈** menu between two steps |
+| Rule used | The **rule…** note under the relation (not checked) |
+| Why a step fails | Hover the ✗; the summary bar names the first failing step |
+| Select / delete a step | Click it (← → to move); 🗑 or **Delete**; **Cmd+Z** in the strip undoes |
+| Assume something about a symbol | The **Assume:** bar above the steps — pick a symbol and **unitary**, **isometry** (normalised, for a state) or **causal**; every check then uses random values satisfying it |
+| A sum over a basis (Σᵢ) | In the step's diagram, **Σ over:** `i` — states and effects labelled `i` range over the basis (labels `0`, `1`, `+`, `−` are the basis vectors themselves) |
+
+Symbols are matched by label and shape: the same `f` on both sides of a step is the same map, and a flipped box (fᵀ, f†, f̄ — drawn rotated or reflected) is that same random map, transformed.
+
+---
+
+### Workbooks
+
+| Action | How |
+|---|---|
+| Browse | **▤ Workbooks** in the app bar (shows the browser in the focused panel; **✕ Close** brings that panel back) |
+| Open | Double-click a workbook (or select it and **Open** / **Enter**). Opening replaces all panels; you are asked first if there are unsaved changes |
+| Save | **Cmd+S** / **Save** — saves a workbook from My Workbooks in place |
+| Keep changes to a demo | **Save a copy…** — saves it to My Workbooks and continues there |
+| Rename / delete | **Rename…** (the open workbook); select a workbook in My Workbooks and **🗑 Delete** |
+
+The app bar shows the open workbook, where it is from, and **●** when it has unsaved changes. Closing the tab with unsaved changes asks first.
+
+**Demos:** *Getting started: the Bell state* (the same state as a circuit, its PQP diagram, a proof that it is a cup, and in Dirac notation), *Spider rules*, *Snake equations*, *Sliding round bends* (PQP Prop. 4.30 and the necklace), *Measurement and discarding* (the doubled picture), *Causality* (assumptions and Σᵢ: composing causal maps, measuring is causal), *GHZ state*.
+
+**Opening a workbook from a link:** `index.html?demo=spider-rules` opens a demo directly; `index.html?open=path/to/workbook.json` opens a workbook file served with the app (the browser tests use `tests/fixtures/classic-workbook.json`).
+
+---
+
 ## Reading conventions
 
 Two independent settings:
@@ -249,6 +329,7 @@ by port positioning, drawing, interpretation, and boundary ordering.
 |---|---|
 | Architecture analysis | `docs/existing-architecture.md` |
 | Compute-location decision | `docs/decision-compute.md` |
+| Demo workbooks | `demos/*.json` — regenerate with `node tools/build-demos.mjs` (every demo proof must check) |
 | Component-decomposition fix | `docs/fix-disconnected-components.md` |
 | Shape/scalar/direction fix | `docs/fix-bra-ket-shape-scalar.md` |
 

@@ -8,13 +8,21 @@ import SplitHandle from './SplitHandle.js';
 import EditorRegistry from '../editors/EditorRegistry.js';
 
 export default class LayoutManager {
-  constructor(rootEl) {
+  /**
+   * @param {HTMLElement} rootEl
+   * @param {{ spec?: object|false, onChange?: Function }} [options] — spec:
+   *   a saved layout, the default if omitted, or false to start empty (a
+   *   workbook will load one). onChange: called when panels are split,
+   *   closed, resized or change editor type.
+   */
+  constructor(rootEl, { spec, onChange = null } = {}) {
     this.rootEl = rootEl;
     this.rootEl.classList.add('layout-container');
     this.areas = new Map();
     this.focusedId = null;
     this.tree = null;
-    this._createDefaultLayout();
+    this.onChange = onChange;
+    if (spec !== false) this.loadLayout(spec || LayoutManager.defaultSpec());
     this._resizeObserver = new ResizeObserver(() => this.render());
     this._resizeObserver.observe(this.rootEl);
   }
@@ -34,6 +42,7 @@ export default class LayoutManager {
     this._replaceNode(areaId, splitNode);
     handle.onDragCallback = (delta, ev) => this._handleDrag(splitNode, ev);
     this.render();
+    this._changed();
   }
 
   closeArea(areaId) {
@@ -47,6 +56,7 @@ export default class LayoutManager {
     if (parent.handle) parent.handle.destroy();
     this._replaceInTree(this.tree, parent, sibling);
     this.render();
+    this._changed();
   }
 
   setFocus(areaId) {
@@ -57,6 +67,7 @@ export default class LayoutManager {
   }
 
   render() {
+    if (!this.tree) return;
     this.rootEl.innerHTML = '';
     const r = this.rootEl.getBoundingClientRect();
     this.rootEl.appendChild(this._buildDOM(this.tree, r.width, r.height));
@@ -64,35 +75,67 @@ export default class LayoutManager {
   }
 
   /**
-   * Create the default layout:
+   * The default layout:
    *   ┌──────────────┬──────────────┐
    *   │ Circuit      │ Diagram      │
    *   ├──────────────┴──────────────┤
    *   │ Dirac                       │
    *   └─────────────────────────────┘
-   * Panels are created diagram → Dirac → circuit, so the Dirac editor first
-   * links to the example diagram (the circuit and its diagram come after).
    */
-  _createDefaultLayout() {
+  static defaultSpec() {
+    return { type: 'split', direction: 'vertical', ratio: 0.6, children: [
+      { type: 'split', direction: 'horizontal', ratio: 0.45, children: [
+        { type: 'leaf', editorType: 'Circuit Editor' },
+        { type: 'leaf', editorType: 'Diagram Editor' } ] },
+      { type: 'leaf', editorType: 'Dirac Formula Editor' } ] };
+  }
+
+  /** The layout as plain data: splits, plus each panel's editor type and state. */
+  serialize() {
+    const ser = n => n.type === 'leaf'
+      ? { type: 'leaf', ...n.area.specForSave() }
+      : { type: 'split', direction: n.direction, ratio: n.ratio, children: n.children.map(ser) };
+    return this.tree ? ser(this.tree) : null;
+  }
+
+  /** Replace every panel with the layout `spec` (editor types it does not know show an error). */
+  loadLayout(spec) {
+    const destroy = n => {
+      if (!n) return;
+      if (n.type === 'leaf') n.area.destroy();
+      else { if (n.handle) n.handle.destroy(); n.children.forEach(destroy); }
+    };
+    destroy(this.tree);
+    this.areas.clear();
+    this.focusedId = null;
     const types = EditorRegistry.list();
-    const pick = (word, fallback) => types.find(t => t.includes(word)) || fallback || types[0];
-    const leaf = type => {
-      const area = new EditorArea(type, this);
+    const build = s => {
+      if (s.type === 'split') {
+        const handle = new SplitHandle(s.direction, () => {});
+        const node = { type: 'split', direction: s.direction, ratio: s.ratio ?? 0.5,
+          children: s.children.map(build), handle };
+        handle.onDragCallback = (delta, ev) => this._handleDrag(node, ev);
+        return node;
+      }
+      const type = types.includes(s.editorType) ? s.editorType : (types[0] || s.editorType);
+      const area = new EditorArea(type, this, s.state || null);
       this.areas.set(area.id, area);
       return { type: 'leaf', areaId: area.id, area };
     };
-    const split = (direction, ratio, a, b) => {
-      const handle = new SplitHandle(direction, () => {});
-      const node = { type: 'split', direction, ratio, children: [a, b], handle };
-      handle.onDragCallback = (delta, ev) => this._handleDrag(node, ev);
-      return node;
-    };
-    const diagram = leaf(pick('Diagram'));
-    const dirac = leaf(pick('Dirac'));
-    const circuitType = types.find(t => t.includes('Circuit'));
-    const top = circuitType ? split('horizontal', 0.45, leaf(circuitType), diagram) : diagram;
-    this.tree = split('vertical', 0.6, top, dirac);
+    this.tree = build(spec || LayoutManager.defaultSpec());
     this.render();
+  }
+
+  /** The focused panel, or the first one. */
+  focusedArea() {
+    return this.areas.get(this.focusedId) || this.areas.values().next().value || null;
+  }
+
+  _changed() { if (this.onChange) this.onChange(); }
+
+  /** Close every visiting editor (e.g. the Workbook Browser), restoring what it covered. */
+  closeTransients() {
+    for (const a of this.areas.values()) a.closeTransient();
   }
 
   _createLeaf(editorType) {
@@ -152,6 +195,7 @@ export default class LayoutManager {
     const pos = isH ? (ev.clientX - r.left) : (ev.clientY - r.top);
     splitNode.ratio = Math.max(0.1, Math.min(0.9, pos / (isH ? r.width : r.height)));
     this.render();
+    this._changed();
   }
 
   _buildDOM(node, w, h) {

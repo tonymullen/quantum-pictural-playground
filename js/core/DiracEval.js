@@ -35,6 +35,8 @@ function _eval(node) {
     case 'tensor': return _evalTensor(node.factors);
     case 'dagger': { const t = _eval(node.operand); return t ? Tensor.dagger(t) : null; }
     case 'tensorpow': return _evalTensorPow(node.operand, node.n);
+    case 'conjugate': { const t = _eval(node.operand); return t ? new Tensor(t.rows, t.cols, t.d.map(C.conj)) : null; }
+    case 'transpose': { const t = _eval(node.operand); return t ? Tensor.dagger(new Tensor(t.rows, t.cols, t.d.map(C.conj))) : null; }
     case 'operator': return _evalOperator(node.name);
     case 'frac': return _evalFrac(node.num, node.den);
     case 'recip': {

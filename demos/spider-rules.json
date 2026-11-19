@@ -1,0 +1,540 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "Spider rules",
+ "description": "The basic ZX rewrites as checked proofs: spider fusion, colour change, π-copy, and identity removal. Each uses symbolic phases, checked for random values.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 0,
+  "proofs": 4
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-16",
+   "data": {
+    "name": "Spider fusion step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-2",
+    "nodes": [
+     {
+      "id": "node-70",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 240,
+      "label": "α",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-71",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 140,
+      "label": "β",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-36",
+      "fromNodeId": "node-70",
+      "fromPort": 0,
+      "toNodeId": "node-71",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-17",
+   "data": {
+    "name": "Spider fusion step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-2",
+    "nodes": [
+     {
+      "id": "node-72",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 190,
+      "label": "α+β",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-18",
+   "data": {
+    "name": "Colour change step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-3",
+    "nodes": [
+     {
+      "id": "node-73",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 270,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-74",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 190,
+      "label": "α",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-75",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 110,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-37",
+      "fromNodeId": "node-73",
+      "fromPort": 0,
+      "toNodeId": "node-74",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-38",
+      "fromNodeId": "node-74",
+      "fromPort": 0,
+      "toNodeId": "node-75",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-19",
+   "data": {
+    "name": "Colour change step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-3",
+    "nodes": [
+     {
+      "id": "node-76",
+      "typeKey": "x-spider",
+      "x": 200,
+      "y": 190,
+      "label": "α",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-20",
+   "data": {
+    "name": "π-copy step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-4",
+    "nodes": [
+     {
+      "id": "node-77",
+      "typeKey": "x-spider",
+      "x": 200,
+      "y": 270,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-78",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 180,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-39",
+      "fromNodeId": "node-77",
+      "fromPort": 0,
+      "toNodeId": "node-78",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-21",
+   "data": {
+    "name": "π-copy step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-4",
+    "nodes": [
+     {
+      "id": "node-79",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 270,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-80",
+      "typeKey": "x-spider",
+      "x": 160,
+      "y": 170,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-81",
+      "typeKey": "x-spider",
+      "x": 240,
+      "y": 170,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-40",
+      "fromNodeId": "node-79",
+      "fromPort": 0,
+      "toNodeId": "node-80",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-41",
+      "fromNodeId": "node-79",
+      "fromPort": 1,
+      "toNodeId": "node-81",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-22",
+   "data": {
+    "name": "Identity removal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-5",
+    "nodes": [
+     {
+      "id": "node-82",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 250,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-83",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 150,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-42",
+      "fromNodeId": "node-82",
+      "fromPort": 0,
+      "toNodeId": "node-83",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-23",
+   "data": {
+    "name": "Identity removal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-5",
+    "nodes": [
+     {
+      "id": "node-84",
+      "typeKey": "z-spider",
+      "x": 200,
+      "y": 200,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-24",
+   "data": {
+    "name": "Identity removal step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-5",
+    "nodes": [
+     {
+      "id": "node-85",
+      "typeKey": "identity",
+      "x": 200,
+      "y": 200,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-2",
+   "data": {
+    "name": "Spider fusion",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-16",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-17",
+      "relation": "=",
+      "note": "spider fusion",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-3",
+   "data": {
+    "name": "Colour change",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-18",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-19",
+      "relation": "=",
+      "note": "colour change",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-4",
+   "data": {
+    "name": "π-copy",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-20",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-21",
+      "relation": "=",
+      "note": "π-copy",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-5",
+   "data": {
+    "name": "Identity removal",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-22",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-23",
+      "relation": "=",
+      "note": "H twice is a plain wire (a phase-free spider)",
+      "source": null
+     },
+     {
+      "diagram": "doc-24",
+      "relation": "=",
+      "note": "identity removal",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "vertical",
+  "ratio": 0.7,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-2",
+     "selected": 1
+    }
+   },
+   {
+    "type": "leaf",
+    "editorType": "Dirac Formula Editor",
+    "state": {
+     "docId": "doc-16"
+    }
+   }
+  ]
+ }
+}

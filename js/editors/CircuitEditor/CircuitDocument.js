@@ -155,6 +155,13 @@ export default class CircuitDocument {
     this._edit(() => { this.tensorOrder = order; });
   }
 
+  /** A new circuit from toJSON() data. */
+  static fromJSON(data) {
+    const c = new CircuitDocument(data.name, data.nQubits);
+    c._restore(data);
+    return c;
+  }
+
   /* ---- Undo / Redo ---- */
   toJSON() {
     return { name: this.name, nQubits: this.nQubits, tensorOrder: this.tensorOrder, inputs: [...this.inputs],

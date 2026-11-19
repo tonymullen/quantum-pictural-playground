@@ -60,9 +60,14 @@ export default function symbolicPrint(comp) {
 
 function _opName(n) {
   const lbl = n.label || n.kind;
-  if (lbl.length === 1 && /[a-zA-Z]/.test(lbl)) return lbl;
-  if (GREEK[lbl]) return GREEK[lbl];
-  return `\\operatorname{${lbl}}`;
+  const base = (lbl.length === 1 && /[a-zA-Z]/.test(lbl)) ? lbl
+    : GREEK[lbl] ? GREEK[lbl] : `\\operatorname{${lbl}}`;
+  // Orientation (PQP's asymmetric boxes): both flips ᵀ, top↔bottom †, left↔right conjugate
+  const f = n.flip || {};
+  if (f.v && f.h) return `${base}^T`;
+  if (f.v) return `${base}^\\dagger`;
+  if (f.h) return `\\overline{${base}}`;
+  return base;
 }
 
 /** @returns {{ latex: string, isSum: boolean }} */
@@ -75,7 +80,10 @@ function _nodeToLatex(n) {
     if (n.kind === GenKind.IDENTITY) return { latex: 'I', isSum: false };
     return { latex: _opName(n), isSum: false };
   }
-  const lbl = toTex(n.label || n.kind);
+  // A state or effect: ket/bra by what it is now; conjugated iff reflected left↔right
+  // (so the adjoint of the state ψ is ⟨ψ| and its transpose is ⟨ψ̄|)
+  const raw = toTex(n.label || n.kind);
+  const lbl = n.flip && n.flip.h ? `\\overline{${raw}}` : raw;
   const nIn = n.totalIn, nOut = n.totalOut;
   if (nIn === 0 && nOut === 1) return { latex: `|${lbl}\\rangle`, isSum: false };
   if (nIn === 1 && nOut === 0) return { latex: `\\langle ${lbl}|`, isSum: false };

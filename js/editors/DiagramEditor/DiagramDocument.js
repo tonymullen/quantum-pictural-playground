@@ -20,6 +20,8 @@ export default class DiagramDocument {
     this.derivedFrom = null;
     /** Which wire is the first ⊗ factor — see IR.TENSOR_ORDERS. */
     this.tensorOrder = 'big-endian';
+    /** Σ over these labels (PQP's sums over a basis), e.g. ['i']: states/effects labelled i range over the basis. */
+    this.sumIndices = [];
     this.nodes = new Map();
     this.wires = [];
     this._undoStack = [];
@@ -38,9 +40,96 @@ export default class DiagramDocument {
   offChange(fn) { this._listeners.delete(fn); }
   _notify() { for (const fn of this._listeners) fn(this); }
 
+  /* ---- Serialization (workbooks) ---- */
+
+  /** Plain data for this diagram (no selection state). */
+  toJSON() {
+    const data = JSON.parse(this._snapshot());
+    for (const n of data.nodes) delete n.selected;
+    for (const w of data.wires) delete w.selected;
+    return { name: this.name, tensorOrder: this.tensorOrder, sumIndices: [...this.sumIndices], derivedFrom: this.derivedFrom,
+      ownerProof: this.ownerProof || null, nodes: data.nodes, wires: data.wires };
+  }
+
+  /** A new diagram from toJSON() data; nodes and wires get fresh ids. */
+  static fromJSON(data, name) {
+    const doc = new DiagramDocument(name || data.name);
+    doc.tensorOrder = data.tensorOrder || 'big-endian';
+    doc.sumIndices = Array.isArray(data.sumIndices) ? [...data.sumIndices] : [];
+    doc.derivedFrom = data.derivedFrom || null;
+    if (data.ownerProof) doc.ownerProof = data.ownerProof;
+    const typeMap = {};
+    for (const t of Object.values(NODE_TYPES)) typeMap[t.key] = t;
+    const ids = new Map();
+    for (const nd of data.nodes) {
+      const type = typeMap[nd.typeKey];
+      if (!type) throw new Error(`Unknown node type "${nd.typeKey}"`);
+      const n = new DiagramNode(type, nd.x, nd.y);
+      n.label = nd.label || ''; n.inputs = nd.inputs; n.outputs = nd.outputs;
+      n.tensor = nd.tensor ? new Tensor(nd.tensor.rows, nd.tensor.cols, nd.tensor.d) : null;
+      n.portXOffsets = nd.portXOffsets || null;
+      n.flip = nd.flip ? { v: !!nd.flip.v, h: !!nd.flip.h } : { v: false, h: false };
+      n.thick = !!nd.thick; n.process = !!nd.process;
+      n.legThick = nd.legThick ? { in: [...nd.legThick.in], out: [...nd.legThick.out] } : { in: [], out: [] };
+      ids.set(nd.id, n.id);
+      doc.nodes.set(n.id, n);
+    }
+    for (const wd of data.wires) {
+      const w = new DiagramWire(ids.get(wd.fromNodeId), wd.fromPort, ids.get(wd.toNodeId), wd.toPort);
+      w.wireType = wd.wireType || 'qubit';
+      doc.wires.push(w);
+    }
+    return doc;
+  }
+
+  /**
+   * An independent copy of `src` (nodes and wires get fresh ids; selection
+   * cleared; tensor order kept; not linked to any circuit or proof).
+   */
+  static copyOf(src, name) {
+    return DiagramDocument.fromJSON({ ...src.toJSON(), derivedFrom: null, ownerProof: null }, name || src.name);
+  }
+
+  /**
+   * Replace this diagram's contents with a fresh copy of `src`'s, as one
+   * undoable edit of this diagram (used for deliberate transfers between a
+   * proof step and the diagram it came from).
+   */
+  replaceWithCopyOf(src) {
+    const fresh = DiagramDocument.copyOf(src);
+    this.pushUndo();
+    this.tensorOrder = src.tensorOrder;
+    this.nodes = fresh.nodes;
+    this.wires = fresh.wires;
+    this.commit();
+  }
+
   /* ---- Common document interface (shared with CircuitDocument) ---- */
   toIR() { return diagramToIR(this); }
-  generateDirac() { return irToDirac(this.toIR()); }
+
+  /** Does the diagram use the doubled picture (any thick wire)? */
+  hasThickWires() { return [...this.nodes.values()].some(n => n.hasThick()); }
+
+  /** Set the summed indices (Σ_i …) — a diagram setting, undoable. */
+  setSumIndices(list) {
+    const clean = [...new Set(list.map(x => x.trim()).filter(x => /^[A-Za-zα-ω][A-Za-z0-9α-ω']*$/.test(x)))];
+    if (clean.join() === this.sumIndices.join()) return;
+    this.pushUndo();
+    this.sumIndices = clean;
+    this.commit();
+  }
+
+  generateDirac() {
+    if (this.sumIndices.length) {
+      return { latex: '', info: 'Dirac notation for diagrams with a sum (Σ) is not available yet — the proof checker handles them',
+        category: 'D', reason: 'Σ: no Dirac form yet', tensor: null, ir: null };
+    }
+    if (this.hasThickWires()) {
+      const why = 'Dirac notation for diagrams with thick (doubled) wires is not available yet — the proof checker handles them';
+      return { latex: '', info: why, category: 'D', reason: 'Thick wires: no Dirac form yet', tensor: null, ir: null };
+    }
+    return irToDirac(this.toIR());
+  }
 
   /** Replace all nodes and wires (used for diagrams generated from a circuit). */
   replaceContents(nodes, wires) {
@@ -70,7 +159,10 @@ export default class DiagramDocument {
         phase: n.phase, symbolicForm: n.symbolicForm,
         provenance: n.provenance,
         tensor: n.tensor ? { rows: n.tensor.rows, cols: n.tensor.cols, d: n.tensor.d } : null,
-        portXOffsets: n.portXOffsets
+        portXOffsets: n.portXOffsets,
+        flip: n.flip && (n.flip.v || n.flip.h) ? { v: !!n.flip.v, h: !!n.flip.h } : undefined,
+        thick: n.thick || undefined, process: n.process || undefined,
+        legThick: (n.legThick && (n.legThick.in.length || n.legThick.out.length)) ? n.legThick : undefined
       });
     }
     const wires = this.wires.map(w => ({
@@ -78,11 +170,12 @@ export default class DiagramDocument {
       toNodeId: w.toNodeId, toPort: w.toPort, selected: w.selected,
       wireType: w.wireType
     }));
-    return JSON.stringify({ nodes, wires });
+    return JSON.stringify({ nodes, wires, sumIndices: this.sumIndices });
   }
 
   _restore(json) {
     const data = JSON.parse(json);
+    if (Array.isArray(data.sumIndices)) this.sumIndices = [...data.sumIndices];
     const typeMap = {};
     for (const t of Object.values(NODE_TYPES)) typeMap[t.key] = t;
     this.nodes.clear();
@@ -96,6 +189,9 @@ export default class DiagramDocument {
       node.provenance = nd.provenance || null;
       node.tensor = nd.tensor ? new Tensor(nd.tensor.rows, nd.tensor.cols, nd.tensor.d) : null;
       node.portXOffsets = nd.portXOffsets || null;
+      node.flip = nd.flip ? { v: !!nd.flip.v, h: !!nd.flip.h } : { v: false, h: false };
+      node.thick = !!nd.thick; node.process = !!nd.process;
+      node.legThick = nd.legThick ? { in: [...nd.legThick.in], out: [...nd.legThick.out] } : { in: [], out: [] };
       this.nodes.set(node.id, node);
     }
     this.wires = data.wires.map(wd => {
@@ -180,6 +276,91 @@ export default class DiagramDocument {
     }
   }
 
+  /* ---- Orientation and sliding (PQP §4.3) ---- */
+
+  /**
+   * Flip a box, state or effect: 'T' (transpose: rotate 180°), 'adj' (adjoint
+   * †: reflect top↔bottom) or 'conj' (conjugate: reflect left↔right). The
+   * adjoint and transpose swap inputs and outputs; for a state or effect that
+   * turns it into the other kind, and its wires (now pointing the wrong way)
+   * are removed. Returns false if the node has no orientation.
+   */
+  flipNode(node, which) {
+    if (!node.isOrientable()) return false;
+    const dv = which !== 'conj', dh = which !== 'adj';
+    node.flip = { v: !!node.flip.v !== dv, h: !!node.flip.h !== dh };
+    if (dv && node.inputs !== node.outputs) {
+      this.wires = this.wires.filter(w => w.fromNodeId !== node.id && w.toNodeId !== node.id);
+      [node.inputs, node.outputs] = [node.outputs, node.inputs];
+      if (node.type === NODE_TYPES.STATE) node.type = NODE_TYPES.EFFECT;
+      else if (node.type === NODE_TYPES.EFFECT) node.type = NODE_TYPES.STATE;
+    }
+    return true;
+  }
+
+  /**
+   * Ways a one-wire box can slide round an adjacent bend (Proposition 4.30):
+   * its input comes from a cup, or its output goes into a cap.
+   * @returns {{ via: DiagramNode, side: 'in'|'out', leg: number }[]}
+   */
+  slideOptions(node) {
+    if (!node || node.type.key !== 'morphism' || node.inputs !== 1 || node.outputs !== 1) return [];
+    const opts = [];
+    const win = this.wireOnPort(node.id, 'in', 0);
+    const cup = win && this.nodes.get(win.fromNodeId);
+    if (cup && cup.type.key === 'cup') opts.push({ via: cup, side: 'in', leg: win.fromPort });
+    const wout = this.wireOnPort(node.id, 'out', 0);
+    const cap = wout && this.nodes.get(wout.toNodeId);
+    if (cap && cap.type.key === 'cap') opts.push({ via: cap, side: 'out', leg: wout.toPort });
+    return opts;
+  }
+
+  /**
+   * Slide a box round a cup or cap: it leaves its leg and appears on the
+   * other leg as its transpose (rotated 180°). The map is unchanged —
+   * (f ⊗ 1)∘cup = (1 ⊗ fᵀ)∘cup, and likewise for caps. Returns the new box.
+   */
+  slide(node, opt) {
+    const other = 1 - opt.leg, via = opt.via;
+    const drop = ws => { this.wires = this.wires.filter(w => !ws.includes(w)); };
+    const moved = new DiagramNode(node.type, 0, node.y);
+    moved.label = node.label;
+    moved.tensor = node.tensor;
+    moved.thick = node.thick; moved.process = node.process;
+    moved.legThick = { in: [...node.legThick.in], out: [...node.legThick.out] };
+    moved.flip = { v: !node.flip.v, h: !node.flip.h };   // transpose = both reflections
+    if (opt.side === 'in') {
+      // cup.leg → f → Q   and   cup.other → P    becomes    cup.leg → Q   and   cup.other → fᵀ → P
+      const wIn = this.wireOnPort(node.id, 'in', 0), up = this.wireOnPort(node.id, 'out', 0);
+      const otherW = this.wireOnPort(via.id, 'out', other);
+      drop([wIn, up, otherW].filter(Boolean));
+      if (up) this.wires.push(new DiagramWire(via.id, opt.leg, up.toNodeId, up.toPort));
+      moved.x = via.getOutputPort(other).x;
+      // Land halfway up the other leg (between the cup and whatever comes next on it)
+      const next = otherW && this.nodes.get(otherW.toNodeId);
+      const legY = via.getOutputPort(other).y;
+      moved.y = next ? (legY + next.getInputPort(otherW.toPort).y) / 2 : legY - 60;
+      this.wires.push(new DiagramWire(via.id, other, moved.id, 0));
+      if (otherW) this.wires.push(new DiagramWire(moved.id, 0, otherW.toNodeId, otherW.toPort));
+    } else {
+      // R → f → cap.leg   and   S → cap.other    becomes    R → cap.leg   and   S → fᵀ → cap.other
+      const wOut = this.wireOnPort(node.id, 'out', 0), down = this.wireOnPort(node.id, 'in', 0);
+      const otherW = this.wireOnPort(via.id, 'in', other);
+      drop([wOut, down, otherW].filter(Boolean));
+      if (down) this.wires.push(new DiagramWire(down.fromNodeId, down.fromPort, via.id, opt.leg));
+      moved.x = via.getInputPort(other).x;
+      // Land halfway down the other leg (between the cap and whatever feeds it)
+      const prev = otherW && this.nodes.get(otherW.fromNodeId);
+      const legY = via.getInputPort(other).y;
+      moved.y = prev ? (legY + prev.getOutputPort(otherW.fromPort).y) / 2 : legY + 60;
+      this.wires.push(new DiagramWire(moved.id, 0, via.id, other));
+      if (otherW) this.wires.push(new DiagramWire(otherW.fromNodeId, otherW.fromPort, moved.id, 0));
+    }
+    this.nodes.delete(node.id);
+    this.nodes.set(moved.id, moved);
+    return moved;
+  }
+
   /** The wire on a given port, if any. */
   wireOnPort(nodeId, dir, index) {
     return this.wires.find(w => dir === 'out'
@@ -217,6 +398,7 @@ export default class DiagramDocument {
 
   /** Remove one port from a node, renumbering the wires on its later ports. */
   removePort(node, dir, index) {
+    if (node.legThick && node.legThick[dir]) node.legThick[dir].splice(index, 1);   // keep leg types in step
     if (dir === 'out') {
       node.outputs = Math.max(0, node.outputs - 1);
       for (const w of this.wires) if (w.fromNodeId === node.id && w.fromPort > index) w.fromPort--;

@@ -253,3 +253,59 @@
   font-size: 11px;
   overflow: visible;
 }
+
+/* Reserve the inspector's width so selecting something never re-wraps the bar
+   (which would move the canvas under the pointer) */
+.diagram-toolbar.doc-bar .diagram-inspector {
+  min-width: 400px;
+  height: 22px;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.diagram-toolbar.doc-bar .diagram-inspector .insp-type {
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Diagram editor: the inspector floats over the canvas's top-left corner */
+.diagram-inspector.floating {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  padding: 3px 8px;
+  margin: 0;
+  background: rgba(37, 37, 38, 0.94);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.diagram-inspector .insp-orient button {
+  min-width: 20px; height: 18px; padding: 0 4px; font-size: 12px; line-height: 1;
+  color: var(--text-primary); background: none;
+  border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer;
+}
+.diagram-inspector .insp-orient button:hover { background: rgba(255,255,255,0.08); border-color: var(--accent); }
+
+.diagram-inspector .insp-orient button.on { background: var(--accent-dim); color: #fff; border-color: var(--accent); }
+.diagram-inspector .insp-select { font-size: 11px; color: var(--text-bright); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); }
+
+/* Well-formedness errors (e.g. PQP typing) shown over the canvas */
+.diagram-diagnostics {
+  position: absolute; left: 8px; bottom: 8px; right: 8px; z-index: 6;
+  padding: 4px 8px; font-size: 11px; line-height: 1.4;
+  color: #ffd0d0; background: rgba(90, 20, 20, 0.88);
+  border: 1px solid #8a2b2b; border-radius: 4px; pointer-events: none;
+}
+
+.diagram-sum-input {
+  width: 46px; height: 20px; padding: 0 4px; font-size: 11px;
+  color: var(--text-bright); background: var(--bg-primary);
+  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+}
+.diagram-sum-input:focus { outline: none; border-color: var(--accent); }
