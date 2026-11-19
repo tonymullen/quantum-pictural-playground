@@ -16,7 +16,8 @@ import contractIR from './ContractIR.js';
 import diagramToDirac from './DiagramToDirac.js';
 import { verify, verifyStatusDisplay } from './Verify.js';
 import parseDirac, { ParseError } from './DiracParser.js';
-import evalDirac, { DiracEvalError } from './DiracEval.js';
+import evalDirac, { DiracEvalError, evalProcess } from './DiracEval.js';
+import { evaluateDiagram } from './ProcessDirac.js';
 
 /**
  * @typedef {'synced'|'stale-diagram'|'stale-dirac'|'not-equivalent'|'unavailable'} SyncState
@@ -99,20 +100,6 @@ export default class SyncController {
   verifyNow() {
     clearTimeout(this._debounceTimer);
 
-    if (this.doc.sumIndices && this.doc.sumIndices.length) {
-      this.state = 'unavailable';
-      this.lastVerifyResult = { status: 'unavailable', hint: 'Checking Dirac expressions against a diagram with a sum (Σ) is not available yet' };
-      this._notify();
-      return;
-    }
-    if (typeof this.doc.hasThickWires === 'function' && this.doc.hasThickWires()) {
-      this.state = 'unavailable';
-      this.lastVerifyResult = { status: 'unavailable',
-        hint: 'Checking Dirac expressions against diagrams with thick (doubled) wires is not available yet' };
-      this._notify();
-      return;
-    }
-
     // Build IR from diagram
     const ir = docToIR(this.doc);
     this.lastIR = ir;
@@ -128,7 +115,8 @@ export default class SyncController {
     }
 
     // Contract diagram to tensor
-    const { tensor: diagTensor, symbolic, reason } = contractIR(ir);
+    // (summing over any Σ indices; a doubled diagram gives its process in the doubled picture)
+    const { tensor: diagTensor, symbolic, reason } = evaluateDiagram(ir);
 
     if (!diagTensor) {
       this.state = 'unavailable';
@@ -157,7 +145,19 @@ export default class SyncController {
     let diracTensor = null;
     try {
       const ast = parseDirac(this.diracLatex);
-      diracTensor = evalDirac(ast);
+      if (ir.doubled && ir.boundaryKinds) {
+        // A quantum process: familiar (ρ ↦ …, a density operator) or PQP (doubled) notation
+        const r = evalProcess(ast, ir.boundaryKinds);
+        diracTensor = r.tensor;
+        if (r.leak) {
+          this.state = 'not-equivalent';
+          this.lastVerifyResult = { status: 'not-equivalent', hint: r.hint };
+          this._notify();
+          return;
+        }
+      } else if (ast.type === 'map') {
+        throw new DiracEvalError('ρ ↦ … describes a quantum process, but this diagram is a linear map (no thick wires) — write it as an operator');
+      } else diracTensor = evalDirac(ast);
     } catch (e) {
       if (e instanceof ParseError) {
         this.state = 'unavailable';

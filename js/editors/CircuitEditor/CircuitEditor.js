@@ -7,7 +7,10 @@
  *   - Drag a placed gate to move it; drag it off the circuit to remove it.
  *   - Click a gate or a qubit label to select it; 🗑 / Delete removes it.
  *   - The inspector shows the selection; Z(θ) and X(θ) take a phase.
- *   - Each wire end has a picker for its input state / output effect.
+ *   - Each wire end has a picker for its input state / output effect (or ⏚).
+ *   - M measures a qubit: from there on its wire is classical (drawn double),
+ *     and only controls may sit on it — they make their step classically
+ *     controlled. The circuit is then a quantum process, drawn doubled.
  *   - View: Circuit (time →) or Algebraic (time ←, reads like the formula).
  *   - ⊗ order: the document's tensor order (see IR.TENSOR_ORDERS).
  *
@@ -17,13 +20,13 @@
 import CircuitDocument, { MAX_QUBITS } from './CircuitDocument.js';
 import DocumentStore from '../DocumentStore.js';
 import { derivedDiagram } from './CircuitDiagramLink.js';
-import { GATES, CONTROL, ANTI_CONTROL, SWAP } from '../../core/CircuitGates.js';
+import { GATES, CONTROL, ANTI_CONTROL, SWAP, MEASURE, wireKinds } from '../../core/CircuitGates.js';
 
 const PALETTE = [
   { gate: 'H' }, { gate: 'X' }, { gate: 'Y' }, { gate: 'Z' },
   { gate: 'S' }, { gate: 'Sdg' }, { gate: 'T' }, { gate: 'Tdg' },
   { gate: 'P', param: 'π/4' }, { gate: 'XP', param: 'π/4' },
-  { gate: CONTROL }, { gate: ANTI_CONTROL }, { gate: SWAP },
+  { gate: CONTROL }, { gate: ANTI_CONTROL }, { gate: SWAP }, { gate: MEASURE },
 ];
 const TITLES = {
   H: 'Hadamard', X: 'Pauli X (X spider, phase π)', Y: 'Pauli Y', Z: 'Pauli Z (Z spider, phase π)',
@@ -32,9 +35,12 @@ const TITLES = {
   [CONTROL]: 'Control: conditions every gate in its step on |1⟩',
   [ANTI_CONTROL]: 'Anti-control: conditions every gate in its step on |0⟩',
   [SWAP]: 'Swap: put two in one step',
+  [MEASURE]: 'Measure in the computational basis: the wire becomes classical (only controls can follow on it)',
 };
 const STATE_LABELS = { open: 'open', 0: '|0⟩', 1: '|1⟩', '+': '|+⟩', '-': '|−⟩' };
-const EFFECT_LABELS = { open: 'open', 0: '⟨0|', 1: '⟨1|', '+': '⟨+|', '-': '⟨−|' };
+const EFFECT_LABELS = { open: 'open', 0: '⟨0|', 1: '⟨1|', '+': '⟨+|', '-': '⟨−|', discard: '⏚' };
+const CLASSICAL_OUT_LABELS = { open: 'open', 0: '0', 1: '1', discard: '⏚' };   // a bit: read, post-select, or delete
+const METER = '<svg viewBox="0 0 24 16" width="22" height="15"><path d="M3 14 A9 9 0 0 1 21 14" fill="none" stroke="#1e1e1e" stroke-width="2"/><line x1="12" y1="14" x2="18" y2="4" stroke="#1e1e1e" stroke-width="2"/></svg>';
 
 // Layout (circuit frame: time →; the Algebraic view mirrors it horizontally)
 const DT = 58, DQ = 56, LEFT = 112, RIGHT = 84, TOP = 16, GATE = 38, DRAG_THRESHOLD = 4;
@@ -209,6 +215,7 @@ export default class CircuitEditor {
     if (cell.gate === CONTROL) { f.className = 'cg-ctrl'; return f; }
     if (cell.gate === ANTI_CONTROL) { f.className = 'cg-actrl'; return f; }
     if (cell.gate === SWAP) { f.className = 'cg-swap'; f.textContent = '×'; return f; }
+    if (cell.gate === MEASURE) { f.className = 'cg-gate cg-m'; f.innerHTML = METER; return f; }
     const g = GATES[cell.gate];
     const family = cell.gate === 'H' ? 'h' : g.zx.spider === 'x' ? 'x' : g.zx.spider === 'z' ? 'z' : 'y';
     f.className = `cg-gate cg-${family}`;
@@ -254,12 +261,23 @@ export default class CircuitEditor {
       svg.appendChild(l);
     };
     const wireStart = LEFT - 4, wireEnd = LEFT + G.T * DT + 4;
-    for (let q = 0; q < G.n; q++) line(wireStart, G.wireY(q), wireEnd, G.wireY(q), 'cw-wire');
+    // A measured wire is classical from its measurement on: drawn as a double line
+    const { measuredAt, classicalBefore } = wireKinds(doc);
+    for (let q = 0; q < G.n; q++) {
+      const y = G.wireY(q), m = measuredAt[q];
+      if (m < 0) { line(wireStart, y, wireEnd, y, 'cw-wire'); continue; }
+      line(wireStart, y, G.colX(m), y, 'cw-wire');
+      line(G.colX(m), y - 2.5, wireEnd, y - 2.5, 'cw-classical');
+      line(G.colX(m), y + 2.5, wireEnd, y + 2.5, 'cw-classical');
+    }
     doc.columns.forEach((col, t) => {
-      const qs = col.map((c, q) => (c ? q : -1)).filter(q => q >= 0);
+      const qs = col.map((c, q) => (c && c.gate !== MEASURE ? q : -1)).filter(q => q >= 0);
       const linked = col.some(c => c && (c.gate === CONTROL || c.gate === ANTI_CONTROL || c.gate === SWAP));
-      if (linked && qs.length > 1)
-        line(G.colX(t), G.wireY(Math.min(...qs)), G.colX(t), G.wireY(Math.max(...qs)), 'cw-link');
+      if (!linked || qs.length < 2) return;
+      const x = G.colX(t), y0 = G.wireY(Math.min(...qs)), y1 = G.wireY(Math.max(...qs));
+      // A classical control's link is classical too (double), as in Quirk
+      if (qs.some(q => classicalBefore[t].has(q))) { line(x - 2.5, y0, x - 2.5, y1, 'cw-classical'); line(x + 2.5, y0, x + 2.5, y1, 'cw-classical'); }
+      else line(x, y0, x, y1, 'cw-link');
     });
     st.appendChild(svg);
 
@@ -299,7 +317,10 @@ export default class CircuitEditor {
       if (sel && sel.kind === 'qubit' && sel.q === q) lab.classList.add('selected');
       lab.addEventListener('mousedown', e => { e.stopPropagation(); this._select({ kind: 'qubit', q }); this.stageWrap.focus({ preventScroll: true }); });
       place(lab, 88, y, 28, 20);
-      place(this._picker(EFFECT_LABELS, doc.outputs[q], v => doc.setOutput(q, v), `Output of qubit ${q}`),
+      const classicalEnd = measuredAt[q] >= 0;
+      place(this._picker(classicalEnd ? CLASSICAL_OUT_LABELS : EFFECT_LABELS, doc.outputs[q], v => doc.setOutput(q, v),
+        classicalEnd ? `Output of qubit ${q} (classical after its measurement): read the bit, post-select 0 or 1, or delete it ⏚`
+          : `Output of qubit ${q} (⏚ discards it)`),
         wireEnd + 40, y, 58, 22);
     }
 
@@ -346,7 +367,7 @@ export default class CircuitEditor {
     if (!s) { this.inspTextEl.textContent = 'Drag gates onto the wires'; return; }
     if (s.kind === 'qubit') { this.inspTextEl.textContent = `Qubit ${s.q} selected (🗑 to remove)`; return; }
     const name = g ? (g.param ? g.label : g.label) : cell.gate === CONTROL ? 'Control •'
-      : cell.gate === ANTI_CONTROL ? 'Anti-control ∘' : 'Swap ×';
+      : cell.gate === ANTI_CONTROL ? 'Anti-control ∘' : cell.gate === MEASURE ? 'Measure' : 'Swap ×';
     this.inspTextEl.textContent = `${name} · step ${s.t + 1}, qubit ${s.q}`;
     if (g && g.param && document.activeElement !== this.inspParamEl) this.inspParamEl.value = cell.param || '';
   }
@@ -414,15 +435,36 @@ export default class CircuitEditor {
     if (!t) return;
     if (d.kind === 'new') {
       if (t.off) return;
-      const pos = t.insert ? this.doc.insertCell(t.t, t.q, d.cell) : this.doc.setCell(t.t, t.q, d.cell);
+      const pos = this._typed(() => (t.insert ? this.doc.insertCell(t.t, t.q, d.cell) : this.doc.setCell(t.t, t.q, d.cell)));
       this._select(pos ? { kind: 'cell', ...pos } : null);
     } else if (t.off) {
-      this.doc.setCell(d.from.t, d.from.q, null);       // dragged off the circuit: remove
+      this._typed(() => this.doc.setCell(d.from.t, d.from.q, null));       // dragged off the circuit: remove
       this._select(null);
     } else if (!(t.t === d.from.t && t.q === d.from.q && !t.insert)) {
-      const pos = this.doc.moveCell(d.from, t);
+      const pos = this._typed(() => this.doc.moveCell(d.from, t));
       this._select(pos ? { kind: 'cell', ...pos } : null);
     }
+  }
+
+  /**
+   * Make an edit, but take it back if it puts a gate on a classical wire
+   * (strict PQP typing: after a measurement only controls may follow).
+   */
+  _typed(edit) {
+    const before = this._classicalErrors();
+    const result = edit();
+    const err = this._classicalErrors().find(m => !before.includes(m));
+    if (err) {
+      this.doc.undo();
+      this._toast(err.replace(/^Step \d+: /, ''));
+      return null;
+    }
+    return result;
+  }
+
+  _classicalErrors() {
+    if (!this.doc.isMixed()) return [];
+    return this.doc.toIR().diagnostics.filter(d => d.severity === 'error' && /classical/.test(d.message)).map(d => d.message);
   }
 
   /**

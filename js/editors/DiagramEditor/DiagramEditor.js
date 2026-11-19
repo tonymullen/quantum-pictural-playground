@@ -39,6 +39,8 @@ export default class DiagramEditor {
       addNode: (t) => this.canvas.addNode(t),
       togglePalette: () => this._togglePalette(),
       deleteSelected: () => this.canvas.deleteSelected(),
+      copy: () => this.canvas.copySelection(),
+      paste: e => this.canvas.paste({ alongside: !!(e && e.shiftKey) }),
     });
 
     // --- Diagram document selector row ---
@@ -318,12 +320,17 @@ export default class DiagramEditor {
     const sel = this.canvas.selectedNodes();
     const n = this._inspNode();
     const sp = this.canvas.selectedPort;
+    this.inspType.title = '';
     this.inspLabelWrap.hidden = !n;
     this.inspIn.wrap.hidden = this.inspOut.wrap.hidden = !(n && n.type.variableArity);
     this.inspector.hidden = !n && sel.length < 2;
     if (!n) this.inspOrient.hidden = this.inspThick.hidden = this.inspProcess.hidden = this.inspLeg.hidden = true;
     if (!n) {
-      this.inspType.textContent = sel.length > 1 ? `${sel.length} nodes selected` : '';
+      if (sel.length > 1) {
+        const l = this.canvas.selectionLegs();
+        this.inspType.textContent = `${sel.length} nodes selected · ${l.inputs} in, ${l.outputs} out`;
+        this.inspType.title = 'Cmd+C copies them as one piece; Cmd+V with a piece of the same legs replaces them';
+      } else this.inspType.textContent = '';
       return;
     }
     this.inspType.textContent = sp && sel.length === 0

@@ -16,7 +16,9 @@ import C from '../js/core/Complex.js';
 import { verify } from '../js/core/Verify.js';
 import circuitToIR from '../js/core/CircuitToIR.js';
 import circuitToDirac from '../js/core/CircuitToDirac.js';
-import { circuitTensor } from '../js/core/CircuitGates.js';
+import { circuitTensor, circuitChannel } from '../js/core/CircuitGates.js';
+import { evalProcess } from '../js/core/DiracEval.js';
+import { evaluateDiagram } from '../js/core/ProcessDirac.js';
 import CircuitDocument from '../js/editors/CircuitEditor/CircuitDocument.js';
 import { derivedDiagram } from '../js/editors/CircuitEditor/CircuitDiagramLink.js';
 import SyncController from '../js/core/SyncController.js';
@@ -26,6 +28,7 @@ import ProofDocument from '../js/editors/EquationEditor/ProofDocument.js';
 import DocumentStore from '../js/editors/DocumentStore.js';
 import { captureWorkbook, openWorkbookDocuments, summaryText } from '../js/workbooks/Workbook.js';
 import { DemoStore, LocalWorkbookStore } from '../js/workbooks/WorkbookStores.js';
+import { copyFragment, pasteFragment, fits, replaceRegion, regionBoundary, plugCandidates } from '../js/editors/DiagramEditor/Fragment.js';
 
 const out = document.getElementById('out');
 let passed = 0, failed = 0;
@@ -1380,7 +1383,7 @@ log('\n=== Q5: Strict typing ===');
   const c = new DiagramDocument('q5c');
   const ts2 = thickN(c, NT.STATE, 100, 200, { label: 'ψ' }); addN(c, NT.MORPHISM, 200, 110, { label: 'g' });
   assert(diagramToIR(c).isValid, 'A thin box (a classical process) is allowed');
-  assert(c.generateDirac().latex === '' && /not available yet/.test(c.generateDirac().info), 'Dirac generation says plainly it does not handle thick wires');
+  assert(!!c.generateDirac().familiar && !!c.generateDirac().pqp, 'Dirac generation for a doubled diagram offers both notations');
 }
 
 log('\n=== Q6: Thick and leg types survive saving ===');
@@ -1501,6 +1504,229 @@ log('\n=== A4: Proofs carry their assumptions ===');
   p.redo();
   const q = ProofDocument.fromJSON(JSON.parse(JSON.stringify(p.toJSON())), new Map(p.steps.map(s => [s.diagram.id, s.diagram])));
   assert(q.assumptions['Φ'] === 'causal', 'Assumptions are saved with the proof');
+}
+
+
+log('\n=== G1: Copying a fragment ===');
+{
+  const d = new DiagramDocument('chain');
+  const psi = addN(d, NT.STATE, 100, 300, { label: 'ψ' });
+  const g = addN(d, NT.MORPHISM, 100, 200, { label: 'g' });
+  const f = addN(d, NT.MORPHISM, 100, 100, { label: 'f' });
+  w(d, psi, 0, g, 0); w(d, g, 0, f, 0);
+  const fr = copyFragment(d, [g.id, f.id]);
+  assert(fr.nodes.length === 2 && fr.wires.length === 1, 'f∘g: two nodes and the wire between them');
+  assert(fr.inputs.length === 1 && fr.outputs.length === 1, 'Its legs: the wire from ψ and the open output → 1 input, 1 output');
+  assert(Math.abs(fr.nodes[0].y + fr.nodes[1].y) < 1e-9, 'Positions are relative to the fragment’s centre');
+  const e = new DiagramDocument('target');
+  const added = pasteFragment(e, fr, 500, 500);
+  assert(e.nodes.size === 2 && e.wires.length === 1, 'Paste: nodes and internal wire arrive');
+  assert(added.every(n => !d.nodes.has(n.id)), 'Pasted nodes get fresh ids');
+  assert(added.some(n => n.label === 'g' && n.y === 550) && added.some(n => n.label === 'f' && n.y === 450), 'Pasted centred on the given point');
+  const again = pasteFragment(e, fr, 0, 0);
+  assert(e.nodes.size === 4 && again.every(n => !added.includes(n)), 'Pasting twice gives two independent copies');
+  assert(copyFragment(d, []) === null, 'Copying nothing gives nothing');
+}
+
+log('\n=== G2: Replacing a region (the rewrite gesture) ===');
+{
+  // ψ → f → g → (open)   ;   replace {f, g} by h
+  const d = new DiagramDocument('r');
+  const psi = addN(d, NT.STATE, 100, 300, { label: 'ψ' });
+  const f = addN(d, NT.MORPHISM, 100, 200, { label: 'f' });
+  const g = addN(d, NT.MORPHISM, 100, 100, { label: 'g' });
+  w(d, psi, 0, f, 0); w(d, f, 0, g, 0);
+  const src = new DiagramDocument('h'); const h = addN(src, NT.MORPHISM, 0, 0, { label: 'h' });
+  const fr = copyFragment(src, [h.id]);
+  assert(fits(d, [f.id, g.id], fr).ok, 'h (1 in, 1 out) fits the region g∘f (1 in, 1 out)');
+  replaceRegion(d, [f.id, g.id], fr);
+  const labels = [...d.nodes.values()].map(n => n.label).sort().join();
+  assert(labels === 'h,ψ', 'The region is gone, h is in its place');
+  const nh = [...d.nodes.values()].find(n => n.label === 'h');
+  assert(d.wires.length === 1 && d.wires[0].fromNodeId === psi.id && d.wires[0].toNodeId === nh.id, 'ψ is wired into h');
+  assert(Math.abs(nh.y - 150) < 1e-9, 'h sits where the region was');
+  // A 2-output piece doesn't fit a 1-output region
+  const two = new DiagramDocument('two'); const t = addN(two, NT.MORPHISM, 0, 0, { label: 't', inputs: 1, outputs: 2 });
+  const ft = fits(d, [nh.id], copyFragment(two, [t.id]));
+  assert(!ft.ok && /1 output/.test(ft.why) && /2 outputs/.test(ft.why), `Mismatch explained: "${ft.why}"`);
+}
+
+log('\n=== G3: Spider fusion by replacement ===');
+{
+  const d = new DiagramDocument('fuse');
+  const a = addN(d, NT.Z_SPIDER, 100, 200, { label: 'α', inputs: 1, outputs: 1 });
+  const b = addN(d, NT.Z_SPIDER, 100, 100, { label: 'β', inputs: 1, outputs: 2 });
+  w(d, a, 0, b, 0);
+  const before = DiagramDocument.copyOf(d);
+  const src = new DiagramDocument('s'); const s = addN(src, NT.Z_SPIDER, 0, 0, { label: 'α+β', inputs: 0, outputs: 0 });
+  const fr = copyFragment(src, [s.id]);
+  assert(fits(d, [a.id, b.id], fr).ok, 'A lone spider fits any region (its legs are interchangeable)');
+  replaceRegion(d, [a.id, b.id], fr);
+  const z = [...d.nodes.values()][0];
+  assert(d.nodes.size === 1 && z.inputs === 1 && z.outputs === 2, 'It takes the region’s legs: 1 in, 2 out');
+  assert(checkStep(before.toIR(), d.toIR(), '=').status === 'ok', 'Z(α);Z(β) = Z(α+β) — the rewrite checks');
+  // Thick region, thin spider: refused
+  const q = new DiagramDocument('q'); const qa = addN(q, NT.Z_SPIDER, 0, 0, { inputs: 1, outputs: 1 }); qa.thick = true;
+  assert(!fits(q, [qa.id], fr).ok, 'A thin spider can’t replace a doubled one');
+}
+
+log('\n=== G4: Outside spiders keep their legs ===');
+{
+  const d = new DiagramDocument('legs');
+  const s = addN(d, NT.Z_SPIDER, 100, 300, { inputs: 0, outputs: 2 });
+  const a = addN(d, NT.MORPHISM, 60, 200, { label: 'a' });
+  const b = addN(d, NT.MORPHISM, 140, 200, { label: 'b' });
+  w(d, s, 0, a, 0); w(d, s, 1, b, 0);
+  const src = new DiagramDocument('c'); const c = addN(src, NT.MORPHISM, 0, 0, { label: 'c' });
+  replaceRegion(d, [a.id], copyFragment(src, [c.id]));
+  const nc = [...d.nodes.values()].find(n => n.label === 'c');
+  assert(s.outputs === 2, 'The spider still has both legs');
+  assert(d.wires.some(x => x.fromNodeId === s.id && x.fromPort === 0 && x.toNodeId === nc.id), 'Leg 0 now feeds c');
+  assert(d.wires.some(x => x.fromNodeId === s.id && x.fromPort === 1 && x.toNodeId === b.id), 'Leg 1 still feeds b');
+  const bd = regionBoundary(d, [nc.id, b.id]);
+  assert(bd.in.length === 2 && bd.in[0].nodeId === nc.id, 'Region legs read left to right');
+}
+
+log('\n=== G5: Plugging in ===');
+{
+  const d = new DiagramDocument('plug');
+  const a = addN(d, NT.MORPHISM, 100, 200, { label: 'a' });
+  const b = addN(d, NT.MORPHISM, 100, 100, { label: 'b' });
+  const gap = b.getInputPort(0).y - a.getOutputPort(0).y;
+  b.y -= gap - 5;                                   // b's input 5 units above a's output
+  let c = plugCandidates(d, [b.id], 18);
+  assert(c.length === 1 && c[0].from.nodeId === a.id && c[0].to.nodeId === b.id, 'a’s free output plugs into b’s input');
+  b.y -= 100;
+  assert(plugCandidates(d, [b.id], 18).length === 0, 'Too far: nothing');
+  b.y += 100; b.thick = true;
+  assert(plugCandidates(d, [b.id], 18).length === 0, 'Thick and thin don’t plug together');
+  b.thick = false; w(d, a, 0, b, 0);
+  assert(plugCandidates(d, [b.id], 18).length === 0, 'Ports already wired are not candidates');
+}
+
+
+log('\n=== M1: Measurement in circuits (the doubled picture) ===');
+{
+  const mkC = (n, f) => { const c = new CircuitDocument('m', n); f(c); return c; };
+  const chan = c => contractIR(c.toIR()).tensor;
+  const same = (A, B) => A && B && A.rows === B.rows && A.cols === B.cols && Tensor.equal(A, B, 1e-9);
+  const m1 = mkC(1, c => c.setCell(0, 0, { gate: 'measure' }));
+  assert(m1.isMixed() && m1.toIR().diagnostics.every(d => d.severity !== 'error'), 'A measuring circuit is a quantum process, well-typed');
+  assert(same(chan(m1), Tensor.fromRows([[1, 0, 0, 0], [0, 0, 0, 1]].map(r => r.map(v => [v, 0])))),
+    'Measuring a qubit: the white dot δ — thick (a, b) in, thin c out, a = b = c');
+  const d = m1.doubledDiagram();
+  const kinds = [...d.nodes.values()].map(n => n.type.key);
+  assert(kinds.includes('dot'), 'Drawn with a white dot');
+  const hm = mkC(1, c => { c.setInput(0, '0'); c.setCell(0, 0, { gate: 'H' }); c.setCell(1, 0, { gate: 'measure' }); });
+  const p = chan(hm);
+  assert(p.rows === 2 && p.cols === 1 && Math.abs(p.get(0, 0)[0] - 0.5) < 1e-9 && Math.abs(p.get(1, 0)[0] - 0.5) < 1e-9,
+    '|0⟩, H, measure: outcomes 0 and 1 with probability ½ each (Born rule)');
+  const hd = [...hm.doubledDiagram().nodes.values()];
+  assert(hd.filter(n => n.type.key !== 'dot').every(n => n.thick), 'Every quantum generator is doubled (thick)');
+  for (const [name, build] of [
+    ['classically controlled X', c => { c.setCell(0, 0, { gate: 'measure' }); c.setCell(1, 0, { gate: 'ctrl' }); c.setCell(1, 1, { gate: 'X' }); }],
+    ['classically controlled Z', c => { c.setCell(0, 0, { gate: 'measure' }); c.setCell(1, 0, { gate: 'ctrl' }); c.setCell(1, 1, { gate: 'Z' }); }],
+    ['classically controlled H (doubled box, copy discarded)', c => { c.setCell(0, 0, { gate: 'measure' }); c.setCell(1, 0, { gate: 'ctrl' }); c.setCell(1, 1, { gate: 'H' }); }],
+    ['classical anti-control', c => { c.setCell(0, 0, { gate: 'measure' }); c.setCell(1, 0, { gate: 'actrl' }); c.setCell(1, 1, { gate: 'X' }); }],
+    ['Bell state, then measure one half', c => { c.setInput(0, '0'); c.setInput(1, '0'); c.setCell(0, 0, { gate: 'H' }); c.setCell(1, 0, { gate: 'ctrl' }); c.setCell(1, 1, { gate: 'X' }); c.setCell(2, 0, { gate: 'measure' }); }],
+    ['discarded output', c => { c.setCell(0, 0, { gate: 'H' }); c.setOutput(1, 'discard'); }],
+    ['classical outputs 1 and ⏚', c => { c.setCell(0, 0, { gate: 'measure' }); c.setCell(0, 1, { gate: 'measure' }); c.setOutput(0, '1'); c.setOutput(1, 'discard'); }],
+  ]) {
+    const c = mkC(2, build);
+    assert(same(chan(c), circuitChannel(c)), `${name}: diagram = density-operator reference`);
+  }
+}
+
+log('\n=== M2: Teleportation ===');
+{
+  const c = new CircuitDocument('teleport', 3);
+  c.setInput(1, '0'); c.setInput(2, '0');
+  c.setCell(0, 1, { gate: 'H' }); c.setCell(1, 1, { gate: 'ctrl' }); c.setCell(1, 2, { gate: 'X' });   // Bell pair on 1, 2
+  c.setCell(2, 0, { gate: 'ctrl' }); c.setCell(2, 1, { gate: 'X' }); c.setCell(3, 0, { gate: 'H' });  // Bell measurement…
+  c.setCell(4, 0, { gate: 'measure' }); c.setCell(4, 1, { gate: 'measure' });
+  c.setCell(5, 1, { gate: 'ctrl' }); c.setCell(5, 2, { gate: 'X' });                                   // …and corrections
+  c.setCell(6, 0, { gate: 'ctrl' }); c.setCell(6, 2, { gate: 'Z' });
+  c.setOutput(0, 'discard'); c.setOutput(1, 'discard');
+  const T = contractIR(c.toIR()).tensor;
+  assert(T && Tensor.equal(T, Tensor.identity(4), 1e-9), 'Measure, correct, discard the bits: exactly the identity channel on the doubled wire');
+  const d = c.doubledDiagram();
+  assert([...d.nodes.values()].filter(n => n.type.key === 'dot').length === 6,
+    'White dots: two measurements, two classical controls, and two deletes (the discarded bits)');
+  c.setCell(6, 0, null);
+  const broken = contractIR(c.toIR()).tensor;
+  assert(!Tensor.equal(broken, Tensor.identity(4), 1e-6), 'Without the Z correction it is not the identity');
+}
+
+log('\n=== M3: Classical wires are typed ===');
+{
+  const c = new CircuitDocument('typed', 1);
+  c.setCell(0, 0, { gate: 'measure' }); c.setCell(1, 0, { gate: 'H' });
+  const err = c.toIR().diagnostics.find(d => d.severity === 'error');
+  assert(err && /classical/.test(err.message), `A gate after the measurement is an error: "${err && err.message}"`);
+  const o = new CircuitDocument('out', 1); o.setCell(0, 0, { gate: 'measure' }); o.setOutput(0, '+');
+  assert(o.toIR().diagnostics.some(d => d.severity === 'error' && /not \+/.test(d.message)), 'A classical wire can’t end in ⟨+|');
+  assert(circuitToDirac(c).latex === '' && /not available yet/.test(circuitToDirac(c).info), 'Dirac: not available yet (said so)');
+  const pure = new CircuitDocument('pure', 1); pure.setCell(0, 0, { gate: 'H' });
+  assert(!pure.isMixed() && contractIR(pure.toIR()).tensor.rows === 2, 'Circuits without measurement are unchanged');
+  const j = CircuitDocument.fromJSON(JSON.parse(JSON.stringify(c.toJSON())));
+  assert(j.isMixed() && j.columns[0][0].gate === 'measure', 'Measurements are saved');
+}
+
+
+log('\n=== D1: Quantum processes in Dirac notation — familiar and PQP ===');
+{
+  const mk = (n, f) => { const c = new CircuitDocument('p', n); f(c); return c; };
+  const check = (c, latex) => { const sc = new SyncController(c); sc.onDiracChanged(latex, true); sc.verifyNow(); const r = sc.state; sc.destroy(); return r; };
+  const meas = mk(1, c => c.setCell(0, 0, { gate: 'measure' }));
+  const g = meas.generateDirac();
+  assert(g.familiar.latex === '\\rho \\mapsto |0\\rangle\\langle 0| \\rho |0\\rangle\\langle 0| + |1\\rangle\\langle 1| \\rho |1\\rangle\\langle 1|',
+    `Measurement, familiar: ${g.familiar.latex}`);
+  assert(g.pqp.latex === '\\sum_{i} |i\\rangle \\otimes \\widehat{\\langle i|}', `Measurement, PQP: ${g.pqp.latex}`);
+  assert(check(meas, g.familiar.latex) === 'synced' && check(meas, g.pqp.latex) === 'synced', 'Both generated forms verify');
+  assert(check(meas, '\\rho \\mapsto \\sum_{i} |i\\rangle\\langle i| \\rho |i\\rangle\\langle i|') === 'synced', 'A student’s Σᵢ |i⟩⟨i| ρ |i⟩⟨i| verifies');
+  assert(check(meas, '\\sum_i |i\\rangle \\hat{\\langle i|}') === 'synced', 'and so does Σᵢ |i⟩ ⟨i|̂ (\\hat, juxtaposed)');
+  assert(check(meas, '\\rho \\mapsto \\rho') === 'not-equivalent', 'ρ ↦ ρ is not a measurement (it keeps coherences on a classical wire)');
+  const disc = mk(1, c => c.setOutput(0, 'discard'));
+  assert(check(disc, '\\rho \\mapsto \\mathrm{tr}(\\rho)') === 'synced', 'Discarding: ρ ↦ tr(ρ)');
+  assert(check(disc, '\\sum_{i} \\widehat{\\langle i|}') === 'synced', 'Discarding, PQP: Σᵢ ⟨i|̂');
+  const coin = mk(1, c => { c.setInput(0, '0'); c.setCell(0, 0, { gate: 'H' }); c.setCell(1, 0, { gate: 'measure' }); });
+  assert(coin.generateDirac().familiar.latex === '\\frac{1}{2}|0\\rangle\\langle 0| + \\frac{1}{2}|1\\rangle\\langle 1|', 'A state, familiar: its density operator ½|0⟩⟨0| + ½|1⟩⟨1|');
+  assert(check(coin, '\\frac{1}{2}(|0\\rangle\\langle 0| + |1\\rangle\\langle 1|)') === 'synced', 'and the student’s ½(|0⟩⟨0| + |1⟩⟨1|) verifies');
+  assert(check(coin, '\\frac{1}{2}|0\\rangle + \\frac{1}{2}|1\\rangle') === 'synced', 'PQP: a probability distribution on the classical wire, ½|0⟩ + ½|1⟩');
+  const dh = mk(1, c => { c.setCell(0, 0, { gate: 'H' }); c.setOutput(0, 'discard'); });
+  assert(check(dh, '\\rho \\mapsto \\mathrm{tr}(H \\rho H^\\dagger)') === 'synced', 'Composition inside the trace: tr(HρH†)');
+  const tel = new CircuitDocument('teleport', 3);
+  tel.setInput(1, '0'); tel.setInput(2, '0');
+  for (const [t, q, gate] of [[0, 1, 'H'], [1, 1, 'ctrl'], [1, 2, 'X'], [2, 0, 'ctrl'], [2, 1, 'X'], [3, 0, 'H'], [4, 0, 'measure'], [4, 1, 'measure'],
+    [5, 1, 'ctrl'], [5, 2, 'X'], [6, 0, 'ctrl'], [6, 2, 'Z']]) tel.setCell(t, q, { gate });
+  tel.setOutput(0, 'discard'); tel.setOutput(1, 'discard');
+  const tg = tel.generateDirac();
+  assert(tg.familiar.latex === '\\rho \\mapsto \\rho' && tg.pqp.latex === '\\widehat{I}', `Teleportation: ${tg.familiar.latex}  |  ${tg.pqp.latex}`);
+  assert(check(tel, '\\rho \\mapsto \\rho') === 'synced', 'and ρ ↦ ρ verifies against the circuit');
+  // A process typed for a plain linear map is refused with a reason
+  const pure = new CircuitDocument('pure', 1); pure.setCell(0, 0, { gate: 'H' });
+  assert(check(pure, '\\rho \\mapsto H \\rho H') === 'not-equivalent', 'ρ ↦ … against a linear map: not equivalent (said why)');
+  // Shapes: a doubled matrix of the wrong size is explained
+  assert(check(meas, '|0\\rangle\\langle 0|') === 'not-equivalent', 'An operator for a process with an input: not equivalent');
+}
+
+log('\n=== D2: Sums over a basis in Dirac notation ===');
+{
+  const r = new DiagramDocument('res'); r.sumIndices = ['i'];
+  addN(r, NT.EFFECT, 100, 220, { label: 'i' }); addN(r, NT.STATE, 100, 120, { label: 'i' });
+  const g = r.generateDirac();
+  assert(!!g.latex, `Σᵢ |i⟩⟨i| generates: ${g.latex}`);
+  const sc = new SyncController(r);
+  for (const [tex, want] of [[g.latex, 'synced'], ['\\sum_i |i\\rangle\\langle i|', 'synced'], ['I', 'synced'], ['|0\\rangle\\langle 0|', 'not-equivalent']]) {
+    sc.onDiracChanged(tex, true); sc.verifyNow();
+    assert(sc.state === want, `${tex} → ${want}`);
+  }
+  sc.destroy();
+  const T = evaluateDiagram(diagramToIR(r)).tensor;
+  assert(Tensor.equal(T, Tensor.identity(2)), 'The diagram with its Σ evaluates to the identity');
+  const pd = evalProcess(parseDirac('\\widehat{H}'), { in: ['q'], out: ['q'] }).tensor;
+  const Hd = new DiagramDocument('Hd'); const h = addN(Hd, NT.HADAMARD, 100, 150); h.thick = true;
+  assert(Tensor.equal(pd, contractIR(diagramToIR(Hd)).tensor, 1e-9), '\\widehat{H} equals the doubled H drawn thick');
 }
 
 // === Summary ===

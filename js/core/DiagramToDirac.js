@@ -215,6 +215,7 @@ function _translateComponent(tensor, cl, comp) {
  * A zero tensor prints as 0 times a basis element so its shape is preserved.
  * @returns {{ latex: string, nTerms: number }}
  */
+export function tensorToLatex(tensor) { return _tensorToLatex(tensor); }
 function _tensorToLatex(tensor) {
   const { rows, cols } = tensor;
   if (rows === 1 && cols === 1) return { latex: _complexToLatex(tensor.get(0, 0)), nTerms: 1 };

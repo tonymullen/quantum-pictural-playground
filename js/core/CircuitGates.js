@@ -12,8 +12,14 @@
  * column conditions every gate in that column; a column with exactly two ×
  * cells swaps those qubits.
  *
- * Inputs: 'open' | '0' | '1' | '+' | '-'.  Outputs: 'open' | '0' | '1' | '+' | '-'
- * (a fixed output is a post-selected effect ⟨0|, ⟨1|, ⟨+|, ⟨−|).
+ * Inputs: 'open' | '0' | '1' | '+' | '-'.  Outputs: 'open' | '0' | '1' | '+' | '-' | 'discard'
+ * (a fixed output is a post-selected effect ⟨0|, ⟨1|, ⟨+|, ⟨−|; 'discard' is ⏚).
+ *
+ * Measurement (PQP ch. 8, strictly): a 'measure' cell measures its qubit in the
+ * computational basis, and from then on the wire is classical. Only controls
+ * may sit on a classical wire — they make the column's gates classically
+ * controlled. A circuit with a measurement (or a discarded output) is a
+ * quantum process, not a linear map: it is drawn in the doubled picture.
  */
 import C from './Complex.js';
 import Tensor from './Tensor.js';
@@ -51,7 +57,29 @@ export const GATES = {
 };
 
 /** Non-gate cells. */
-export const CONTROL = 'ctrl', ANTI_CONTROL = 'actrl', SWAP = 'swap';
+export const CONTROL = 'ctrl', ANTI_CONTROL = 'actrl', SWAP = 'swap', MEASURE = 'measure';
+
+/** Does the circuit measure or discard anything (so it is a quantum process, drawn doubled)? */
+export function isMixedCircuit(circ) {
+  return (circ.outputs || []).includes('discard')
+    || (circ.columns || []).some(col => (col || []).some(c => c && c.gate === MEASURE));
+}
+
+/**
+ * Which wires are classical before each step: classicalBefore(circ)[t] is the
+ * set of qubits measured in a step before t (t = columns.length: at the outputs).
+ * Also returns measuredAt[q] = the step that measures q (or -1).
+ */
+export function wireKinds(circ) {
+  const n = circ.nQubits, measuredAt = Array(n).fill(-1), before = [];
+  let cur = new Set();
+  (circ.columns || []).forEach((col, t) => {
+    before.push(new Set(cur));
+    (col || []).forEach((c, q) => { if (c && c.gate === MEASURE && measuredAt[q] < 0) { measuredAt[q] = t; cur.add(q); } });
+  });
+  before.push(new Set(cur));
+  return { classicalBefore: before, measuredAt };
+}
 
 /** Phase of a parametrised cell (null if symbolic, e.g. "α"). */
 export function cellPhase(cell) {
@@ -74,12 +102,13 @@ export const BASIS_KET = { '0': K.KET0, '1': K.KET1, '+': K.KET_PLUS, '-': K.KET
  *             swaps: number[], diagnostics: string[] }}
  */
 export function analyzeColumn(col) {
-  const controls = [], targets = [], swapQs = [], diagnostics = [];
+  const controls = [], targets = [], swapQs = [], measures = [], diagnostics = [];
   (col || []).forEach((cell, q) => {
     if (!cell) return;
     if (cell.gate === CONTROL) controls.push({ q, anti: false });
     else if (cell.gate === ANTI_CONTROL) controls.push({ q, anti: true });
     else if (cell.gate === SWAP) swapQs.push(q);
+    else if (cell.gate === MEASURE) measures.push(q);
     else if (GATES[cell.gate]) targets.push({ q, cell });
     else diagnostics.push(`Unknown gate "${cell.gate}" on qubit ${q}`);
   });
@@ -88,13 +117,13 @@ export function analyzeColumn(col) {
     diagnostics.push(`A swap needs exactly two × in a column (found ${swapQs.length}); ignored`);
     swaps = [];
   }
-  return { controls, targets, swaps, diagnostics };
+  return { controls, targets, swaps, measures, diagnostics };
 }
 
 /** Is a column empty or a no-op (controls with nothing to control)? */
 export function isIdleColumn(col) {
   const a = analyzeColumn(col);
-  return a.targets.length === 0 && a.swaps.length === 0;
+  return a.targets.length === 0 && a.swaps.length === 0 && a.measures.length === 0;
 }
 
 /**
@@ -163,4 +192,87 @@ export function circuitTensor(circ) {
   }
   if (n === 0) return Tensor.identity(1);
   return Tensor.mul(E, Tensor.mul(U, S));
+}
+
+/**
+ * Reference semantics of a circuit with measurements: its channel, in the
+ * index convention of the doubled picture (see DiagramToIR), computed
+ * directly with density operators — independent of the diagram.
+ *
+ * Measuring dephases the qubit; a classically controlled gate is then just
+ * the controlled gate (its control is diagonal). Each open quantum wire is a
+ * pair (conjugate index a, index b), standing for the operator |b⟩⟨a|; each
+ * open classical wire is one index c (the diagonal entry). Wires are in qubit
+ * order, qubit 0 most significant (big-endian). Returns null if symbolic.
+ * @returns {Tensor|null} (out dim) × (in dim)
+ */
+export function circuitChannel(circ) {
+  const n = circ.nQubits, N = 1 << n;
+  const all = Array.from({ length: n }, (_, q) => q);
+  const bitOf = (x, q) => (x >> (n - 1 - q)) & 1;
+  const steps = [];
+  for (const col of circ.columns) {
+    const a = analyzeColumn(col);
+    if (a.targets.length || a.swaps.length) {
+      const U = columnOperator(col.map(c => (c && c.gate === MEASURE ? null : c)), all);
+      if (!U) return null;
+      steps.push({ U, Ud: Tensor.dagger(U) });
+    }
+    for (const q of a.measures) steps.push({ measure: q });
+  }
+  const { classicalBefore } = wireKinds(circ);
+  const classicalOut = classicalBefore[circ.columns.length];
+  const openIn = all.filter(q => (circ.inputs[q] || 'open') === 'open');
+  const outKind = q => {
+    const o = circ.outputs[q] || 'open';
+    if (o !== 'open') return o;
+    return classicalOut.has(q) ? 'c' : 'q';
+  };
+  const inDim = 4 ** openIn.length;
+  const outQ = all.filter(q => ['q', 'c'].includes(outKind(q)));
+  const outDim = outQ.reduce((d, q) => d * (outKind(q) === 'q' ? 4 : 2), 1);
+  const M = Tensor.zeros(outDim, inDim);
+  const ket = s => BASIS_KET[s];
+  for (let j = 0; j < inDim; j++) {
+    // |b⟩⟨a| on the open inputs (pairs (a, b), qubit order), |s⟩⟨s| on fixed ones
+    let X = Tensor.fromRows([[C.ONE]]);
+    let k = openIn.length;
+    for (const q of all) {
+      const inp = circ.inputs[q] || 'open';
+      let f;
+      if (inp === 'open') {
+        k--; const pair = (j >> (2 * k)) & 3, a = pair >> 1, b = pair & 1;
+        f = Tensor.zeros(2, 2); f.set(b, a, C.ONE);
+      } else f = Tensor.mul(ket(inp), Tensor.dagger(ket(inp)));
+      X = q === 0 ? f : Tensor.kron(X, f);
+    }
+    for (const st of steps) {
+      if (st.U) X = Tensor.mul(st.U, Tensor.mul(X, st.Ud));
+      else {
+        const Y = Tensor.zeros(N, N);
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+          if (bitOf(r, st.measure) === bitOf(c, st.measure)) Y.set(r, c, X.get(r, c));
+        X = Y;
+      }
+    }
+    // Read off the outputs: sum over discarded / post-selected wires
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const v = X.get(r, c);
+      if (C.isZero(v)) continue;
+      let w = C.ONE, idx = 0, ok = true;
+      for (const q of all) {
+        const o = outKind(q), br = bitOf(r, q), bc = bitOf(c, q);
+        if (o === 'q') idx = idx * 4 + bc * 2 + br;          // pair (conj a = column, b = row)
+        else if (o === 'c') { if (br !== bc) { ok = false; break; } idx = idx * 2 + br; }
+        else if (o === 'discard') { if (br !== bc) { ok = false; break; } }
+        else {                                                // post-select ⟨s|·|s⟩
+          const e = ket(o);
+          w = C.mul(w, C.mul(C.conj(e.get(br, 0)), e.get(bc, 0)));
+        }
+      }
+      if (!ok || C.isZero(w)) continue;
+      M.set(idx, j, C.add(M.get(idx, j), C.mul(w, v)));
+    }
+  }
+  return M;
 }

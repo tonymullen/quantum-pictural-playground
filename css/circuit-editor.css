@@ -24,6 +24,7 @@
 .circuit-stage svg { position: absolute; left: 0; top: 0; pointer-events: none; }
 .cw-wire { stroke: #b0b0b0; stroke-width: 2; }
 .cw-link { stroke: #e0e0e0; stroke-width: 2; }
+.cw-classical { stroke: #b0b0b0; stroke-width: 1.5; }   /* a measured (classical) wire: double line */
 
 /* Placed cells */
 .circuit-cell {
@@ -57,6 +58,7 @@
 .cg-x { background: #ce4a4a; }       /* X spiders */
 .cg-h { background: #cca700; }       /* Hadamard */
 .cg-y { background: #7a6aa8; }
+.cg-m { background: #e8e8e8; }       /* measurement (meter) */
 .cg-ctrl { width: 12px; height: 12px; border-radius: 50%; background: #e0e0e0; }
 .cg-actrl { width: 10px; height: 10px; border-radius: 50%; background: #1e1e1e; border: 2px solid #e0e0e0; }
 .cg-swap { color: #e0e0e0; font: 22px/1 sans-serif; }

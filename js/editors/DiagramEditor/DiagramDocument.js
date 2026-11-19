@@ -8,6 +8,7 @@ import DiagramWire from './DiagramWire.js';
 import Tensor from '../../core/Tensor.js';
 import diagramToIR from '../../core/DiagramToIR.js';
 import { irToDirac } from '../../core/DiagramToDirac.js';
+import { processToDirac, sumToDirac } from '../../core/ProcessDirac.js';
 
 let _docId = 0;
 
@@ -120,14 +121,9 @@ export default class DiagramDocument {
   }
 
   generateDirac() {
-    if (this.sumIndices.length) {
-      return { latex: '', info: 'Dirac notation for diagrams with a sum (Σ) is not available yet — the proof checker handles them',
-        category: 'D', reason: 'Σ: no Dirac form yet', tensor: null, ir: null };
-    }
-    if (this.hasThickWires()) {
-      const why = 'Dirac notation for diagrams with thick (doubled) wires is not available yet — the proof checker handles them';
-      return { latex: '', info: why, category: 'D', reason: 'Thick wires: no Dirac form yet', tensor: null, ir: null };
-    }
+    // A quantum process (doubled picture): both the familiar and PQP's notation
+    if (this.hasThickWires()) return processToDirac(this);
+    if (this.sumIndices.length) return sumToDirac(this);
     return irToDirac(this.toIR());
   }
 

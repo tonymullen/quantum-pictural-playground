@@ -69,6 +69,16 @@
     "diagrams": 0,
     "proofs": 0
    }
+  },
+  {
+   "id": "teleportation",
+   "name": "Quantum teleportation",
+   "description": "Alice holds a qubit (q0) and half of a Bell pair (q1); Bob holds the other half (q2). She measures q0 and q1 in the Bell basis — the wires turn classical (double lines) — and Bob corrects with an X and a Z controlled by her two bits. Because the circuit measures, its PQP diagram is doubled: thick quantum wires, thin classical ones, white dots for the measurements and the classical controls. The proof checks that the whole process, with the bits discarded, is just a wire: the state arrives intact.",
+   "summary": {
+    "circuits": 1,
+    "diagrams": 0,
+    "proofs": 1
+   }
   }
  ]
 }

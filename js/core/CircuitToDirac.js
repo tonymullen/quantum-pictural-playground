@@ -11,13 +11,17 @@
  * a bra likewise. Every expression parses with DiracParser and evaluates to
  * exactly the circuit's tensor (CircuitGates.circuitTensor).
  */
-import { GATES, analyzeColumn, cellPhase, isIdleColumn } from './CircuitGates.js';
+import { GATES, analyzeColumn, cellPhase, isIdleColumn, isMixedCircuit } from './CircuitGates.js';
 
 /**
  * @param {{ nQubits:number, inputs:string[], outputs:string[], columns:any[][] }} circ
  * @returns {{ latex: string, info: string, category: string, reason: string }}
  */
 export default function circuitToDirac(circ) {
+  if (isMixedCircuit(circ)) {
+    return { latex: '', category: 'D', reason: 'Measurement: no Dirac form yet',
+      info: 'This circuit measures or discards, so it is a quantum process (drawn doubled) — Dirac notation for it is not available yet; the proof checker handles it' };
+  }
   // Little-endian: the last qubit is the first factor — print the mirrored circuit
   if (circ.tensorOrder === 'little-endian') circ = mirrorQubits(circ);
   const n = circ.nQubits;

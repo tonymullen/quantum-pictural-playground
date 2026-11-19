@@ -1,0 +1,1143 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "Quantum teleportation",
+ "description": "Alice holds a qubit (q0) and half of a Bell pair (q1); Bob holds the other half (q2). She measures q0 and q1 in the Bell basis — the wires turn classical (double lines) — and Bob corrects with an X and a Z controlled by her two bits. Because the circuit measures, its PQP diagram is doubled: thick quantum wires, thin classical ones, white dots for the measurements and the classical controls. The proof checks that the whole process, with the bits discarded, is just a wire: the state arrives intact.",
+ "summary": {
+  "circuits": 1,
+  "diagrams": 0,
+  "proofs": 1
+ },
+ "documents": [
+  {
+   "kind": "circuit",
+   "id": "circ-4",
+   "data": {
+    "name": "Teleportation",
+    "nQubits": 3,
+    "tensorOrder": "big-endian",
+    "inputs": [
+     "open",
+     "0",
+     "0"
+    ],
+    "outputs": [
+     "discard",
+     "discard",
+     "open"
+    ],
+    "columns": [
+     [
+      null,
+      {
+       "gate": "H"
+      },
+      null
+     ],
+     [
+      null,
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      }
+     ],
+     [
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      },
+      null
+     ],
+     [
+      {
+       "gate": "H"
+      },
+      null,
+      null
+     ],
+     [
+      {
+       "gate": "measure"
+      },
+      {
+       "gate": "measure"
+      },
+      null
+     ],
+     [
+      null,
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      }
+     ],
+     [
+      {
+       "gate": "ctrl"
+      },
+      null,
+      {
+       "gate": "Z"
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-122",
+   "data": {
+    "name": "Teleportation · diagram",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": "circ-4",
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-374",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-375",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-376",
+      "typeKey": "hadamard",
+      "x": 230,
+      "y": 440,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-377",
+      "typeKey": "z-spider",
+      "x": 230,
+      "y": 360,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-378",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 360,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-379",
+      "typeKey": "z-spider",
+      "x": 120,
+      "y": 280,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-380",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 280,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-381",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 200,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-382",
+      "typeKey": "dot",
+      "x": 120,
+      "y": 120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-383",
+      "typeKey": "dot",
+      "x": 230,
+      "y": 120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-384",
+      "typeKey": "dot",
+      "x": 230,
+      "y": 40,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": [
+        false,
+        true
+       ]
+      }
+     },
+     {
+      "id": "node-385",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 40,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-386",
+      "typeKey": "dot",
+      "x": 120,
+      "y": -40,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": [
+        false,
+        true
+       ]
+      }
+     },
+     {
+      "id": "node-387",
+      "typeKey": "z-spider",
+      "x": 340,
+      "y": -40,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-388",
+      "typeKey": "hadamard",
+      "x": 285,
+      "y": -40,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-389",
+      "typeKey": "dot",
+      "x": 120,
+      "y": -120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     },
+     {
+      "id": "node-390",
+      "typeKey": "dot",
+      "x": 230,
+      "y": -120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     },
+     {
+      "id": "node-391",
+      "typeKey": "scalar",
+      "x": 450,
+      "y": 520,
+      "label": "2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": {
+       "rows": 1,
+       "cols": 1,
+       "d": [
+        [
+         2.0000000000000004,
+         0
+        ]
+       ]
+      },
+      "portXOffsets": null,
+      "thick": true
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-235",
+      "fromNodeId": "node-374",
+      "fromPort": 0,
+      "toNodeId": "node-376",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-236",
+      "fromNodeId": "node-376",
+      "fromPort": 0,
+      "toNodeId": "node-377",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-237",
+      "fromNodeId": "node-375",
+      "fromPort": 0,
+      "toNodeId": "node-378",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-238",
+      "fromNodeId": "node-377",
+      "fromPort": 1,
+      "toNodeId": "node-378",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-239",
+      "fromNodeId": "node-377",
+      "fromPort": 0,
+      "toNodeId": "node-380",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-240",
+      "fromNodeId": "node-379",
+      "fromPort": 1,
+      "toNodeId": "node-380",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-241",
+      "fromNodeId": "node-379",
+      "fromPort": 0,
+      "toNodeId": "node-381",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-242",
+      "fromNodeId": "node-381",
+      "fromPort": 0,
+      "toNodeId": "node-382",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-243",
+      "fromNodeId": "node-380",
+      "fromPort": 0,
+      "toNodeId": "node-383",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-244",
+      "fromNodeId": "node-383",
+      "fromPort": 0,
+      "toNodeId": "node-384",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-245",
+      "fromNodeId": "node-378",
+      "fromPort": 0,
+      "toNodeId": "node-385",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-246",
+      "fromNodeId": "node-384",
+      "fromPort": 1,
+      "toNodeId": "node-385",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-247",
+      "fromNodeId": "node-382",
+      "fromPort": 0,
+      "toNodeId": "node-386",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-248",
+      "fromNodeId": "node-385",
+      "fromPort": 0,
+      "toNodeId": "node-387",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-249",
+      "fromNodeId": "node-386",
+      "fromPort": 1,
+      "toNodeId": "node-388",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-250",
+      "fromNodeId": "node-388",
+      "fromPort": 0,
+      "toNodeId": "node-387",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-251",
+      "fromNodeId": "node-386",
+      "fromPort": 0,
+      "toNodeId": "node-389",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-252",
+      "fromNodeId": "node-384",
+      "fromPort": 0,
+      "toNodeId": "node-390",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-123",
+   "data": {
+    "name": "Teleportation is a wire step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-40",
+    "nodes": [
+     {
+      "id": "node-392",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-393",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-394",
+      "typeKey": "hadamard",
+      "x": 230,
+      "y": 440,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-395",
+      "typeKey": "z-spider",
+      "x": 230,
+      "y": 360,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-396",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 360,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-397",
+      "typeKey": "z-spider",
+      "x": 120,
+      "y": 280,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-398",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 280,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-399",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 200,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-400",
+      "typeKey": "dot",
+      "x": 120,
+      "y": 120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-401",
+      "typeKey": "dot",
+      "x": 230,
+      "y": 120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        true
+       ],
+       "out": [
+        false
+       ]
+      }
+     },
+     {
+      "id": "node-402",
+      "typeKey": "dot",
+      "x": 230,
+      "y": 40,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": [
+        false,
+        true
+       ]
+      }
+     },
+     {
+      "id": "node-403",
+      "typeKey": "x-spider",
+      "x": 340,
+      "y": 40,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-404",
+      "typeKey": "dot",
+      "x": 120,
+      "y": -40,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": [
+        false,
+        true
+       ]
+      }
+     },
+     {
+      "id": "node-405",
+      "typeKey": "z-spider",
+      "x": 340,
+      "y": -40,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-406",
+      "typeKey": "hadamard",
+      "x": 285,
+      "y": -40,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     },
+     {
+      "id": "node-407",
+      "typeKey": "dot",
+      "x": 120,
+      "y": -120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     },
+     {
+      "id": "node-408",
+      "typeKey": "dot",
+      "x": 230,
+      "y": -120,
+      "label": "",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "legThick": {
+       "in": [
+        false
+       ],
+       "out": []
+      }
+     },
+     {
+      "id": "node-409",
+      "typeKey": "scalar",
+      "x": 450,
+      "y": 520,
+      "label": "2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": {
+       "rows": 1,
+       "cols": 1,
+       "d": [
+        [
+         2.0000000000000004,
+         0
+        ]
+       ]
+      },
+      "portXOffsets": null,
+      "thick": true
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-253",
+      "fromNodeId": "node-392",
+      "fromPort": 0,
+      "toNodeId": "node-394",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-254",
+      "fromNodeId": "node-394",
+      "fromPort": 0,
+      "toNodeId": "node-395",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-255",
+      "fromNodeId": "node-393",
+      "fromPort": 0,
+      "toNodeId": "node-396",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-256",
+      "fromNodeId": "node-395",
+      "fromPort": 1,
+      "toNodeId": "node-396",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-257",
+      "fromNodeId": "node-395",
+      "fromPort": 0,
+      "toNodeId": "node-398",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-258",
+      "fromNodeId": "node-397",
+      "fromPort": 1,
+      "toNodeId": "node-398",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-259",
+      "fromNodeId": "node-397",
+      "fromPort": 0,
+      "toNodeId": "node-399",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-260",
+      "fromNodeId": "node-399",
+      "fromPort": 0,
+      "toNodeId": "node-400",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-261",
+      "fromNodeId": "node-398",
+      "fromPort": 0,
+      "toNodeId": "node-401",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-262",
+      "fromNodeId": "node-401",
+      "fromPort": 0,
+      "toNodeId": "node-402",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-263",
+      "fromNodeId": "node-396",
+      "fromPort": 0,
+      "toNodeId": "node-403",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-264",
+      "fromNodeId": "node-402",
+      "fromPort": 1,
+      "toNodeId": "node-403",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-265",
+      "fromNodeId": "node-400",
+      "fromPort": 0,
+      "toNodeId": "node-404",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-266",
+      "fromNodeId": "node-403",
+      "fromPort": 0,
+      "toNodeId": "node-405",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-267",
+      "fromNodeId": "node-404",
+      "fromPort": 1,
+      "toNodeId": "node-406",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-268",
+      "fromNodeId": "node-406",
+      "fromPort": 0,
+      "toNodeId": "node-405",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-269",
+      "fromNodeId": "node-404",
+      "fromPort": 0,
+      "toNodeId": "node-407",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-270",
+      "fromNodeId": "node-402",
+      "fromPort": 0,
+      "toNodeId": "node-408",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-124",
+   "data": {
+    "name": "Teleportation is a wire step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-40",
+    "nodes": [
+     {
+      "id": "node-410",
+      "typeKey": "identity",
+      "x": 200,
+      "y": 200,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null,
+      "thick": true
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-40",
+   "data": {
+    "name": "Teleportation is a wire",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-123",
+      "relation": "≈",
+      "note": "",
+      "source": {
+       "id": "doc-122",
+       "name": "Teleportation · diagram"
+      }
+     },
+     {
+      "diagram": "doc-124",
+      "relation": "=",
+      "note": "teleportation: measure, correct, discard the bits = the identity channel",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "vertical",
+  "ratio": 0.55,
+  "children": [
+   {
+    "type": "split",
+    "direction": "horizontal",
+    "ratio": 0.5,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Circuit Editor",
+      "state": {
+       "docId": "circ-4"
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-122",
+       "orientation": "pqp",
+       "view": {
+        "fitted": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-40",
+     "selected": 1
+    }
+   }
+  ]
+ }
+}

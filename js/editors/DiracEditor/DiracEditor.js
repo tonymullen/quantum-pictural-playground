@@ -2,6 +2,11 @@
  * DiracEditor — LaTeX-based Dirac notation formula editor.
  * Features a snippet toolbar, LaTeX textarea, live KaTeX preview,
  * saved formula list, and sync with diagram documents.
+ *
+ * Quantum processes (doubled diagrams, circuits that measure) have two
+ * notations, and both are shown side by side: the familiar one (ρ ↦ Σ K ρ K†,
+ * or a density operator) and PQP's doubled one (Σ K̂). "Write in" picks which
+ * goes in the editor; either is checked against the diagram.
  */
 import DocumentStore from '../DocumentStore.js';
 import SyncController from '../../core/SyncController.js';
@@ -13,6 +18,7 @@ export default class DiracEditor {
     const st = options.state || {};
     this.container = containerEl;
     this.formulas = Array.isArray(st.formulas) ? [...st.formulas] : [];  // saved formulas
+    this.notation = st.notation === 'pqp' ? 'pqp' : 'familiar';            // for quantum processes
     this.syncController = null;
     this.linkedDocId = null;
     this.el = document.createElement('div');
@@ -68,6 +74,27 @@ export default class DiracEditor {
     this.orderNoteEl.className = 'dirac-order-note';
     this.docBarEl.appendChild(this.orderNoteEl);
 
+    // Quantum processes: which notation to write in (both are shown for comparison)
+    this.notationWrapEl = document.createElement('span');
+    this.notationWrapEl.className = 'dirac-notation';
+    this.notationWrapEl.hidden = true;
+    const nl = document.createElement('span'); nl.textContent = 'Write in';
+    nl.style.color = 'var(--text-secondary)'; nl.style.fontSize = '11px';
+    this.notationSelectEl = document.createElement('select');
+    this.notationSelectEl.className = 'editor-type-select';
+    this.notationSelectEl.title = 'A quantum process can be written the familiar way (ρ ↦ Σ K ρ K†, or a density operator) or in PQP’s doubled notation (Σ K̂, with K̂ = K̄ ⊗ K)';
+    for (const [v, t] of [['familiar', 'Familiar (ρ ↦ …)'], ['pqp', 'PQP (doubled)']]) {
+      const o = document.createElement('option'); o.value = v; o.textContent = t; this.notationSelectEl.appendChild(o);
+    }
+    this.notationSelectEl.value = this.notation;
+    this.notationSelectEl.addEventListener('change', () => {
+      this.notation = this.notationSelectEl.value;
+      // Switch the editor's text only if it is still the generated one
+      if (this.syncController && !this.syncController.diracAuthored) this._generateInto();
+    });
+    this.notationWrapEl.append(nl, this.notationSelectEl);
+    this.docBarEl.appendChild(this.notationWrapEl);
+
     this.el.appendChild(this.docBarEl);
 
     this._onStoreChange = () => this._refreshDocSelect();
@@ -119,7 +146,7 @@ export default class DiracEditor {
    */
   /** Panel state for workbooks: what is linked, the expression, saved formulas. */
   getState() {
-    return { docId: this.linkedDocId, text: this.textarea.value,
+    return { docId: this.linkedDocId, text: this.textarea.value, notation: this.notation,
       authored: !!(this.syncController && this.syncController.diracAuthored), formulas: [...this.formulas] };
   }
 
@@ -162,16 +189,79 @@ export default class DiracEditor {
   _generateInto() {
     const sc = this.syncController;
     const result = sc.generateDirac();
-    this._showInfoPanel(result.info || '');
-    this.textarea.value = result.latex || '';
+    const latex = this._chosen(result);
+    this._showInfoPanel(this._chosenInfo(result));
+    this._showComparison(result);
+    this.textarea.value = latex || '';
     sc.diracAuthored = false;
-    sc.diracGenerated = !!result.latex;
+    sc.diracGenerated = !!latex;
     if (this._genPreviewEl) this._genPreviewEl.innerHTML = '';
     this._render();
-    if (result.latex) { sc.onDiracChanged(result.latex, false); sc.verifyNow(); }
+    if (latex) { sc.onDiracChanged(latex, false); sc.verifyNow(); }
     else {
       // Nothing parseable to show (e.g. too large): say why
       this.syncTextEl.textContent = result.reason || 'No expression generated';
+    }
+  }
+
+  /** The generated expression in the chosen notation (processes have two). */
+  _chosen(result) {
+    if (!result.familiar) return result.latex;
+    return result[this.notation].latex || result.familiar.latex || result.pqp.latex || '';
+  }
+  _chosenInfo(result) {
+    if (!result.familiar) return result.info || '';
+    return (result[this.notation].latex ? result[this.notation] : result.familiar).info || result.info || '';
+  }
+
+  /**
+   * Side by side: a quantum process in familiar and in PQP notation, each with
+   * "Use" (puts it in the editor). Hidden for ordinary linear maps.
+   */
+  _showComparison(result) {
+    const isProcess = !!(result && result.familiar);
+    this.notationWrapEl.hidden = !isProcess;
+    if (!this._compareEl) {
+      this._compareEl = document.createElement('div');
+      this._compareEl.className = 'dirac-compare';
+      this.previewEl.after(this._compareEl);
+    }
+    this._compareEl.innerHTML = '';
+    this._compareEl.hidden = !isProcess;
+    if (!isProcess) return;
+    for (const [key, title] of [['familiar', 'Familiar'], ['pqp', 'PQP (doubled)']]) {
+      const col = document.createElement('div');
+      col.className = 'dirac-compare-col' + (key === this.notation ? ' chosen' : '');
+      const head = document.createElement('div');
+      head.className = 'dirac-compare-head';
+      head.textContent = title;
+      const f = result[key];
+      if (f.latex) {
+        const use = document.createElement('button');
+        use.className = 'dirac-snippet-btn';
+        use.textContent = 'Use';
+        use.title = `Put the ${title.toLowerCase()} form in the editor`;
+        use.addEventListener('click', () => {
+          this.textarea.value = f.latex;
+          this.syncController.diracAuthored = false;
+          this.syncController.diracGenerated = true;
+          this.syncController.onDiracChanged(f.latex, false);
+          this._render();
+          this.syncController.verifyNow();
+        });
+        head.appendChild(use);
+      }
+      const body = document.createElement('div');
+      body.className = 'dirac-compare-math';
+      try {
+        if (f.latex && typeof katex !== 'undefined') katex.render(f.latex, body, { displayMode: true, throwOnError: false });
+        else body.textContent = f.latex || '';
+      } catch { body.textContent = f.latex; }
+      const note = document.createElement('div');
+      note.className = 'dirac-compare-note';
+      note.textContent = f.info || '';
+      col.append(head, body, note);
+      this._compareEl.appendChild(col);
     }
   }
 
@@ -219,18 +309,20 @@ export default class DiracEditor {
     this.syncIconEl.className = `sync-icon ${result.category === 'error' ? 'verify-fail' : 'verify-ok'}`;
 
     // Show info (non-parseable summaries) in a separate panel, never in textarea
-    this._showInfoPanel(result.info || '');
+    this._showInfoPanel(this._chosenInfo(result));
+    this._showComparison(result);
 
     // Only put parseable LaTeX in the textarea
-    if (result.latex) {
+    const latex = this._chosen(result);
+    if (latex) {
       if (!this.syncController.diracAuthored || !this.textarea.value.trim()) {
-        this.textarea.value = result.latex;
+        this.textarea.value = latex;
         this.syncController.diracAuthored = false;
         this.syncController.diracGenerated = true;
-        this.syncController.onDiracChanged(result.latex, false);
+        this.syncController.onDiracChanged(latex, false);
         this._render();
       } else {
-        this._showGeneratedPreview(result);
+        this._showGeneratedPreview({ ...result, latex });
       }
     }
   }
@@ -323,7 +415,10 @@ export default class DiracEditor {
       { label: '†', latex: '^\\dagger' },
       { label: 'Σ', latex: '\\sum_{i}' },
       { label: '√', latex: '\\frac{1}{\\sqrt{2}}' },
-      { label: 'H', latex: '\\hat{H}' },
+      { label: 'H', latex: 'H' },
+      { label: 'ρ ↦', latex: '\\rho \\mapsto ' },
+      { label: 'f̂', latex: '\\widehat{f}' },
+      { label: 'tr', latex: '\\mathrm{tr}' },
       { label: 'CNOT', latex: '\\text{CNOT}' },
       { label: 'I', latex: '\\mathbb{I}' },
       { label: 'α|0⟩+β|1⟩', latex: '\\alpha|0\\rangle + \\beta|1\\rangle' },

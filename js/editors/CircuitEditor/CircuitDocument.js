@@ -3,10 +3,10 @@
  *
  *   nQubits   number of wires; qubit 0 is the leftmost tensor factor
  *   inputs[q]  'open' | '0' | '1' | '+' | '-'
- *   outputs[q] 'open' | '0' | '1' | '+' | '-'   (fixed = post-selected effect)
+ *   outputs[q] 'open' | '0' | '1' | '+' | '-' | 'discard'   (fixed = post-selected effect; ⏚)
  *   columns[t][q]  Cell | null,  Cell = { gate, param? }
  *       gate ∈ CircuitGates.GATES ids ('H','X','Y','Z','S','Sdg','T','Tdg','P','XP')
- *              or 'ctrl' (•), 'actrl' (∘), 'swap' (×)
+ *              or 'ctrl' (•), 'actrl' (∘), 'swap' (×), 'measure' (after it the wire is classical)
  *       param: phase string for 'P' / 'XP', e.g. "π/8" or a symbol "α"
  *
  * Same document interface as DiagramDocument: onChange/offChange, undo/redo,
@@ -15,11 +15,16 @@
  */
 import circuitToIR from '../../core/CircuitToIR.js';
 import circuitToDirac from '../../core/CircuitToDirac.js';
-import { GATES, CONTROL, ANTI_CONTROL, SWAP } from '../../core/CircuitGates.js';
+import diagramToIR from '../../core/DiagramToIR.js';
+import { GATES, CONTROL, ANTI_CONTROL, SWAP, MEASURE, isMixedCircuit } from '../../core/CircuitGates.js';
+import DiagramDocument from '../DiagramEditor/DiagramDocument.js';
+import irToDiagram from './IRToDiagram.js';
+import { processToDirac } from '../../core/ProcessDirac.js';
 
 let _circId = 0;
 const STATES = ['open', '0', '1', '+', '-'];
-const CELL_IDS = new Set([...Object.keys(GATES), CONTROL, ANTI_CONTROL, SWAP]);
+const OUTPUTS = [...STATES, 'discard'];
+const CELL_IDS = new Set([...Object.keys(GATES), CONTROL, ANTI_CONTROL, SWAP, MEASURE]);
 export const MAX_QUBITS = 8;
 
 export default class CircuitDocument {
@@ -44,8 +49,32 @@ export default class CircuitDocument {
   _notify() { for (const fn of this._listeners) fn(this); }
 
   /* ---- Common document interface ---- */
-  toIR() { return circuitToIR(this); }
-  generateDirac() { return { ...circuitToDirac(this), ir: null, tensor: null }; }
+  toIR() {
+    if (!this.isMixed()) return circuitToIR(this);
+    // A circuit that measures is a quantum process: its meaning is the doubled diagram it draws
+    const d = this.doubledDiagram();
+    const g = diagramToIR(d);
+    g.diagnostics.push(...d._circuitDiagnostics);    // e.g. a gate on a classical wire
+    return g;
+  }
+
+  /** Does it measure or discard (a quantum process, drawn in the doubled picture)? */
+  isMixed() { return isMixedCircuit(this); }
+
+  /** The doubled PQP diagram of this circuit (a fresh, unregistered document). */
+  doubledDiagram() {
+    const d = new DiagramDocument(`${this.name} · diagram`);
+    d.tensorOrder = this.tensorOrder;
+    const ir = circuitToIR({ ...this.toJSON(), id: this.id, tensorOrder: 'big-endian' });
+    const { nodes, wires } = irToDiagram(ir);
+    d.replaceContents(nodes, wires);
+    d._circuitDiagnostics = ir.diagnostics;
+    return d;
+  }
+  generateDirac() {
+    if (this.isMixed()) return processToDirac(this.doubledDiagram());   // both notations
+    return { ...circuitToDirac(this), ir: null, tensor: null };
+  }
 
   /* ---- Reading ---- */
   cell(t, q) { return (this.columns[t] && this.columns[t][q]) || null; }
@@ -145,7 +174,10 @@ export default class CircuitDocument {
   }
 
   setInput(q, state) { this._checkState(state); this._checkQubit(q); this._edit(() => { this.inputs[q] = state; }); }
-  setOutput(q, state) { this._checkState(state); this._checkQubit(q); this._edit(() => { this.outputs[q] = state; }); }
+  setOutput(q, state) {
+    if (!OUTPUTS.includes(state)) throw new Error(`Output must be one of ${OUTPUTS.join(', ')}`);
+    this._checkQubit(q); this._edit(() => { this.outputs[q] = state; });
+  }
 
   rename(name) { this._edit(() => { this.name = name; }); }
 

@@ -181,3 +181,12 @@
   margin-left: 6px;
   white-space: nowrap;
 }
+
+/* A quantum process in both notations, side by side */
+.dirac-notation { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; }
+.dirac-compare { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 8px; border-top: 1px solid var(--border-color); }
+.dirac-compare-col { flex: 1 1 260px; min-width: 0; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; }
+.dirac-compare-col.chosen { border-color: #4fc1ff; }
+.dirac-compare-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary); }
+.dirac-compare-math { overflow-x: auto; font-size: 14px; }
+.dirac-compare-note { font-size: 10.5px; color: var(--text-secondary); }

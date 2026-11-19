@@ -27,6 +27,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **Quirk-style circuits** — drag gates onto wires; controls, anti-controls, swaps, phase gates
 - **Live PQP diagram** — each circuit keeps a generated ZX-style diagram (CNOT = spiders joined by a horizontal leg)
 - **Dirac** — written step by step, e.g. `CNOT (H ⊗ I)|00⟩`, and verified like any diagram
+- **Measurement** — the meter measures a qubit; from then on its wire is classical (a double line), and only controls may sit on it, making their step classically controlled. Outputs can be discarded (⏚). A measuring circuit is a quantum process, so its PQP diagram is **doubled**: thick quantum wires, thin classical ones, white dots for measurements and classical controls — enough for teleportation, which the checker confirms is exactly a wire
 
 ![The GHZ circuit, its generated PQP diagram, and the Dirac expression, verified as equivalent](docs/images/ghz.png)
 
@@ -37,6 +38,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **Symbolic diagrams** (boxes f, states ψ, phases α, α+β, 2α−π/2 …) checked by random substitution — a pass is overwhelming evidence, a fail is a definite counterexample
 - **Assumptions** — "for causal Φ", "U unitary", "V an isometry": the checker samples values satisfying them (causality is linear, so a random causal map is a random point of exactly that set)
 - **Sums** Σᵢ over a basis, drawn as in PQP
+- **Rewrite by copy and paste** — ＋ Step, select the region to rewrite, Cmd+V the replacement (from any diagram or step): wires reconnect in order, and the step is checked
 
 <table><tr>
 <td><img src="docs/images/necklace.png" alt="The necklace proof: three boxes slid round the bends of a snake and yanked straight, every step checked"></td>
@@ -63,11 +65,13 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **Boundary markers** — numbered "in/out" labels on open ports
 
 ### Dirac Formula Editor
-- LaTeX textarea with **live KaTeX rendering** and **16 snippet buttons**
+- LaTeX textarea with **live KaTeX rendering** and snippet buttons
 - **Linked to diagrams** — dropdown selector for which diagram to sync with
 - **Generate** — diagram → Dirac expression (per-component, with recognition)
 - **Verify** — student expression vs diagram: ✓ Equivalent / ✗ Not equivalent
 - **Never overwrites student work** — generated forms shown as suggestions
+- **Quantum processes in two notations, side by side** — a doubled diagram (or a circuit that measures) is written both the familiar way, `ρ ↦ Σ K ρ K†` (or, for a state, its density operator), and in PQP's doubled notation, `Σᵢ |i⟩ ⊗ ⟨i|̂` with `\widehat{f}` = f̄ ⊗ f wire by wire. **Write in** chooses which goes in the editor; either is verified. A classical (thin) wire is a diagonal `|i⟩⟨i|` in the familiar form and a single index in PQP's. Every generated expression is checked against the diagram before it is shown; teleportation comes out as `ρ ↦ ρ` and `\widehat{I}`
+- **Sums over a basis** — `\sum_{i,j} …` (kets and bras labelled i, j take 0 and 1), for diagrams with a Σ and in processes
 
 ### Diagram → Dirac Translation
 - **Component decomposition** — disconnected pieces translated independently
@@ -123,6 +127,10 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 | Discard | **⏚** in the palette (takes a thick wire) |
 | Select / move | Click; **Shift+click** multi; drag box-select; **Cmd+A** all; drag to move the selection |
 | Delete | 🗑 button (or **Delete**/**Backspace**) deletes the selection |
+| Copy / cut a piece | Select nodes, **Cmd+C** / **Cmd+X** (or **⧉**). The piece takes the wires between them; every other port is one of its legs (the inspector shows how many: "3 nodes selected · 1 in, 2 out"). One clipboard serves every panel, including proof steps |
+| Paste | **Cmd+V** (or **📋**) at the pointer, selected and ready to drag; **Cmd+D** duplicates |
+| Replace a selection (a rewrite) | Select a region and **Cmd+V** a piece with the same legs (thick/thin matching, left to right): the region is swapped out and its wires reconnected in order. A lone spider fits any region and takes its legs, so fusing spiders is: copy Z(α+β), select Z(α) and Z(β), Cmd+V. A piece that doesn't fit is pasted beside it, with the reason; **Shift+Cmd+V** always pastes beside |
+| Plug in | Drag a node so one of its free ports comes near a free port it fits (output ↔ input, same thickness): a preview line shows, and dropping wires them |
 | Pan / Zoom | **Alt+drag** or middle-mouse / **Scroll wheel** |
 | Undo / Redo | **Cmd+Z** / **Cmd+Shift+Z** |
 | Switch diagram | **Diagram** dropdown; **＋ New** to create |
@@ -136,6 +144,7 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 | Link to a diagram or circuit | **Linked to** dropdown — the generated expression appears and is verified at once (your own expression for the previous document goes to the saved list) |
 | Generate Dirac | Click **Generate** — translates diagram to LaTeX |
 | Verify | Click **Verify** — checks expression against diagram |
+| A quantum process | Familiar: `\rho \mapsto \sum_{i} \|i\rangle\langle i\| \rho \|i\rangle\langle i\|`, `\rho \mapsto \mathrm{tr}(\rho)`, or a density operator `\frac{1}{2}(\|0\rangle\langle 0\| + \|1\rangle\langle 1\|)`. PQP: `\sum_i \|i\rangle \otimes \widehat{\langle i\|}` (`\hat{…}` works too). **Write in** switches the generated form; **Use** on either column puts it in |
 | Save / recall | **＋ Save Formula**; click to reload |
 
 ### Layout
@@ -240,10 +249,11 @@ Inputs can be open or |0⟩, |1⟩, |+⟩, |−⟩; outputs open or post-selecte
 | Add a gate | Drag it from the palette onto a wire — onto a step, or into the gap between steps to insert a new step (an occupied cell is replaced) |
 | Controlled gates | Put • (control) or ∘ (anti-control) in the same step: they condition every gate in that step |
 | Swap | Two × in one step |
+| Measure | Drag the meter onto a wire. After it the wire is classical (double line): a gate dropped there is refused, but • / ∘ on it classically controls the other gates of its step. A classical wire ends open (read the bit), 0 / 1 (post-select), or ⏚ (delete) |
 | Move / remove | Drag a placed gate; drag it off the circuit to remove it |
 | Select / delete | Click a gate or a qubit label (q0, q1, …), then 🗑 or **Delete** |
 | Phase of Z(θ), X(θ) | Select the gate, type in the inspector's **Phase** field (π/8, −π/2, α, …) |
-| Inputs / outputs | Pickers at each end of a wire: open, \|0⟩, \|1⟩, \|+⟩, \|−⟩ (outputs: post-selected effects) |
+| Inputs / outputs | Pickers at each end of a wire: open, \|0⟩, \|1⟩, \|+⟩, \|−⟩ (outputs: post-selected effects, or ⏚ discard) |
 | Qubits | **＋ Qubit**; select a qubit label + 🗑 to remove |
 | View | Circuit (time →) or Algebraic (time ←) |
 | Show the diagram | **◇ Diagram** — opens the circuit's PQP diagram in the Diagram Editor and links the Dirac editor |
@@ -281,7 +291,7 @@ Symbols are matched by label and shape: the same `f` on both sides of a step is 
 
 The app bar shows the open workbook, where it is from, and **●** when it has unsaved changes. Closing the tab with unsaved changes asks first.
 
-**Demos:** *Getting started: the Bell state* (the same state as a circuit, its PQP diagram, a proof that it is a cup, and in Dirac notation), *Spider rules*, *Snake equations*, *Sliding round bends* (PQP Prop. 4.30 and the necklace), *Measurement and discarding* (the doubled picture), *Causality* (assumptions and Σᵢ: composing causal maps, measuring is causal), *GHZ state*.
+**Demos:** *Getting started: the Bell state* (the same state as a circuit, its PQP diagram, a proof that it is a cup, and in Dirac notation), *Spider rules*, *Snake equations*, *Sliding round bends* (PQP Prop. 4.30 and the necklace), *Measurement and discarding* (the doubled picture), *Causality* (assumptions and Σᵢ: composing causal maps, measuring is causal), *GHZ state*, *Quantum teleportation* (measurement and classical control; the proof that it is a wire).
 
 **Opening a workbook from a link:** `index.html?demo=spider-rules` opens a demo directly; `index.html?open=path/to/workbook.json` opens a workbook file served with the app (the browser tests use `tests/fixtures/classic-workbook.json`).
 

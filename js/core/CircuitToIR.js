@@ -17,6 +17,18 @@
  * The scalars the spider forms introduce (√2 per leg, 1/√2 per state/effect,
  * i for Y) are collected in one scalar node, so the result is exact.
  *
+ * Circuits that measure (or discard) are quantum processes, drawn in PQP's
+ * doubled picture: the graph is then *marked* rather than contractible —
+ * quantum nodes carry thick: true, classical wires are thin, and
+ *   measure                → white dot (thick in, thin out)
+ *   • on a classical wire  → white dot copying the bit into a thick leg of the
+ *                            gate (CNOT/CZ form), or into a doubled controlled
+ *                            box whose control output is discarded
+ *   output ⏚               → discard (a thin wire: a white dot with no output)
+ *   classical output 0/1   → a thin effect ⟨0| / ⟨1|
+ * and g.mixed = true. Its meaning is that of the diagram it draws
+ * (CircuitDocument.toIR expands it with DiagramToIR).
+ *
  * Each IR node gets `layout = { q, t, portQ: { in: [...], out: [...] } }`
  * (qubit position, time step, and the qubit each port belongs to), which
  * IRToDiagram uses to draw the circuit as a PQP diagram.
@@ -25,7 +37,7 @@ import C from './Complex.js';
 import Tensor from './Tensor.js';
 import Phase from './Phase.js';
 import { IRGraph, IRNode, IREdge, IRPort, GenKind, applyTensorOrder } from './IR.js';
-import { GATES, analyzeColumn, columnOperator, cellPhase } from './CircuitGates.js';
+import { GATES, MEASURE, analyzeColumn, columnOperator, cellPhase, isMixedCircuit, wireKinds } from './CircuitGates.js';
 
 const SQRT2 = Math.SQRT2;
 
@@ -38,8 +50,11 @@ export default function circuitToIR(circ) {
   const n = circ.nQubits;
   const cur = new Array(n);     // per qubit position: dangling output { nodeId, port }
   let scalar = C.ONE;
+  const mixed = isMixedCircuit(circ);
+  const { classicalBefore } = wireKinds(circ);
 
   const mk = (kind, nIn, nOut, layout, props = {}) => {
+    if (mixed && props.thick === undefined) props = { ...props, thick: true };
     const node = new IRNode(kind,
       Array.from({ length: nIn }, (_, i) => new IRPort('in', i)),
       Array.from({ length: nOut }, (_, i) => new IRPort('out', i)));
@@ -78,9 +93,69 @@ export default function circuitToIR(circ) {
   // --- Columns (t = 1 …) ---
   circ.columns.forEach((col, ci) => {
     const t = ci + 1;
-    const { controls, targets, swaps, diagnostics } = analyzeColumn(col);
+    const { controls: allControls, targets, swaps, measures, diagnostics } = analyzeColumn(col);
     for (const d of diagnostics) g.addDiagnostic('warning', `Step ${t}: ${d}`);
+    const classical = classicalBefore[ci];
+    // Strict typing: on a classical wire only controls are allowed
+    const onClassical = [...targets.map(x => x.q), ...swaps, ...measures].filter(q => classical.has(q));
+    if (onClassical.length) {
+      g.addDiagnostic('error', `Step ${t}: qubit ${onClassical[0]} was measured earlier, so its wire is classical — `
+        + 'only a control (•/∘) can go on it');
+      return;
+    }
+    for (const q of measures) {
+      if (allControls.some(c => c.q === q)) continue;
+      const dot = mk('dot', 1, 1, lay(q, t, [q], [q]), { thick: false, legThick: { in: [true], out: [false] } });
+      feed(q, dot, 0);
+      cur[q] = { nodeId: dot.id, port: 0 };
+    }
     if (targets.length === 0 && swaps.length === 0) return;
+    const controls = allControls.filter(c => !classical.has(c.q));
+    const cctl = allControls.filter(c => classical.has(c.q));
+
+    if (cctl.length) {
+      const allOfC = id => targets.length > 0 && targets.every(x => x.cell.gate === id);
+      if (cctl.length === 1 && !cctl[0].anti && controls.length === 0 && swaps.length === 0 && (allOfC('X') || allOfC('Z'))) {
+        // Classically controlled X / Z: a white dot copies the bit into a thick leg (PQP's CNOT form)
+        const c = cctl[0].q, k = targets.length, isX = allOfC('X');
+        const dot = mk('dot', 1, 1 + k, lay(c, t, [c], [c]), { thick: false,
+          legThick: { in: [false], out: [false, ...Array(k).fill(true)] } });
+        feed(c, dot, 0);
+        cur[c] = { nodeId: dot.id, port: 0 };
+        targets.forEach(({ q }, j) => {
+          const tg = spider(isX ? 'x' : 'z', Phase.ZERO, 2, 1, lay(q, t, [q], [q]));
+          feed(q, tg, 0);
+          if (isX) g.addEdge(new IREdge(dot.id, 1 + j, tg.id, 1));
+          else {
+            const h = mk(GenKind.HADAMARD, 1, 1, lay(_besideTarget(c, q), t, [], []));
+            g.addEdge(new IREdge(dot.id, 1 + j, h.id, 0));
+            g.addEdge(new IREdge(h.id, 0, tg.id, 1));
+          }
+          cur[q] = { nodeId: tg.id, port: 0 };
+        });
+        scalar = C.scale(SQRT2 ** k, scalar);
+        return;
+      }
+      // General: the doubled controlled box; each classical control is copied
+      // in by a white dot, and the box's copy of it is discarded afterwards
+      const qs = [...new Set([...allControls.map(x => x.q), ...targets.map(x => x.q), ...swaps])].sort((a, b) => a - b);
+      const box = mk(GenKind.MORPHISM, qs.length, qs.length,
+        lay(qs.reduce((s, q) => s + q, 0) / qs.length, t, qs, qs), {
+          label: _boxLabel(allControls, targets, swaps),
+          tensor: columnOperator(col.map(x => (x && x.gate === MEASURE ? null : x)), qs),
+        });
+      qs.forEach((q, i) => {
+        if (classical.has(q)) {
+          const dot = mk('dot', 1, 2, lay(q, t - 0.45, [q], [q]), { thick: false, legThick: { in: [false], out: [false, true] } });
+          feed(q, dot, 0);
+          cur[q] = { nodeId: dot.id, port: 0 };
+          g.addEdge(new IREdge(dot.id, 1, box.id, i));
+          const ds = mk('discard', 1, 0, lay(q + 0.35, t + 0.45, [q], []));
+          g.addEdge(new IREdge(box.id, i, ds.id, 0));
+        } else { feed(q, box, i); cur[q] = { nodeId: box.id, port: i }; }
+      });
+      return;
+    }
 
     if (controls.length === 0) {
       for (const { q, cell } of targets) scalar = C.mul(scalar, _singleQubit(q, t, cell, cur, mk, spider, feed, lay));
@@ -102,7 +177,7 @@ export default function circuitToIR(circ) {
         if (isX) {
           g.addEdge(new IREdge(zc.id, 1 + j, tg.id, 1));
         } else {
-          const h = mk(GenKind.HADAMARD, 1, 1, lay((c + q) / 2, t, [], []));
+          const h = mk(GenKind.HADAMARD, 1, 1, lay(_besideTarget(c, q), t, [], []));
           g.addEdge(new IREdge(zc.id, 1 + j, h.id, 0));
           g.addEdge(new IREdge(h.id, 0, tg.id, 1));
         }
@@ -117,7 +192,7 @@ export default function circuitToIR(circ) {
     const box = mk(GenKind.MORPHISM, qs.length, qs.length,
       lay(qs.reduce((s, q) => s + q, 0) / qs.length, t, qs, qs), {
         label: _boxLabel(controls, targets, swaps),
-        tensor: columnOperator(col, qs),
+        tensor: columnOperator(col.map(x => (x && x.gate === MEASURE ? null : x)), qs),
       });
     qs.forEach((q, i) => { feed(q, box, i); cur[q] = { nodeId: box.id, port: i }; });
   });
@@ -125,14 +200,27 @@ export default function circuitToIR(circ) {
   // --- Outputs (t = last + 1) ---
   const tOut = circ.columns.length + 1;
   const outputBoundary = [];
+  const classicalOut = classicalBefore[circ.columns.length];
   for (let q = 0; q < n; q++) {
     const out = circ.outputs[q] || 'open';
-    if (out === 'open') {
+    const isC = classicalOut.has(q);
+    if (out === 'discard') {
+      const ds = isC ? mk('dot', 1, 0, lay(q, tOut, [q], []), { thick: false, legThick: { in: [false], out: [] } })
+        : mk('discard', 1, 0, lay(q, tOut, [q], []));
+      feed(q, ds, 0);
+    } else if (isC && out !== 'open') {
+      if (out !== '0' && out !== '1') {
+        g.addDiagnostic('error', `Qubit ${q} is classical after its measurement: its output can be open, 0, 1 or ⏚, not ${out}`);
+        continue;
+      }
+      const ef = mk(GenKind.EFFECT, 1, 0, lay(q, tOut, [q], []), { thick: false, label: out });   // ⟨0| / ⟨1| on a bit
+      feed(q, ef, 0);
+    } else if (out === 'open') {
       // After a swap the wire may end on a node at another qubit position:
       // route it to position q with a plain wire so the diagram reads correctly
       const end = g.nodes.get(cur[q].nodeId);
       if ((end.layout.portQ.out[cur[q].port] ?? end.layout.q) !== q) {
-        const id = mk(GenKind.IDENTITY, 1, 1, lay(q, tOut, [q], [q]));
+        const id = mk(GenKind.IDENTITY, 1, 1, lay(q, tOut, [q], [q]), isC ? { thick: false } : {});
         feed(q, id, 0);
         cur[q] = { nodeId: id.id, port: 0 };
       }
@@ -153,6 +241,7 @@ export default function circuitToIR(circ) {
 
   g.inputBoundary = inputBoundary;
   g.outputBoundary = outputBoundary;
+  g.mixed = mixed;
   for (const node of g.nodes.values()) g.layoutKey.set(node.id, node.layout.q);
   _spliceIdentities(g);
   applyTensorOrder(g, circ.tensorOrder);   // qubit order → ⊗ order
@@ -239,4 +328,10 @@ export function scalarLabel(z) {
   const pre = ['', 'i', '-', '-i'][((quarter % 4) + 4) % 4];
   if (m === '1') return pre === '' ? '1' : pre === '-' ? '-1' : pre;
   return pre + m;
+}
+
+/** Where a CZ's H sits: halfway to the target, or (if that is another wire) half a wire short of it. */
+function _besideTarget(c, q) {
+  const mid = (c + q) / 2;
+  return Number.isInteger(mid) ? q - Math.sign(q - c) * 0.5 : mid;
 }

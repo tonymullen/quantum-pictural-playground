@@ -2,6 +2,7 @@
  * DiracParser — Parse Dirac-notation LaTeX into an AST.
  *
  * Grammar (loosest binding first):
+ *   expr    := [ '\rho' '\mapsto' ] sum                      (a quantum process ρ ↦ …)
  *   sum     := tensor (('+' | '-') tensor)*
  *   tensor  := product ('\otimes' product)*
  *   product := postfix (['\cdot'] postfix | '/' postfix)*       (juxtaposition = composition)
@@ -9,6 +10,9 @@
  *   atom    := '(' sum ')' | '\left(' sum '\right)' | ket | bra | braket
  *            | \ket{…} | \bra{…} | \braket{a|b}
  *            | \frac{sum}{sum} | \sqrt{sum} | e^{sum} | number | i | \pi
+ *            | \sum_{i,j} tensor        (a sum over the basis: |i⟩, ⟨i| take 0 and 1)
+ *            | \hat{sum} | \widehat{sum}   (PQP's doubling: f̂ = f̄ ⊗ f, wire by wire)
+ *            | \mathrm{tr} postfix     (trace)
  *            | '-' atom | named symbol | letter | \text{…} | \operatorname{…} | …
  *
  * So `|0⟩⟨0| ⊗ I + |1⟩⟨1| ⊗ X` reads as (|0⟩⟨0|)⊗I + (|1⟩⟨1|)⊗X, and
@@ -26,6 +30,8 @@
  *   { type:'sqrt', operand }            { type:'exp', operand }
  *   { type:'transpose', operand }       { type:'conjugate', operand }   (^T, \overline{…})
  *   { type:'operator', name }
+ *   { type:'map', variable, body }      { type:'indexsum', indices:[], body }
+ *   { type:'double', operand }          { type:'trace', operand }
  */
 
 export class ParseError {
@@ -34,7 +40,7 @@ export class ParseError {
 
 export default function parseDirac(latex) {
   const p = new Parser(latex);
-  const ast = p.parseExpr();
+  const ast = p.parseTop();
   p.skipWS();
   if (p.pos < p.src.length)
     throw new ParseError(`Unexpected '${p.src[p.pos]}' at position ${p.pos}`, p.pos);
@@ -42,7 +48,7 @@ export default function parseDirac(latex) {
 }
 
 const GREEK = { alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', theta: 'θ',
-  phi: 'φ', varphi: 'φ', psi: 'ψ', lambda: 'λ', mu: 'μ', omega: 'ω' };
+  phi: 'φ', varphi: 'φ', psi: 'ψ', lambda: 'λ', mu: 'μ', omega: 'ω', rho: 'ρ' };
 const SPACING = ['\\quad', '\\qquad', '\\,', '\\;', '\\:', '\\!', '\\ '];
 
 class Parser {
@@ -71,6 +77,20 @@ class Parser {
   tryEat(s) { if (this.at(s)) { this.pos += s.length; return true; } return false; }
 
   parseExpr() { return this.parseSum(); }
+
+  /** Top level: a sum, or a process  ρ ↦ sum. */
+  parseTop() {
+    const start = this.pos;
+    if (this.atCmd('\\rho') || this.at('ρ')) {
+      if (this.at('ρ')) this.advance(); else this.eat('\\rho');
+      if (this.atCmd('\\mapsto') || this.at('↦')) {
+        if (this.at('↦')) this.advance(); else this.eat('\\mapsto');
+        return { type: 'map', variable: 'ρ', body: this.parseSum() };
+      }
+      this.pos = start;
+    }
+    return this.parseSum();
+  }
 
   parseSum() {
     const terms = [{ sign: 1, node: this.parseTensor() }];
@@ -141,8 +161,17 @@ class Parser {
     if (this.atCmd('\\pi')) { this.eat('\\pi'); return { type: 'scalar', value: [Math.PI, 0] }; }
     for (const cmd of ['\\overline', '\\bar'])
       if (this.atCmd(cmd)) { this.eat(cmd); return { type: 'conjugate', operand: this._parseBracedExpr() }; }
-    for (const cmd of ['\\hat', '\\text', '\\mathrm', '\\mathbb', '\\operatorname', '\\mathbf'])
-      if (this.atCmd(cmd)) { this.eat(cmd); return { type: 'operator', name: this._braced().trim() }; }
+    for (const cmd of ['\\widehat', '\\hat'])
+      if (this.atCmd(cmd)) { this.eat(cmd); return { type: 'double', operand: this._parseBracedExpr() }; }
+    if (this.atCmd('\\sum')) return this.parseIndexSum();
+    if (this.atCmd('\\mapsto')) throw new ParseError(`'\\mapsto' must follow \\rho at the start (ρ ↦ …)`, this.pos);
+    for (const cmd of ['\\text', '\\mathrm', '\\mathbb', '\\operatorname', '\\mathbf'])
+      if (this.atCmd(cmd)) {
+        this.eat(cmd);
+        const name = this._braced().trim();
+        if (/^(tr|Tr|trace)$/.test(name)) return { type: 'trace', operand: this.parsePostfix() };
+        return { type: 'operator', name };
+      }
     if (this.peek() === 'e' && this.src[this.pos + 1] === '^') {
       this.advance(2);
       const operand = this.peek() === '{' ? this._parseBracedExpr() : this.parseAtom();
@@ -190,6 +219,19 @@ class Parser {
     return { type: 'bra', label: label1.trim() };
   }
 
+  /** \sum_{i,j} body  or  \sum_i body — the body is the following ⊗-term. */
+  parseIndexSum() {
+    this.eat('\\sum');
+    let indices = [];
+    if (this.tryEat('_')) {
+      const raw = this.peek() === '{' ? this._braced() : (this.advance(), this.src[this.pos - 1]);
+      indices = raw.split(/[,\s]+/).map(x => x.trim()).filter(Boolean);
+    }
+    if (!indices.length || !indices.every(x => /^[a-zA-Z]$/.test(x)))
+      throw new ParseError('Write a sum over the basis as \\sum_{i} or \\sum_{i,j} (single-letter indices)', this.pos);
+    return { type: 'indexsum', indices, body: this.parseTensor() };
+  }
+
   parseFrac() {
     this.advance(this.src.startsWith('\\frac', this.pos) ? 5 : 6);
     const num = this._parseBracedExpr();
@@ -212,7 +254,7 @@ class Parser {
     this.eat('\\'); let name = '';
     while (this.pos < this.src.length && this._isAlpha(this.src[this.pos]))
       { name += this.src[this.pos]; this.advance(); }
-    if (['otimes', 'rangle', 'right', 'cdot', 'times'].includes(name))
+    if (['otimes', 'rangle', 'right', 'cdot', 'times', 'mapsto'].includes(name))
       throw new ParseError(`Unexpected '\\${name}' at position ${start}`, start);
     return { type: 'operator', name: GREEK[name] || name };
   }
@@ -235,7 +277,7 @@ class Parser {
     if (this.pos >= this.src.length) return false;
     const ch = this.src[this.pos];
     if ('+-)}/^'.includes(ch)) return false;
-    for (const stop of ['\\otimes', '\\right', '\\rangle', '\\cdot', '\\times'])
+    for (const stop of ['\\otimes', '\\right', '\\rangle', '\\cdot', '\\times', '\\mapsto'])
       if (this.atCmd(stop)) return false;
     return true;
   }

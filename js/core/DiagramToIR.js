@@ -182,6 +182,12 @@ export default function diagramToIR(doc) {
     .map(e => ({ nodeId: e.irId, portIndex: e.port })));
   graph.inputBoundary = expand(open.in);
   graph.outputBoundary = expand(open.out);
+  // In the doubled picture: which boundary wires are quantum (thick) and which classical (thin)
+  graph.doubled = doubledDiagram;
+  if (doubledDiagram) {
+    const kind = p => (thick(p.node, p.dir, p.i) ? 'q' : 'c');
+    graph.boundaryKinds = { in: open.in.map(kind), out: open.out.map(kind) };
+  }
 
   // Boundaries in diagram terms, for the in/out markers on the canvas
   doc.inputBoundary = open.in.map(p => ({ nodeId: p.node.id, portIndex: p.i }));

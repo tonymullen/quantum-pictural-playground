@@ -31,6 +31,13 @@ export default class DiagramToolbar {
     paletteBtn.addEventListener('click', () => callbacks.togglePalette());
     utilGroup.appendChild(paletteBtn);
 
+    const mk = (text, title, fn) => {
+      const b = document.createElement('button');
+      b.className = 'diagram-tool-btn'; b.textContent = text; b.title = title;
+      b.addEventListener('click', fn); utilGroup.appendChild(b); return b;
+    };
+    if (callbacks.copy) mk('⧉', 'Copy the selected nodes (Cmd+C) — paste into any diagram', () => callbacks.copy());
+    if (callbacks.paste) mk('📋', 'Paste (Cmd+V). With a matching selection, replaces it; Shift-click or Shift+Cmd+V pastes beside', e => callbacks.paste(e));
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'diagram-tool-btn';
     deleteBtn.title = 'Delete selected (Del)';

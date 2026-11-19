@@ -11,12 +11,17 @@
  *   - Click a node / wire     → select (Shift adds); drag on empty space → box select
  *   - Click a spider/box port → select that leg (🗑 removes it)
  *   - Delete / Backspace      → delete selection (same as the 🗑 button)
+ *   - Cmd+C / Cmd+X           → copy / cut the selected nodes as a fragment (one clipboard, all panels)
+ *   - Cmd+V                   → paste; with a selection whose legs match, replace it (a rewrite)
+ *   - Shift+Cmd+V / Cmd+D     → paste beside / duplicate, never replacing
+ *   - Drop a node near a free port it fits → plugged in (wired)
  *   - Alt+drag / middle-drag  → pan; wheel → zoom
  */
 import DiagramNode, { uprightText } from './DiagramNode.js';
 import { ORIENTATIONS, orient, unorient } from '../../core/FlowDirection.js';
 import DiagramWire, { wireCurve, straightCurve, strokeCurve } from './DiagramWire.js';
 import diagramToIR from '../../core/DiagramToIR.js';
+import { Clipboard, copyFragment, pasteFragment, fits, replaceRegion, regionBoundary, plugCandidates, describeLegs } from './Fragment.js';
 
 // Handle sizes are in SCREEN pixels (converted with px()), so ports, wires and
 // the + handle stay grabbable however far the view is zoomed out.
@@ -24,6 +29,7 @@ const PORT_HIT_R = 9;     // screen-px radius for grabbing a port handle
 const DRAG_THRESHOLD = 3; // screen px before a press becomes a drag
 const LEG_HANDLE_R = 7;   // screen-px radius of a spider's "+ new leg" handle
 const NODE_CORE = 0.55;   // the inner part of a node always grabs the node, not a port
+const PLUG_R = 18;        // screen-px: a dropped node's free port this close to a fitting one is wired to it
 
 /** Draw "Σ" with its indices as a subscript, right-aligned at (x, y) in screen space. */
 export function drawSigma(ctx, x, y, indices, size = 30) {
@@ -242,6 +248,90 @@ export default class DiagramCanvas {
   /** Selected nodes (array). */
   selectedNodes() { return Array.from(this.nodes.values()).filter(n => n.selected); }
 
+  /* ---- Fragments: copy, paste, replace (see Fragment.js) ---- */
+
+  /** Copy the selected nodes (and the wires between them) to the app clipboard. */
+  copySelection({ quiet = false } = {}) {
+    const ids = this.selectedNodes().map(n => n.id);
+    if (!ids.length) { this._showToast('Select nodes to copy', 'warn'); return null; }
+    const frag = copyFragment(this.doc, ids);
+    Clipboard.set(frag);
+    this._pasted = new Set(ids);   // pasting over what was just copied would change nothing: paste beside it
+    if (!quiet) this._showToast(`Copied: ${frag.nodes.length} node${frag.nodes.length === 1 ? '' : 's'}, ${describeLegs(frag.inputs.length, frag.outputs.length)}`, 'info');
+    return frag;
+  }
+
+  cutSelection() {
+    if (!this.copySelection({ quiet: true })) return;
+    this.deleteSelected();
+  }
+
+  /**
+   * Paste the clipboard. With a selection whose legs match the clipboard's,
+   * replace it (the rewrite gesture for proofs); otherwise — or with
+   * alongside — add it beside, selected and ready to drag (and plug in).
+   */
+  paste({ alongside = false } = {}) {
+    const frag = Clipboard.get();
+    if (!frag) { this._showToast('Nothing to paste — copy some nodes first (Cmd+C)', 'warn'); return null; }
+    const sel = this.selectedNodes().map(n => n.id);
+    // Selection = what was just copied or pasted → paste (another) beside it, never over it
+    const justPasted = this._pasted && sel.length === this._pasted.size && sel.every(id => this._pasted.has(id));
+    if (sel.length && !alongside && !justPasted) {
+      const f = fits(this.doc, sel, frag);
+      if (f.ok) {
+        this.doc.pushUndo();
+        const added = replaceRegion(this.doc, sel, frag);
+        this._deselectAll(); for (const n of added) n.selected = true;
+        this._pasted = null;
+        this._commit(); this._selectionChanged();
+        this._showToast('Replaced the selection (Cmd+Z undoes; Shift+Cmd+V pastes beside instead)', 'info');
+        return added;
+      }
+      this._showToast(`Pasted beside — can’t replace: ${f.why}`, 'warn');
+    }
+    // Beside: at the pointer (if it moved since the last paste), else a step on from the last paste
+    const same = (a, b) => a && b && Math.hypot(a.x - b.x, a.y - b.y) < 1;
+    const selNodes = this.selectedNodes();
+    const overSel = p => p && selNodes.some(n => Math.hypot(p.x - n.x, p.y - n.y) <= n.radius * 1.5);
+    let at;
+    if (this._pointer && !same(this._pointer, this._pasteFrom) && !(justPasted && overSel(this._pointer))) at = { ...this._pointer };
+    else if (justPasted && selNodes.length) {
+      const c = selNodes.reduce((a, n) => ({ x: a.x + n.x / selNodes.length, y: a.y + n.y / selNodes.length }), { x: 0, y: 0 });
+      at = { x: c.x + 40, y: c.y + 40 };
+    } else if (this._lastPasteAt) at = { x: this._lastPasteAt.x + 40, y: this._lastPasteAt.y + 40 };
+    else { const r = this.canvas.getBoundingClientRect(); at = this._screenToWorld(r.width / 2, r.height / 2); }
+    this._pasteFrom = this._pointer;
+    this.doc.pushUndo();
+    const added = pasteFragment(this.doc, frag, at.x, at.y);
+    this._deselectAll(); for (const n of added) n.selected = true;
+    this._pasted = new Set(added.map(n => n.id));
+    this._lastPasteAt = at;
+    this._commit(); this._selectionChanged();
+    return added;
+  }
+
+  /** Copy and paste beside in one go (leaves the clipboard as it was). */
+  duplicateSelection() {
+    const ids = this.selectedNodes().map(n => n.id);
+    if (!ids.length) { this._showToast('Select nodes to duplicate', 'warn'); return null; }
+    const saved = Clipboard.get();
+    Clipboard.set(copyFragment(this.doc, ids));
+    this._pasted = new Set(ids);       // → beside the selection
+    this._pasteFrom = this._pointer;   // (ignore the pointer)
+    const added = this.paste({ alongside: true });
+    Clipboard.set(saved);
+    return added;
+  }
+
+  /** The selection's legs, for the inspector: "2 inputs, 1 output". */
+  selectionLegs() {
+    const ids = this.selectedNodes().map(n => n.id);
+    if (!ids.length) return null;
+    const b = regionBoundary(this.doc, ids);
+    return { inputs: b.in.length, outputs: b.out.length };
+  }
+
   undo() { if (!this.doc.undo()) this._showToast('Nothing to undo', 'warn'); }
   redo() { if (!this.doc.redo()) this._showToast('Nothing to redo', 'warn'); }
 
@@ -337,6 +427,7 @@ export default class DiagramCanvas {
     this._drawBoundaryMarkers(ctx);
     this._drawHandles(ctx);
     if (g && g.kind === 'wire') this._drawWiringPreview(ctx);
+    if (g && g.kind === 'move' && g.moved && g.plugs) this._drawPlugPreview(ctx, g.plugs);
     ctx.restore();
     this._drawFlowArrow();
     this._drawSum();
@@ -494,6 +585,19 @@ export default class DiagramCanvas {
     ctx.strokeStyle = '#4fc1ff'; ctx.lineWidth = 2;
     if (!g.target) ctx.setLineDash([5, 4]);
     strokeCurve(ctx, pts);
+    ctx.restore();
+  }
+
+  /** While dragging: which free ports will be wired together on drop. */
+  _drawPlugPreview(ctx, plugs) {
+    ctx.save();
+    ctx.strokeStyle = '#4fc1ff'; ctx.fillStyle = '#4fc1ff'; ctx.lineWidth = this.px(2);
+    for (const p of plugs) {
+      ctx.beginPath(); ctx.moveTo(p.ax, p.ay); ctx.lineTo(p.bx, p.by); ctx.stroke();
+      for (const [x, y] of [[p.ax, p.ay], [p.bx, p.by]]) {
+        ctx.beginPath(); ctx.arc(x, y, this.px(6), 0, Math.PI * 2); ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 
@@ -763,6 +867,7 @@ export default class DiagramCanvas {
   _onMouseMove(e) {
     const { sx, sy, x, y } = this._eventPos(e);
     const g = this.gesture;
+    if (e.target === this.canvas) this._pointer = { x, y };
     if (!g) {
       // Hover feedback only when the pointer is over this canvas
       if (e.target !== this.canvas) return;
@@ -793,6 +898,7 @@ export default class DiagramCanvas {
       if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < DRAG_THRESHOLD) return;
       g.moved = true;
       for (const [n, o] of g.origins) { n.x = o.x + (x - g.wx); n.y = o.y + (y - g.wy); }
+      g.plugs = plugCandidates(this.doc, new Set([...g.origins.keys()].map(n => n.id)), this.px(PLUG_R));
       this.draw();
     } else if (g.kind === 'wire') {
       if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < DRAG_THRESHOLD) return;
@@ -810,7 +916,13 @@ export default class DiagramCanvas {
     if (!g) return;
     this.gesture = null;
     if (g.kind === 'move') {
-      if (g.moved) { this.doc.pushUndo(g.snapshot); this._commit(); }
+      if (g.moved) {
+        this.doc.pushUndo(g.snapshot);
+        const plugs = plugCandidates(this.doc, new Set([...g.origins.keys()].map(n => n.id)), this.px(PLUG_R));
+        for (const p of plugs) this.wires.push(new DiagramWire(p.from.nodeId, p.from.port, p.to.nodeId, p.to.port));
+        if (plugs.length) this._showToast(`Plugged in ${plugs.length} leg${plugs.length === 1 ? '' : 's'}`, 'info');
+        this._commit();
+      }
     } else if (g.kind === 'wire') {
       if (g.pressed && !g.moved) this._clickPort(g.pressed, e.shiftKey);
       else this._finishWire(g);
@@ -944,6 +1056,10 @@ export default class DiagramCanvas {
       for (const n of this.nodes.values()) n.selected = true;
       this.draw(); this._selectionChanged();
     }
+    else if (mod && !e.altKey && (e.key === 'c' || e.key === 'C') && !e.shiftKey) { e.preventDefault(); this.copySelection(); }
+    else if (mod && !e.altKey && (e.key === 'x' || e.key === 'X') && !e.shiftKey) { e.preventDefault(); this.cutSelection(); }
+    else if (mod && !e.altKey && (e.key === 'v' || e.key === 'V')) { e.preventDefault(); this.paste({ alongside: e.shiftKey }); }
+    else if (mod && !e.altKey && (e.key === 'd' || e.key === 'D') && !e.shiftKey) { e.preventDefault(); this.duplicateSelection(); }
     else if (e.key === 'z' && mod && !e.shiftKey) { e.preventDefault(); this.undo(); }
     else if ((e.key === 'z' && mod && e.shiftKey) || (e.key === 'y' && mod)) { e.preventDefault(); this.redo(); }
   }
@@ -962,7 +1078,8 @@ export default class DiagramCanvas {
 
   /** Show a brief toast message overlaid on the canvas */
   _showToast(msg, type = 'error') {
-    const el = document.createElement('div');
+    if (this._toastEl) this._toastEl.remove();      // one at a time: the newest replaces the last
+    const el = this._toastEl = document.createElement('div');
     el.textContent = msg;
     el.style.cssText = `
       position:absolute; bottom:12px; left:50%; transform:translateX(-50%);

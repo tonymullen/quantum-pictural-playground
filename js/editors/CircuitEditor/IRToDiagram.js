@@ -26,6 +26,9 @@ export default function irToDiagram(ir) {
     d.outputs = n.totalOut;
     d.label = _label(n);
     if (n.tensor && (n.kind === 'morphism' || n.kind === 'scalar')) d.tensor = n.tensor;
+    // The doubled picture (a circuit that measures): thick quantum nodes, white dots with typed legs
+    if (n.thick) d.thick = true;
+    if (n.legThick) d.legThick = { in: [...n.legThick.in], out: [...n.legThick.out] };
     // A multi-qubit box puts each port on its own qubit's wire
     const pq = n.layout && n.layout.portQ;
     if (n.kind === 'morphism' && pq && pq.in.length > 1) d.portXOffsets = pq.in.map(qq => (qq - q) * DX);

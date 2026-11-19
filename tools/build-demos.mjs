@@ -348,6 +348,36 @@ DEMOS.push({
   },
 });
 
+DEMOS.push({
+  id: 'teleportation',
+  name: 'Quantum teleportation',
+  description: 'Alice holds a qubit (q0) and half of a Bell pair (q1); Bob holds the other half (q2). '
+    + 'She measures q0 and q1 in the Bell basis — the wires turn classical (double lines) — and Bob corrects '
+    + 'with an X and a Z controlled by her two bits. Because the circuit measures, its PQP diagram is doubled: '
+    + 'thick quantum wires, thin classical ones, white dots for the measurements and the classical controls. '
+    + 'The proof checks that the whole process, with the bits discarded, is just a wire: the state arrives intact.',
+  build() {
+    const c = circuit('Teleportation', 3, [
+      [0, 1, 'H'], [1, 1, 'ctrl'], [1, 2, 'X'],                     // Bell pair on q1, q2
+      [2, 0, 'ctrl'], [2, 1, 'X'], [3, 0, 'H'],                     // Bell-basis measurement…
+      [4, 0, 'measure'], [4, 1, 'measure'],
+      [5, 1, 'ctrl'], [5, 2, 'X'], [6, 0, 'ctrl'], [6, 2, 'Z'],     // …and Bob's corrections
+    ], ['open', '0', '0']);
+    c.setOutput(0, 'discard'); c.setOutput(1, 'discard');
+    c._undoStack = [];
+    const diagram = derivedDiagram(c);
+    const p = proof('Teleportation is a wire', [
+      { from: diagram },
+      { relation: '=', note: 'teleportation: measure, correct, discard the bits = the identity channel',
+        build: d => { const w = add(d, NT.IDENTITY, 200, 200); w.thick = true; } },
+    ]);
+    return split('vertical', 0.55,
+      split('horizontal', 0.5, leaf('Circuit Editor', { docId: c.id }),
+        leaf('Diagram Editor', { docId: diagram.id, orientation: 'pqp', view: { fitted: true } })),
+      leaf('Diagram Equation Editor', { proofId: p.id, selected: 1 }));
+  },
+});
+
 /* ---------------- Build ---------------- */
 
 mkdirSync(OUT, { recursive: true });
