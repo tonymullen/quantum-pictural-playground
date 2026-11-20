@@ -1,0 +1,248 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.6 A circuit is a diagram",
+ "description": "A two-gate circuit: find its layers and write it as one ∘/⊗ formula.",
+ "summary": {
+  "circuits": 1,
+  "diagrams": 0,
+  "proofs": 0
+ },
+ "documents": [
+  {
+   "kind": "circuit",
+   "id": "circ-2",
+   "data": {
+    "name": "Two gates",
+    "nQubits": 2,
+    "tensorOrder": "big-endian",
+    "inputs": [
+     "0",
+     "0"
+    ],
+    "outputs": [
+     "open",
+     "open"
+    ],
+    "columns": [
+     [
+      {
+       "gate": "H"
+      },
+      null
+     ],
+     [
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-53",
+   "data": {
+    "name": "Two gates · diagram",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": "circ-2",
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-155",
+      "typeKey": "x-spider",
+      "x": 120,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-156",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-157",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 440,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-158",
+      "typeKey": "z-spider",
+      "x": 120,
+      "y": 360,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-159",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 360,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-160",
+      "typeKey": "scalar",
+      "x": 340,
+      "y": 520,
+      "label": "1/√2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": {
+       "rows": 1,
+       "cols": 1,
+       "d": [
+        [
+         0.7071067811865475,
+         0
+        ]
+       ]
+      },
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-86",
+      "fromNodeId": "node-155",
+      "fromPort": 0,
+      "toNodeId": "node-157",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-87",
+      "fromNodeId": "node-157",
+      "fromPort": 0,
+      "toNodeId": "node-158",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-88",
+      "fromNodeId": "node-156",
+      "fromPort": 0,
+      "toNodeId": "node-159",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-89",
+      "fromNodeId": "node-158",
+      "fromPort": 1,
+      "toNodeId": "node-159",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "horizontal",
+    "ratio": 0.5,
+    "children": [
+     {
+      "type": "split",
+      "direction": "vertical",
+      "ratio": 0.45,
+      "children": [
+       {
+        "type": "leaf",
+        "editorType": "Circuit Editor",
+        "state": {
+         "docId": "circ-2"
+        }
+       },
+       {
+        "type": "leaf",
+        "editorType": "Diagram Editor",
+        "state": {
+         "docId": "doc-53",
+         "orientation": "pqp",
+         "structure": true,
+         "view": {
+          "fitted": true
+         }
+        }
+       }
+      ]
+     },
+     {
+      "type": "leaf",
+      "editorType": "Dirac Formula Editor",
+      "state": {
+       "docId": "circ-2"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex06",
+  "chapter": 3,
+  "number": "3.6",
+  "title": "A circuit is a diagram",
+  "level": 2,
+  "statement": "The Circuit Editor builds circuits from gates; its PQP diagram is shown below it with the ∘⊗ layers switched on. (The CNOT is drawn as a green and a red dot joined by a line — a picture PQP explains in Chapter 9. For now, treat the pair as one box with two inputs and two outputs.)\n\n- (a) Write the whole circuit, starting state included, as one formula using ⊗ and composition, in the Dirac Formula Editor, and press **Verify**. Remember that composition is written right to left: $BA$ means *A first*.\n- (b) Add a gate in a new column of the circuit and extend your formula to match.\n- (c) PQP Theorem 3.22 says a diagram is a circuit exactly when it has no directed cycles. Describe a diagram that is not a circuit.",
+  "done": "Verify shows ✓ Equivalent for your formula, before and after (b).",
+  "book": "textbook/ch03.html#ex-3-6"
+ }
+}

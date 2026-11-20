@@ -232,6 +232,7 @@ export default class EquationEditor {
   }
 
   _deleteStep() {
+    if (this.proof.isLocked(this.selected)) { this._toast('This step is given by the exercise — it stays'); return; }
     if (this.proof.steps.length <= 1) { this._toast('A proof keeps at least one step'); return; }
     this.proof.removeStep(this.selected);
     this.selected = Math.min(this.selected, this.proof.steps.length - 1);
@@ -286,7 +287,8 @@ export default class EquationEditor {
       const cap = document.createElement('div');
       cap.className = 'equation-card-caption';
       const src = p.sourceOf(i);
-      cap.textContent = `D${SUB(i + 1)}`;
+      cap.textContent = `D${SUB(i + 1)}` + (p.isLocked(i) ? ' · given' : '');
+      if (p.isLocked(i)) card.classList.add('locked');
       if (src) card.title = `Copy of “${DocumentStore.displayName(src)}” — click to edit this step`;
       card.appendChild(cap);
       card.addEventListener('mousedown', () => { this.selected = i; this.render(); this.stripEl.focus({ preventScroll: true }); });
@@ -355,6 +357,12 @@ export default class EquationEditor {
     const n = this.proof.steps.length;
     const el = this.summaryEl;
     el.className = 'equation-summary';
+    const goal = this.proof.goalStatus(check);
+    if (goal) {
+      el.classList.add(goal.solved ? 'ok' : check.status === 'fail' ? 'fail' : 'goal');
+      el.textContent = goal.message;
+      return;
+    }
     if (check.status === 'empty') { el.textContent = 'Add a step (＋ Step duplicates this one) to start the proof'; return; }
     const claim = `D${SUB(1)} ${check.relation} D${SUB(n)}`;
     if (check.status === 'ok') {
@@ -372,13 +380,15 @@ export default class EquationEditor {
     if (!st) { this.inspTextEl.textContent = ''; this.updateBtn.hidden = this.applyBtn.hidden = true; return; }
     const src = this.proof.sourceOf(this.selected);
     this.inspTextEl.textContent = `Editing D${SUB(this.selected + 1)}` + (src ? ` · copy of “${DocumentStore.displayName(src)}”` : '');
-    this.updateBtn.hidden = !src;
+    this.updateBtn.hidden = !src || this.proof.isLocked(this.selected);
+    if (this.proof.isLocked(this.selected)) this.inspTextEl.textContent = `D${SUB(this.selected + 1)} is given by the exercise (read-only)`;
     this.applyBtn.hidden = !this.proof.canApplyToSource(this.selected);
   }
 
   _showSelectedStep() {
     const st = this.proof.steps[this.selected];
     if (!st) return;
+    this._showLock(this.proof.isLocked(this.selected));
     if (!this.stepEditor) {
       this.stepEditor = new DiagramEditor(this.editorWrap, { doc: st.diagram, embedded: true });
       // A rewrite in a proof makes the next step (the selected one stays as it was)
@@ -390,6 +400,25 @@ export default class EquationEditor {
       this.stepEditor.showDocument(st.diagram);
       this.stepEditor.canvas.fitToContent();
     }
+  }
+
+  /** A given step (an exercise's start or goal) is shown but cannot be edited: a cover over its editor. */
+  _showLock(locked) {
+    this.editorWrap.classList.toggle('locked-step', locked);
+    if (locked && !this.lockEl) {
+      this.lockEl = document.createElement('div');
+      this.lockEl.className = 'equation-lock';
+      const msg = document.createElement('div');
+      msg.className = 'equation-lock-msg';
+      msg.textContent = 'Given by the exercise — read-only. Select a step in between to edit it, or ＋ Step to work from this one.';
+      this.lockEl.appendChild(msg);
+      // Clicks on the cover keep focus on the strip, so keys (Del, arrows) act on the steps
+      this.lockEl.addEventListener('mousedown', e => { e.preventDefault(); this.stripEl.focus({ preventScroll: true }); });
+      this.lockEl.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+      this.editorWrap.appendChild(this.lockEl);
+    }
+    if (this.lockEl) this.lockEl.hidden = !locked;
+    if (locked && this.stepEditor) requestAnimationFrame(() => this.stepEditor && this.stepEditor.canvas.fitToContent());
   }
 
   _toast(msg) {
@@ -411,8 +440,12 @@ export default class EquationEditor {
   }
 }
 
-/** Draw a diagram, fitted, into a small canvas (in the given view orientation). */
-export function drawThumbnail(cv, doc, orientation) {
+/**
+ * Draw a diagram, fitted, into a small canvas (in the given view orientation).
+ * opts: { width, height, maxZoom } — the textbook's figures draw larger.
+ */
+export function drawThumbnail(cv, doc, orientation, { width = THUMB_W, height = THUMB_H, maxZoom = 1 } = {}) {
+  const THUMB_W = width, THUMB_H = height;
   const dpr = window.devicePixelRatio || 1;
   cv.width = THUMB_W * dpr; cv.height = THUMB_H * dpr;
   cv.style.width = THUMB_W + 'px'; cv.style.height = THUMB_H + 'px';
@@ -432,7 +465,7 @@ export function drawThumbnail(cv, doc, orientation) {
     x0 = Math.min(x0, p.x - pad); x1 = Math.max(x1, p.x + pad);
     y0 = Math.min(y0, p.y - pad); y1 = Math.max(y1, p.y + pad);
   }
-  const z = Math.min(1, (THUMB_W - 8) / (x1 - x0), (THUMB_H - 8) / (y1 - y0));
+  const z = Math.min(maxZoom, (THUMB_W - 8) / (x1 - x0), (THUMB_H - 8) / (y1 - y0));
   const sums = doc.sumIndices || [];
   const shift = sums.length ? 10 : 0;          // room for Σᵢ on the left
   ctx.save();

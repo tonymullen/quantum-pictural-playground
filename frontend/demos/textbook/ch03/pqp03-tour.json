@@ -1,0 +1,295 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.0 Getting around the Playground",
+ "description": "The workbook used in the walkthrough at the start of Chapter 3: a state ψ, a box f and an effect π in the Diagram Editor (with its ∘⊗ reading switched on), the same diagram in Dirac notation, and a first proof — moving a box changes nothing, because only connectivity matters (PQP Cor. 3.5).",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 1,
+  "proofs": 1
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-0",
+   "data": {
+    "name": "ψ, f and π",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-0",
+      "typeKey": "state",
+      "x": 200,
+      "y": 320,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-1",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-2",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 120,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-0",
+      "fromNodeId": "node-0",
+      "fromPort": 0,
+      "toNodeId": "node-1",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-1",
+      "fromNodeId": "node-1",
+      "fromPort": 0,
+      "toNodeId": "node-2",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-2",
+   "data": {
+    "name": "Moving a box changes nothing step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-0",
+    "nodes": [
+     {
+      "id": "node-6",
+      "typeKey": "state",
+      "x": 200,
+      "y": 320,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-7",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-8",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 120,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-4",
+      "fromNodeId": "node-6",
+      "fromPort": 0,
+      "toNodeId": "node-7",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-5",
+      "fromNodeId": "node-7",
+      "fromPort": 0,
+      "toNodeId": "node-8",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-4",
+   "data": {
+    "name": "Moving a box changes nothing step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-0",
+    "nodes": [
+     {
+      "id": "node-9",
+      "typeKey": "state",
+      "x": 200,
+      "y": 320,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-10",
+      "typeKey": "morphism",
+      "x": 300,
+      "y": 240,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-11",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 120,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-6",
+      "fromNodeId": "node-9",
+      "fromPort": 0,
+      "toNodeId": "node-10",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-7",
+      "fromNodeId": "node-10",
+      "fromPort": 0,
+      "toNodeId": "node-11",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-0",
+   "data": {
+    "name": "Moving a box changes nothing",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-2",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-4",
+      "relation": "=",
+      "note": "deformation: only connectivity matters (PQP Cor. 3.5)",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.5,
+  "children": [
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.6,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-0",
+       "orientation": "pqp",
+       "structure": true,
+       "view": {
+        "fitted": true
+       }
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Dirac Formula Editor",
+      "state": {
+       "docId": "doc-0"
+      }
+     }
+    ]
+   },
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-0",
+     "selected": 1
+    }
+   }
+  ]
+ }
+}

@@ -12,6 +12,7 @@ import C from './Complex.js';
 import Tensor from './Tensor.js';
 import Phase from './Phase.js';
 import { GenKind, WireType } from './IR.js';
+import { parseScalarLabel } from './ScalarLabel.js';
 import Config from './Config.js';
 
 /**
@@ -51,9 +52,13 @@ export function generatorTensor(node) {
       const b = basisTensor(node.label, node);
       return b ? orientTensor(b, node.flip) : null;
     }
+    case GenKind.SCALAR: {
+      // A number: "2", "0", "1/√2", "e^(iπ/4)" … is that number; "λ" is a symbol
+      const z = parseScalarLabel(node.label);
+      return z ? orientTensor(new Tensor(1, 1, [z]), node.flip) : null;
+    }
     case GenKind.MORPHISM:
-    case GenKind.SCALAR:
-      // These are symbolic unless a tensor is attached
+      // Symbolic unless a tensor is attached
       return null;
     default:
       return null;

@@ -44,6 +44,7 @@ export function irToDirac(ir) {
 
   let scalarPrefactor = C.ONE;
   const parts = [];
+  const symbolicPre = [];          // symbolic numbers, written in front: λ f
   const infoParts = [];
 
   for (const comp of components) {
@@ -59,6 +60,12 @@ export function irToDirac(ir) {
     const compResult = _translateComponent(tensor, cl, comp);
     // the diagram nodes this factor comes from (for hover-highlighting)
     compResult.nodeIds = [...comp.nodes.values()].map(n => n.provenance && n.provenance.elementId).filter(Boolean);
+    // A symbolic number (λ, or ⟨π|ψ⟩): no wires in or out, so it multiplies the rest
+    if (!tensor && !comp.inputBoundary.length && !comp.outputBoundary.length && compResult.latex) {
+      symbolicPre.push(compResult);
+      if (compResult.info) infoParts.push(compResult.info);
+      continue;
+    }
     // Fold recognition scalar into the global prefactor
     if (compResult.scalar && !C.eq(compResult.scalar, C.ONE)) {
       scalarPrefactor = C.mul(scalarPrefactor, compResult.scalar);
@@ -80,38 +87,44 @@ export function irToDirac(ir) {
     infoParts.push(`Overall scalar ${scalarLabel(scalarPrefactor)}`);
 
   const prefactorIsOne = C.eq(scalarPrefactor, C.ONE);
-  const wrap = p => (p.isSum && (parts.length > 1 || !prefactorIsOne)) ? `(${p.latex})` : p.latex;
-  const combined = parts.map(wrap).join(' \\otimes ');
+  const wrap = p => (p.isSum && (parts.length > 1 || !prefactorIsOne || symbolicPre.length)) ? `(${p.latex})` : p.latex;
+  // A ket beside a bra is written |ψ⟩⟨π| (the outer product, PQP §3.4.4 D4), not |ψ⟩ ⊗ ⟨π|
+  const join = strs => strs.reduce((acc, t, k) => (k === 0 ? t
+    : acc + (/\\rangle\}*$/.test(acc) && /^(\\htmlData\{qpp=\d+\}\{)?\\langle/.test(t) ? ' ' : ' \\otimes ') + t), '');
+  const symPre = symbolicPre.map(p => (p.isSum ? `(${p.latex})` : p.latex)).join(' ');
+  const combined = (symPre && parts.length ? symPre + ' ' : symPre) + join(parts.map(wrap));
   // The same expression with each ⊗ factor tagged (KaTeX \htmlData), and what each tag points at
-  const links = parts.map(p => ({ nodeIds: p.nodeIds || [] }));
-  const annotatedParts = parts.map((p, k) => `\\htmlData{qpp=${k}}{${wrap(p)}}`).join(' \\otimes ');
+  const all = [...symbolicPre, ...parts];
+  const links = all.map(p => ({ nodeIds: p.nodeIds || [] }));
+  const annotatedParts = (symbolicPre.length ? symbolicPre.map((p, k) => `\\htmlData{qpp=${k}}{${p.isSum ? `(${p.latex})` : p.latex}}`).join(' ') + (parts.length ? ' ' : '') : '')
+    + join(parts.map((p, k) => `\\htmlData{qpp=${k + symbolicPre.length}}{${wrap(p)}}`));
 
   let latex;
-  if (parts.length === 0) {
+  if (parts.length === 0 && !symbolicPre.length) {
     latex = _complexToLatex(scalarPrefactor);
   } else if (prefactorIsOne) {
     latex = combined;
   } else {
     const pre = C.isZero(scalarPrefactor) ? '0' : _complexToLatex(scalarPrefactor);
-    latex = pre + ' \\cdot ' + (parts.length > 1 ? '(' + combined + ')' : combined);
+    latex = pre + ' \\cdot ' + (all.length > 1 ? '(' + combined + ')' : combined);
   }
   // A component that could not be printed would silently change the shape of
   // the ⊗ product, so emit nothing parseable rather than a wrong expression.
   if (parts.some(p => !p.latex)) latex = '';
   let annotated = '';
-  if (latex && parts.length) {
+  if (latex && all.length) {
     annotated = prefactorIsOne ? annotatedParts
-      : (C.isZero(scalarPrefactor) ? '0' : _complexToLatex(scalarPrefactor)) + ' \\cdot ' + (parts.length > 1 ? '(' + annotatedParts + ')' : annotatedParts);
+      : (C.isZero(scalarPrefactor) ? '0' : _complexToLatex(scalarPrefactor)) + ' \\cdot ' + (all.length > 1 ? '(' + annotatedParts + ')' : annotatedParts);
   }
 
-  const cats = parts.map(p => p.category);
-  const overallCat = parts.length === 0 ? 'C'
+  const cats = all.map(p => p.category);
+  const overallCat = all.length === 0 ? 'C'
     : cats.includes('D') ? 'D' : cats.includes('F') ? 'F'
     : cats.includes('A') ? 'A' : cats.includes('B') ? 'B' : 'C';
-  const reasons = parts.map(p => p.reason).filter(Boolean);
-  const overallReason = parts.length === 0
+  const reasons = all.map(p => p.reason).filter(Boolean);
+  const overallReason = all.length === 0
     ? (C.isZero(scalarPrefactor) ? 'Evaluates to zero' : 'Scalar')
-    : reasons.length <= 1 ? (reasons[0] || '') : parts.length + ' components';
+    : reasons.length <= 1 ? (reasons[0] || '') : all.length + ' components';
 
   const info = infoParts.join(' | ');
   return { latex, info, category: overallCat, reason: overallReason, tensor: null, ir, annotated, links };

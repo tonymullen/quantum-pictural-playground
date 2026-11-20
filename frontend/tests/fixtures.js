@@ -30,6 +30,8 @@ import ProofDocument from '../js/editors/EquationEditor/ProofDocument.js';
 import DocumentStore from '../js/editors/DocumentStore.js';
 import { captureWorkbook, openWorkbookDocuments, summaryText } from '../js/workbooks/Workbook.js';
 import { DemoStore, LocalWorkbookStore } from '../js/workbooks/WorkbookStores.js';
+import { parseScalarLabel } from '../js/core/ScalarLabel.js';
+import { renderMiniMarkup } from '../js/core/MiniMarkup.js';
 import { copyFragment, pasteFragment, fits, replaceRegion, regionBoundary, plugCandidates } from '../js/editors/DiagramEditor/Fragment.js';
 
 const out = document.getElementById('out');
@@ -634,8 +636,9 @@ log('\n=== R12: Parser ===');
   assert(same('\\langle 0|+\\rangle', '\\frac{1}{\\sqrt{2}}'), '⟨0|+⟩ braket');
   assert(evalStr('\\frac{1}{\\sqrt{n}}|0\\rangle') === null, 'Symbolic \\frac → null, not a wrong number');
   assert(same('|\\Phi^-\\rangle', '\\frac{1}{\\sqrt{2}}(|00\\rangle - |11\\rangle)'), 'Bell state Φ⁻');
+  assert(same('|0\\rangle |1\\rangle', '|01\\rangle'), 'Kets side by side are a tensor product: |0⟩ |1⟩ = |01⟩ (Nielsen & Chuang §2.1.7)');
   let threw = false;
-  try { evalStr('|0\\rangle |1\\rangle'); } catch (e) { threw = e.message.includes("don't match"); }
+  try { evalStr('X |00\\rangle'); } catch (e) { threw = e.message.includes("don't match"); }
   assert(threw, 'Dimension mismatch gives a readable error');
 }
 
@@ -1148,8 +1151,9 @@ log('\n=== W4: Every demo opens, and its proofs check ===');
         fetchJSON: async p => JSON.parse(await (await import('node:fs/promises')).readFile(p, 'utf8')) })
     : new DemoStore({ base: new URL('../demos/', import.meta.url).href });
   const list = await demos.list();
-  assert(list.length >= 4 && list[0].id === 'getting-started', `${list.length} demos listed, Getting started first`);
-  for (const item of list) {
+  assert(list.length >= 4 && list.some(d => d.id === 'getting-started'), `${list.length} demos listed, Getting started among them`);
+  assert(list.every(d => Array.isArray(d.folder) && d.folder.length && d.file), 'Every demo has a folder and a file');
+  for (const item of list.filter(d => !d.exercise)) {   // exercise starters: X6
     const wb = await demos.load(item.id);
     const { layout } = openWorkbookDocuments(wb);
     const proofs = DocumentStore.list('proof');
@@ -1894,6 +1898,119 @@ log('\n=== K1: Rewrite rules on a selection ===');
   assert(!rulesFor(d, [za.id, xa.id]).some(x => x.id === 'fuse'), 'Fusion is not offered for different colours');
   const bad = applyRewrite(d, { id: 'fuse', ctx: { a: za, b: xa } });
   assert(!bad.ok && d.nodes.size === 2, 'and forcing it (Z(π)·X(π) is not Z(2π)) is caught by the check — the diagram is left as it was');
+}
+
+
+// ===== TEXTBOOK SUPPORT (chapter 3) =====
+
+log('\n=== X1: Number labels are numbers (PQP §3.4.1) ===');
+{
+  const near = (z, re, im = 0) => z && Math.abs(z[0] - re) < 1e-12 && Math.abs(z[1] - im) < 1e-12;
+  assert(near(parseScalarLabel('2'), 2) && near(parseScalarLabel('0'), 0) && near(parseScalarLabel('-1'), -1), '2, 0, −1');
+  assert(near(parseScalarLabel('1/√2'), Math.SQRT1_2) && near(parseScalarLabel('√2/2'), Math.SQRT1_2) && near(parseScalarLabel('0.5'), 0.5), '1/√2, √2/2, 0.5');
+  assert(near(parseScalarLabel('i'), 0, 1) && near(parseScalarLabel('−i'), 0, -1) && near(parseScalarLabel('2i'), 0, 2) && near(parseScalarLabel('(1+i)/2'), 0.5, 0.5), 'i, −i, 2i, (1+i)/2');
+  assert(near(parseScalarLabel('e^(iπ)'), -1) && near(parseScalarLabel('e^{iπ/2}'), 0, 1), 'e^(iπ) = −1, e^{iπ/2} = i');
+  assert(parseScalarLabel('λ') === null && parseScalarLabel('s') === null && parseScalarLabel('2λ') === null && parseScalarLabel('1/0') === null && parseScalarLabel('') === null, 'λ, s, 2λ, 1/0 and empty are not numbers');
+  const d = new DiagramDocument('n'); addN(d, NT.SCALAR, 100, 100, { label: '1/2' });
+  const t = contractIR(diagramToIR(d)).tensor;
+  assert(t && C.eq(t.get(0, 0), C.real(0.5)), 'A number node labelled 1/2 is the number ½');
+}
+
+log('\n=== X2: Numbers in proofs: = , ≈ and zero (PQP §3.4.2–3.4.3) ===');
+{
+  const fWith = lbl => { const d = new DiagramDocument('f'); if (lbl) addN(d, NT.SCALAR, 60, 200, { label: lbl }); const a = addN(d, NT.IDENTITY, 150, 300), f = addN(d, NT.MORPHISM, 150, 200, { label: 'f' }); w(d, a, 0, f, 0); return d; };
+  let r = checkStep(fWith('2').toIR(), fWith(null).toIR(), '=');
+  assert(r.status === 'fail' && /scalar/.test(r.hint), `2·f = f fails: ${r.hint}`);
+  r = checkStep(fWith('2').toIR(), fWith(null).toIR(), '≈');
+  assert(r.status === 'ok', '2·f ≈ f');
+  r = checkStep(fWith('2').toIR(), fWith('2').toIR(), '=');
+  assert(r.status === 'ok', '2·f = 2·f');
+  r = checkStep(fWith('0').toIR(), fWith('2').toIR(), '≈');
+  assert(r.status === 'fail' && /zero/.test(r.hint), `0·f ≈ 2·f fails, and says why: ${r.hint}`);
+  r = checkStep(fWith('0').toIR(), fWith('0').toIR(), '=');
+  assert(r.status === 'ok', '0·f = 0·f');
+}
+
+log('\n=== X3: Dirac on one line (PQP §3.4.4; Nielsen & Chuang §2.1.7) ===');
+{
+  const t = evalDirac(parseDirac('|0\\rangle|+\\rangle')), u = evalDirac(parseDirac('|0\\rangle \\otimes |+\\rangle'));
+  assert(Tensor.equal(t, u), 'Kets side by side are their tensor product: |0⟩|+⟩ = |0⟩ ⊗ |+⟩');
+  assert(Tensor.equal(evalDirac(parseDirac('\\langle 0|\\langle 1|')), evalDirac(parseDirac('\\langle 01|'))), 'and bras: ⟨0|⟨1| = ⟨01|');
+  assert(Tensor.equal(evalDirac(parseDirac('|0\\rangle\\langle 1|')), Tensor.fromRows([[0, 1], [0, 0]])), 'A ket then a bra is still the outer product |0⟩⟨1|');
+  let d = new DiagramDocument('λf'); addN(d, NT.SCALAR, 60, 200, { label: 'λ' }); addN(d, NT.MORPHISM, 150, 200, { label: 'f' });
+  assert(diagramToDirac(d).latex === '\\lambda f', `A symbolic number is written in front: ${diagramToDirac(d).latex}`);
+  d = new DiagramDocument('ket-bra'); addN(d, NT.STATE, 100, 100, { label: 'ψ' }); addN(d, NT.EFFECT, 100, 200, { label: 'π' });
+  assert(diagramToDirac(d).latex === '|\\psi\\rangle \\langle \\pi|', `A state beside an effect is |ψ⟩⟨π|: ${diagramToDirac(d).latex}`);
+  d = new DiagramDocument('fψφ');
+  const s1 = addN(d, NT.STATE, 100, 300, { label: 'ψ' }), s2 = addN(d, NT.STATE, 200, 300, { label: 'φ' }), f = addN(d, NT.MORPHISM, 150, 200, { label: 'f', inputs: 2 });
+  w(d, s1, 0, f, 0); w(d, s2, 0, f, 1);
+  assert(diagramToDirac(d).latex === 'f |\\psi\\rangle |\\phi\\rangle', `States side by side print left to right: ${diagramToDirac(d).latex}`);
+}
+
+log('\n=== X4: Exercise goals: given steps are locked ===');
+{
+  DocumentStore.clear();
+  const p = DocumentStore.add(new ProofDocument('goal'));
+  p.addEmptyStep(); p.addEmptyStep();
+  const [a, b] = [p.steps[0].diagram, p.steps[1].diagram];
+  { const s = addN(a, NT.STATE, 100, 300, { label: 'ψ' }), h1 = addN(a, NT.HADAMARD, 100, 220), h2 = addN(a, NT.HADAMARD, 100, 150); w(a, s, 0, h1, 0); w(a, h1, 0, h2, 0); }
+  addN(b, NT.STATE, 100, 200, { label: 'ψ' });
+  p.steps[1].relation = '=';
+  p.goal = { minSteps: 1 };
+  assert(p.isLocked(0) && p.isLocked(1), 'The first and last steps are locked');
+  assert(p.removeStep(0) === false && p.removeStep(1) === false && p.steps.length === 2, 'and cannot be removed');
+  let st = p.goalStatus();
+  assert(!st.solved && /now prove it/.test(st.message), `The true claim alone is not a solution: ${st.message}`);
+  const at = p.duplicateStep(1);
+  assert(at === 1 && p.steps.length === 3 && p.isLocked(2), 'A copy of the goal goes before it, not after');
+  const mid = p.steps[1].diagram;
+  for (const n of [...mid.nodes.values()]) mid.nodes.delete(n.id);
+  mid.wires = [];
+  { const s = addN(mid, NT.STATE, 100, 300, { label: 'ψ' }), z = addN(mid, NT.IDENTITY, 100, 200); w(mid, s, 0, z, 0); }
+  p.steps[1].relation = '='; p.steps[2].relation = '=';
+  st = p.goalStatus();
+  assert(!st.solved && /rule/.test(st.message), `Steps that check still need their rules named: ${st.message}`);
+  p.goal.relation = '=';
+  p.setRelation(1, '≈');
+  p.setNote(1, 'H H = 1'); p.setNote(2, 'identity removal');
+  st = p.goalStatus();
+  assert(!st.solved && /only claims ≈/.test(st.message), `A goal of = is not met by a step that only claims ≈: ${st.message}`);
+  p.setRelation(1, '=');
+  st = p.goalStatus();
+  assert(st.solved, `Then it is solved: ${st.message}`);
+  const json = p.toJSON();
+  const back = ProofDocument.fromJSON(json, new Map(p.steps.map(x => [x.diagram.id, x.diagram])));
+  assert(back.goal && back.goal.minSteps === 1 && back.isLocked(0), 'The goal survives saving');
+  DocumentStore.clear();
+}
+
+log('\n=== X5: Exercise workbooks keep their exercise ===');
+{
+  DocumentStore.clear();
+  const ex = { id: 'pqp03-ex99', chapter: 3, number: '3.99', title: 'T', level: 2, statement: 's', done: 'd', book: 'textbook/ch03.html#ex-3-99' };
+  const wb = captureWorkbook({ name: 'W', exercise: ex }, { type: 'leaf', editorType: 'Exercise', state: {} });
+  assert(wb.exercise && wb.exercise.number === '3.99' && wb.exercise !== ex, 'captureWorkbook copies the exercise');
+  assert(!('exercise' in captureWorkbook({ name: 'W' }, null)), 'and a workbook that is not an exercise has none');
+  const html = renderMiniMarkup('Hello **there** <script>alert(1)</script>\n\n- one\n- two');
+  assert(!/<script/.test(html) && /&lt;script&gt;/.test(html) && /<strong>there<\/strong>/.test(html) && /<ul><li>one<\/li><li>two<\/li><\/ul>/.test(html), 'Exercise text is rendered safely: bold, lists, and escaped HTML');
+}
+
+log('\n=== X6: Every textbook exercise starter opens, and its goals are true ===');
+{
+  const inNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+  const demos = inNode
+    ? new DemoStore({ base: new URL('../demos/', import.meta.url).pathname,
+        fetchJSON: async p => JSON.parse(await (await import('node:fs/promises')).readFile(p, 'utf8')) })
+    : new DemoStore({ base: new URL('../demos/', import.meta.url).href });
+  const list = (await demos.list()).filter(d => d.exercise);
+  let goals = 0, bad = [];
+  for (const item of list) {
+    const wb = await demos.load(item.id);
+    openWorkbookDocuments(wb);
+    if (!wb.exercise || wb.exercise.number !== item.exercise.number || !wb.exercise.statement) bad.push(item.id + ' (no exercise)');
+    for (const p of DocumentStore.list('proof')) if (p.goal) { goals++; if (p.checkAll().status !== 'ok' || p.goalStatus().solved) bad.push(`${item.id}: ${p.name}`); }
+  }
+  assert(list.length >= 10 && goals >= 2 && !bad.length, `${list.length} exercise starters; ${goals} goals, each true and not yet solved${bad.length ? '; bad: ' + bad.join(', ') : ''}`);
 }
 
 // === Summary ===

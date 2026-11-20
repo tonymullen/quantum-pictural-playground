@@ -11,7 +11,7 @@
  "documents": [
   {
    "kind": "circuit",
-   "id": "circ-4",
+   "id": "circ-8",
    "data": {
     "name": "Teleportation",
     "nQubits": 3,
@@ -91,16 +91,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-166",
+   "id": "doc-245",
    "data": {
     "name": "Teleportation · diagram",
     "tensorOrder": "big-endian",
     "sumIndices": [],
-    "derivedFrom": "circ-4",
+    "derivedFrom": "circ-8",
     "ownerProof": null,
     "nodes": [
      {
-      "id": "node-535",
+      "id": "node-768",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -115,7 +115,7 @@
       "thick": true
      },
      {
-      "id": "node-536",
+      "id": "node-769",
       "typeKey": "x-spider",
       "x": 340,
       "y": 520,
@@ -130,7 +130,7 @@
       "thick": true
      },
      {
-      "id": "node-537",
+      "id": "node-770",
       "typeKey": "hadamard",
       "x": 230,
       "y": 440,
@@ -145,7 +145,7 @@
       "thick": true
      },
      {
-      "id": "node-538",
+      "id": "node-771",
       "typeKey": "z-spider",
       "x": 230,
       "y": 360,
@@ -160,7 +160,7 @@
       "thick": true
      },
      {
-      "id": "node-539",
+      "id": "node-772",
       "typeKey": "x-spider",
       "x": 340,
       "y": 360,
@@ -175,7 +175,7 @@
       "thick": true
      },
      {
-      "id": "node-540",
+      "id": "node-773",
       "typeKey": "z-spider",
       "x": 120,
       "y": 280,
@@ -190,7 +190,7 @@
       "thick": true
      },
      {
-      "id": "node-541",
+      "id": "node-774",
       "typeKey": "x-spider",
       "x": 230,
       "y": 280,
@@ -205,7 +205,7 @@
       "thick": true
      },
      {
-      "id": "node-542",
+      "id": "node-775",
       "typeKey": "hadamard",
       "x": 120,
       "y": 200,
@@ -220,7 +220,7 @@
       "thick": true
      },
      {
-      "id": "node-543",
+      "id": "node-776",
       "typeKey": "dot",
       "x": 120,
       "y": 120,
@@ -242,7 +242,7 @@
       }
      },
      {
-      "id": "node-544",
+      "id": "node-777",
       "typeKey": "dot",
       "x": 230,
       "y": 120,
@@ -264,7 +264,7 @@
       }
      },
      {
-      "id": "node-545",
+      "id": "node-778",
       "typeKey": "dot",
       "x": 230,
       "y": 40,
@@ -287,7 +287,7 @@
       }
      },
      {
-      "id": "node-546",
+      "id": "node-779",
       "typeKey": "x-spider",
       "x": 340,
       "y": 40,
@@ -302,7 +302,7 @@
       "thick": true
      },
      {
-      "id": "node-547",
+      "id": "node-780",
       "typeKey": "dot",
       "x": 120,
       "y": -40,
@@ -325,7 +325,7 @@
       }
      },
      {
-      "id": "node-548",
+      "id": "node-781",
       "typeKey": "z-spider",
       "x": 340,
       "y": -40,
@@ -340,7 +340,7 @@
       "thick": true
      },
      {
-      "id": "node-549",
+      "id": "node-782",
       "typeKey": "hadamard",
       "x": 285,
       "y": -40,
@@ -355,7 +355,7 @@
       "thick": true
      },
      {
-      "id": "node-550",
+      "id": "node-783",
       "typeKey": "dot",
       "x": 120,
       "y": -120,
@@ -375,7 +375,7 @@
       }
      },
      {
-      "id": "node-551",
+      "id": "node-784",
       "typeKey": "dot",
       "x": 230,
       "y": -120,
@@ -395,7 +395,7 @@
       }
      },
      {
-      "id": "node-552",
+      "id": "node-785",
       "typeKey": "scalar",
       "x": 450,
       "y": 520,
@@ -421,146 +421,146 @@
     ],
     "wires": [
      {
-      "id": "wire-372",
-      "fromNodeId": "node-535",
+      "id": "wire-496",
+      "fromNodeId": "node-768",
       "fromPort": 0,
-      "toNodeId": "node-537",
+      "toNodeId": "node-770",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-373",
-      "fromNodeId": "node-537",
+      "id": "wire-497",
+      "fromNodeId": "node-770",
       "fromPort": 0,
-      "toNodeId": "node-538",
+      "toNodeId": "node-771",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-374",
-      "fromNodeId": "node-536",
+      "id": "wire-498",
+      "fromNodeId": "node-769",
       "fromPort": 0,
-      "toNodeId": "node-539",
+      "toNodeId": "node-772",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-375",
-      "fromNodeId": "node-538",
+      "id": "wire-499",
+      "fromNodeId": "node-771",
       "fromPort": 1,
-      "toNodeId": "node-539",
+      "toNodeId": "node-772",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-376",
-      "fromNodeId": "node-538",
+      "id": "wire-500",
+      "fromNodeId": "node-771",
       "fromPort": 0,
-      "toNodeId": "node-541",
+      "toNodeId": "node-774",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-377",
-      "fromNodeId": "node-540",
+      "id": "wire-501",
+      "fromNodeId": "node-773",
       "fromPort": 1,
-      "toNodeId": "node-541",
+      "toNodeId": "node-774",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-378",
-      "fromNodeId": "node-540",
+      "id": "wire-502",
+      "fromNodeId": "node-773",
       "fromPort": 0,
-      "toNodeId": "node-542",
+      "toNodeId": "node-775",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-379",
-      "fromNodeId": "node-542",
+      "id": "wire-503",
+      "fromNodeId": "node-775",
       "fromPort": 0,
-      "toNodeId": "node-543",
+      "toNodeId": "node-776",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-380",
-      "fromNodeId": "node-541",
+      "id": "wire-504",
+      "fromNodeId": "node-774",
       "fromPort": 0,
-      "toNodeId": "node-544",
+      "toNodeId": "node-777",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-381",
-      "fromNodeId": "node-544",
+      "id": "wire-505",
+      "fromNodeId": "node-777",
       "fromPort": 0,
-      "toNodeId": "node-545",
+      "toNodeId": "node-778",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-382",
-      "fromNodeId": "node-539",
+      "id": "wire-506",
+      "fromNodeId": "node-772",
       "fromPort": 0,
-      "toNodeId": "node-546",
+      "toNodeId": "node-779",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-383",
-      "fromNodeId": "node-545",
+      "id": "wire-507",
+      "fromNodeId": "node-778",
       "fromPort": 1,
-      "toNodeId": "node-546",
+      "toNodeId": "node-779",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-384",
-      "fromNodeId": "node-543",
+      "id": "wire-508",
+      "fromNodeId": "node-776",
       "fromPort": 0,
-      "toNodeId": "node-547",
+      "toNodeId": "node-780",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-385",
-      "fromNodeId": "node-546",
+      "id": "wire-509",
+      "fromNodeId": "node-779",
       "fromPort": 0,
-      "toNodeId": "node-548",
+      "toNodeId": "node-781",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-386",
-      "fromNodeId": "node-547",
+      "id": "wire-510",
+      "fromNodeId": "node-780",
       "fromPort": 1,
-      "toNodeId": "node-549",
+      "toNodeId": "node-782",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-387",
-      "fromNodeId": "node-549",
+      "id": "wire-511",
+      "fromNodeId": "node-782",
       "fromPort": 0,
-      "toNodeId": "node-548",
+      "toNodeId": "node-781",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-388",
-      "fromNodeId": "node-547",
+      "id": "wire-512",
+      "fromNodeId": "node-780",
       "fromPort": 0,
-      "toNodeId": "node-550",
+      "toNodeId": "node-783",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-389",
-      "fromNodeId": "node-545",
+      "id": "wire-513",
+      "fromNodeId": "node-778",
       "fromPort": 0,
-      "toNodeId": "node-551",
+      "toNodeId": "node-784",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -569,16 +569,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-167",
+   "id": "doc-246",
    "data": {
     "name": "Teleportation is a wire step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-50",
+    "ownerProof": "proof-74",
     "nodes": [
      {
-      "id": "node-553",
+      "id": "node-786",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -593,7 +593,7 @@
       "thick": true
      },
      {
-      "id": "node-554",
+      "id": "node-787",
       "typeKey": "x-spider",
       "x": 340,
       "y": 520,
@@ -608,7 +608,7 @@
       "thick": true
      },
      {
-      "id": "node-555",
+      "id": "node-788",
       "typeKey": "hadamard",
       "x": 230,
       "y": 440,
@@ -623,7 +623,7 @@
       "thick": true
      },
      {
-      "id": "node-556",
+      "id": "node-789",
       "typeKey": "z-spider",
       "x": 230,
       "y": 360,
@@ -638,7 +638,7 @@
       "thick": true
      },
      {
-      "id": "node-557",
+      "id": "node-790",
       "typeKey": "x-spider",
       "x": 340,
       "y": 360,
@@ -653,7 +653,7 @@
       "thick": true
      },
      {
-      "id": "node-558",
+      "id": "node-791",
       "typeKey": "z-spider",
       "x": 120,
       "y": 280,
@@ -668,7 +668,7 @@
       "thick": true
      },
      {
-      "id": "node-559",
+      "id": "node-792",
       "typeKey": "x-spider",
       "x": 230,
       "y": 280,
@@ -683,7 +683,7 @@
       "thick": true
      },
      {
-      "id": "node-560",
+      "id": "node-793",
       "typeKey": "hadamard",
       "x": 120,
       "y": 200,
@@ -698,7 +698,7 @@
       "thick": true
      },
      {
-      "id": "node-561",
+      "id": "node-794",
       "typeKey": "dot",
       "x": 120,
       "y": 120,
@@ -720,7 +720,7 @@
       }
      },
      {
-      "id": "node-562",
+      "id": "node-795",
       "typeKey": "dot",
       "x": 230,
       "y": 120,
@@ -742,7 +742,7 @@
       }
      },
      {
-      "id": "node-563",
+      "id": "node-796",
       "typeKey": "dot",
       "x": 230,
       "y": 40,
@@ -765,7 +765,7 @@
       }
      },
      {
-      "id": "node-564",
+      "id": "node-797",
       "typeKey": "x-spider",
       "x": 340,
       "y": 40,
@@ -780,7 +780,7 @@
       "thick": true
      },
      {
-      "id": "node-565",
+      "id": "node-798",
       "typeKey": "dot",
       "x": 120,
       "y": -40,
@@ -803,7 +803,7 @@
       }
      },
      {
-      "id": "node-566",
+      "id": "node-799",
       "typeKey": "z-spider",
       "x": 340,
       "y": -40,
@@ -818,7 +818,7 @@
       "thick": true
      },
      {
-      "id": "node-567",
+      "id": "node-800",
       "typeKey": "hadamard",
       "x": 285,
       "y": -40,
@@ -833,7 +833,7 @@
       "thick": true
      },
      {
-      "id": "node-568",
+      "id": "node-801",
       "typeKey": "dot",
       "x": 120,
       "y": -120,
@@ -853,7 +853,7 @@
       }
      },
      {
-      "id": "node-569",
+      "id": "node-802",
       "typeKey": "dot",
       "x": 230,
       "y": -120,
@@ -873,7 +873,7 @@
       }
      },
      {
-      "id": "node-570",
+      "id": "node-803",
       "typeKey": "scalar",
       "x": 450,
       "y": 520,
@@ -899,146 +899,146 @@
     ],
     "wires": [
      {
-      "id": "wire-390",
-      "fromNodeId": "node-553",
+      "id": "wire-514",
+      "fromNodeId": "node-786",
       "fromPort": 0,
-      "toNodeId": "node-555",
+      "toNodeId": "node-788",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-391",
-      "fromNodeId": "node-555",
+      "id": "wire-515",
+      "fromNodeId": "node-788",
       "fromPort": 0,
-      "toNodeId": "node-556",
+      "toNodeId": "node-789",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-392",
-      "fromNodeId": "node-554",
+      "id": "wire-516",
+      "fromNodeId": "node-787",
       "fromPort": 0,
-      "toNodeId": "node-557",
+      "toNodeId": "node-790",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-393",
-      "fromNodeId": "node-556",
+      "id": "wire-517",
+      "fromNodeId": "node-789",
       "fromPort": 1,
-      "toNodeId": "node-557",
+      "toNodeId": "node-790",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-394",
-      "fromNodeId": "node-556",
+      "id": "wire-518",
+      "fromNodeId": "node-789",
       "fromPort": 0,
-      "toNodeId": "node-559",
+      "toNodeId": "node-792",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-395",
-      "fromNodeId": "node-558",
+      "id": "wire-519",
+      "fromNodeId": "node-791",
       "fromPort": 1,
-      "toNodeId": "node-559",
+      "toNodeId": "node-792",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-396",
-      "fromNodeId": "node-558",
+      "id": "wire-520",
+      "fromNodeId": "node-791",
       "fromPort": 0,
-      "toNodeId": "node-560",
+      "toNodeId": "node-793",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-397",
-      "fromNodeId": "node-560",
+      "id": "wire-521",
+      "fromNodeId": "node-793",
       "fromPort": 0,
-      "toNodeId": "node-561",
+      "toNodeId": "node-794",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-398",
-      "fromNodeId": "node-559",
+      "id": "wire-522",
+      "fromNodeId": "node-792",
       "fromPort": 0,
-      "toNodeId": "node-562",
+      "toNodeId": "node-795",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-399",
-      "fromNodeId": "node-562",
+      "id": "wire-523",
+      "fromNodeId": "node-795",
       "fromPort": 0,
-      "toNodeId": "node-563",
+      "toNodeId": "node-796",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-400",
-      "fromNodeId": "node-557",
+      "id": "wire-524",
+      "fromNodeId": "node-790",
       "fromPort": 0,
-      "toNodeId": "node-564",
+      "toNodeId": "node-797",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-401",
-      "fromNodeId": "node-563",
+      "id": "wire-525",
+      "fromNodeId": "node-796",
       "fromPort": 1,
-      "toNodeId": "node-564",
+      "toNodeId": "node-797",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-402",
-      "fromNodeId": "node-561",
+      "id": "wire-526",
+      "fromNodeId": "node-794",
       "fromPort": 0,
-      "toNodeId": "node-565",
+      "toNodeId": "node-798",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-403",
-      "fromNodeId": "node-564",
+      "id": "wire-527",
+      "fromNodeId": "node-797",
       "fromPort": 0,
-      "toNodeId": "node-566",
+      "toNodeId": "node-799",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-404",
-      "fromNodeId": "node-565",
+      "id": "wire-528",
+      "fromNodeId": "node-798",
       "fromPort": 1,
-      "toNodeId": "node-567",
+      "toNodeId": "node-800",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-405",
-      "fromNodeId": "node-567",
+      "id": "wire-529",
+      "fromNodeId": "node-800",
       "fromPort": 0,
-      "toNodeId": "node-566",
+      "toNodeId": "node-799",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-406",
-      "fromNodeId": "node-565",
+      "id": "wire-530",
+      "fromNodeId": "node-798",
       "fromPort": 0,
-      "toNodeId": "node-568",
+      "toNodeId": "node-801",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-407",
-      "fromNodeId": "node-563",
+      "id": "wire-531",
+      "fromNodeId": "node-796",
       "fromPort": 0,
-      "toNodeId": "node-569",
+      "toNodeId": "node-802",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -1047,16 +1047,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-168",
+   "id": "doc-247",
    "data": {
     "name": "Teleportation is a wire step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-50",
+    "ownerProof": "proof-74",
     "nodes": [
      {
-      "id": "node-571",
+      "id": "node-804",
       "typeKey": "identity",
       "x": 200,
       "y": 200,
@@ -1076,22 +1076,22 @@
   },
   {
    "kind": "proof",
-   "id": "proof-50",
+   "id": "proof-74",
    "data": {
     "name": "Teleportation is a wire",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-167",
+      "diagram": "doc-246",
       "relation": "≈",
       "note": "",
       "source": {
-       "id": "doc-166",
+       "id": "doc-245",
        "name": "Teleportation · diagram"
       }
      },
      {
-      "diagram": "doc-168",
+      "diagram": "doc-247",
       "relation": "=",
       "note": "teleportation: measure, correct, discard the bits = the identity channel",
       "source": null
@@ -1114,14 +1114,14 @@
       "type": "leaf",
       "editorType": "Circuit Editor",
       "state": {
-       "docId": "circ-4"
+       "docId": "circ-8"
       }
      },
      {
       "type": "leaf",
       "editorType": "Diagram Editor",
       "state": {
-       "docId": "doc-166",
+       "docId": "doc-245",
        "orientation": "pqp",
        "view": {
         "fitted": true
@@ -1134,7 +1134,7 @@
     "type": "leaf",
     "editorType": "Diagram Equation Editor",
     "state": {
-     "proofId": "proof-50",
+     "proofId": "proof-74",
      "selected": 1
     }
    }

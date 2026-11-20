@@ -1,0 +1,298 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.7 Diagram substitution",
+ "description": "A goal proof: replace part of a diagram using an equation (PQP §3.1.5).",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 1,
+  "proofs": 1
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-55",
+   "data": {
+    "name": "Substitute H H = 1 step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-16",
+    "nodes": [
+     {
+      "id": "node-173",
+      "typeKey": "state",
+      "x": 200,
+      "y": 380,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-174",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 300,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-175",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 230,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-176",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 150,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-98",
+      "fromNodeId": "node-173",
+      "fromPort": 0,
+      "toNodeId": "node-174",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-99",
+      "fromNodeId": "node-174",
+      "fromPort": 0,
+      "toNodeId": "node-175",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-100",
+      "fromNodeId": "node-175",
+      "fromPort": 0,
+      "toNodeId": "node-176",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-56",
+   "data": {
+    "name": "Substitute H H = 1 step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-16",
+    "nodes": [
+     {
+      "id": "node-177",
+      "typeKey": "state",
+      "x": 200,
+      "y": 300,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-178",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 190,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-101",
+      "fromNodeId": "node-177",
+      "fromPort": 0,
+      "toNodeId": "node-178",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-57",
+   "data": {
+    "name": "H H = 1",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-179",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 260,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-180",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 190,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-181",
+      "typeKey": "identity",
+      "x": 260,
+      "y": 225,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-102",
+      "fromNodeId": "node-179",
+      "fromPort": 0,
+      "toNodeId": "node-180",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-16",
+   "data": {
+    "name": "Substitute H H = 1",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-55",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-56",
+      "relation": "=",
+      "note": "",
+      "source": null
+     }
+    ],
+    "goal": {
+     "minSteps": 1,
+     "relation": "="
+    }
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "horizontal",
+    "ratio": 0.68,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Equation Editor",
+      "state": {
+       "proofId": "proof-16",
+       "selected": 0
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-57",
+       "orientation": "pqp",
+       "view": {
+        "fitted": true
+       }
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex07",
+  "chapter": 3,
+  "number": "3.7",
+  "title": "Diagram substitution",
+  "level": 2,
+  "statement": "Two H boxes in a row are a plain wire: $H H = 1$ (you will see why in Chapter 5). Use this equation to get from the proof's given first step to its given last step.\n\n- Select D₁ and press **＋ Step**: a copy appears as the next step.\n- In the diagram **H H = 1** (right), select the plain wire and copy it (Cmd/Ctrl+C).\n- In your new step, select both H boxes (Shift-click) and paste (Cmd/Ctrl+V): the pair is replaced by the wire, reconnected in order — the \"same place\" rule of PQP Remark 3.16.\n- Write the rule you used in the step's **rule…** box.\n\nAfterwards, try the one-click way: select the two H boxes and look in the inspector for *Cancel H·H*.",
+  "done": "The Exercise panel shows ✓ Solved.",
+  "book": "textbook/ch03.html#ex-3-7"
+ }
+}

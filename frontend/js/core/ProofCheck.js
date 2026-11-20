@@ -61,6 +61,11 @@ export function checkStep(irA, irB, relation, { trials = 3, seed = 12345, assump
     const exact = Tensor.equal(A, B, tol);
     const upTo = exact ? { equal: true, phase: C.ONE } : Tensor.equalUpToPhase(A, B, tol);
     if (!upTo.equal) {
+      // ≈ asks for nonzero numbers λ, μ with λ f = μ g (PQP Def. 3.39), so zero is ≈ only to zero
+      const zA = A.d.every(z => C.isZero(z, tol));
+      const zB = B.d.every(z => C.isZero(z, tol));
+      if (zA !== zB) return { status: 'fail', symbols,
+        hint: `The ${zA ? 'left' : 'right'} diagram is zero and the other is not — zero is equal (even up to a number) only to zero` };
       return { status: 'fail', symbols,
         hint: symbols.length ? `Not equal (a random choice of ${symbols.join(', ')} tells them apart)` : 'Not equal' };
     }

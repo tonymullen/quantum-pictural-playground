@@ -1,0 +1,181 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.5 Equal up to a number",
+ "description": "A proof that fails with = : make it hold, then see why zero is special.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 0,
+  "proofs": 1
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-49",
+   "data": {
+    "name": "2·f and f step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-14",
+    "nodes": [
+     {
+      "id": "node-139",
+      "typeKey": "scalar",
+      "x": 120,
+      "y": 220,
+      "label": "2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-140",
+      "typeKey": "identity",
+      "x": 220,
+      "y": 320,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-141",
+      "typeKey": "morphism",
+      "x": 220,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-78",
+      "fromNodeId": "node-140",
+      "fromPort": 0,
+      "toNodeId": "node-141",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-50",
+   "data": {
+    "name": "2·f and f step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-14",
+    "nodes": [
+     {
+      "id": "node-142",
+      "typeKey": "identity",
+      "x": 220,
+      "y": 320,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-143",
+      "typeKey": "morphism",
+      "x": 220,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-79",
+      "fromNodeId": "node-142",
+      "fromPort": 0,
+      "toNodeId": "node-143",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-14",
+   "data": {
+    "name": "2·f and f",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-49",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-50",
+      "relation": "=",
+      "note": "",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-14",
+     "selected": 1
+    }
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex05",
+  "chapter": 3,
+  "number": "3.5",
+  "title": "Equal up to a number",
+  "level": 2,
+  "statement": "The proof claims $2\\cdot f = f$, and the checker says ✗.\n\n- (a) Read the checker's message (hover the ✗). Change the step's relation from = to ≈. What does ≈ claim (PQP Def. 3.39)?\n- (b) Change it back to =, and make the claim true by adding a **number** node (the Scalar in the toolbar) to D₂. A label that reads as a number — 2, 1/2, 0.5, 1/√2, −i — is that number; any other label is a symbol.\n- (c) Now change the 2 in D₁ to 0. Why does neither = nor ≈ hold any more, and why does Def. 3.39 insist that the numbers be non-zero?",
+  "done": "After (b) the proof shows ✓ with =, and you can answer (c).",
+  "book": "textbook/ch03.html#ex-3-5"
+ }
+}

@@ -11,7 +11,7 @@
  "documents": [
   {
    "kind": "circuit",
-   "id": "circ-2",
+   "id": "circ-6",
    "data": {
     "name": "GHZ",
     "nQubits": 3,
@@ -57,16 +57,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-164",
+   "id": "doc-243",
    "data": {
     "name": "GHZ · diagram",
     "tensorOrder": "big-endian",
     "sumIndices": [],
-    "derivedFrom": "circ-2",
+    "derivedFrom": "circ-6",
     "ownerProof": null,
     "nodes": [
      {
-      "id": "node-457",
+      "id": "node-690",
       "typeKey": "x-spider",
       "x": 120,
       "y": 520,
@@ -80,7 +80,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-458",
+      "id": "node-691",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -94,7 +94,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-459",
+      "id": "node-692",
       "typeKey": "x-spider",
       "x": 340,
       "y": 520,
@@ -108,7 +108,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-460",
+      "id": "node-693",
       "typeKey": "hadamard",
       "x": 120,
       "y": 440,
@@ -122,7 +122,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-461",
+      "id": "node-694",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -136,7 +136,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-462",
+      "id": "node-695",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -150,7 +150,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-463",
+      "id": "node-696",
       "typeKey": "z-spider",
       "x": 230,
       "y": 280,
@@ -164,7 +164,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-464",
+      "id": "node-697",
       "typeKey": "x-spider",
       "x": 340,
       "y": 280,
@@ -178,7 +178,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-465",
+      "id": "node-698",
       "typeKey": "scalar",
       "x": 450,
       "y": 520,
@@ -203,58 +203,58 @@
     ],
     "wires": [
      {
-      "id": "wire-300",
-      "fromNodeId": "node-457",
+      "id": "wire-424",
+      "fromNodeId": "node-690",
       "fromPort": 0,
-      "toNodeId": "node-460",
+      "toNodeId": "node-693",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-301",
-      "fromNodeId": "node-460",
+      "id": "wire-425",
+      "fromNodeId": "node-693",
       "fromPort": 0,
-      "toNodeId": "node-461",
+      "toNodeId": "node-694",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-302",
-      "fromNodeId": "node-458",
+      "id": "wire-426",
+      "fromNodeId": "node-691",
       "fromPort": 0,
-      "toNodeId": "node-462",
+      "toNodeId": "node-695",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-303",
-      "fromNodeId": "node-461",
+      "id": "wire-427",
+      "fromNodeId": "node-694",
       "fromPort": 1,
-      "toNodeId": "node-462",
+      "toNodeId": "node-695",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-304",
-      "fromNodeId": "node-462",
+      "id": "wire-428",
+      "fromNodeId": "node-695",
       "fromPort": 0,
-      "toNodeId": "node-463",
+      "toNodeId": "node-696",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-305",
-      "fromNodeId": "node-459",
+      "id": "wire-429",
+      "fromNodeId": "node-692",
       "fromPort": 0,
-      "toNodeId": "node-464",
+      "toNodeId": "node-697",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-306",
-      "fromNodeId": "node-463",
+      "id": "wire-430",
+      "fromNodeId": "node-696",
       "fromPort": 1,
-      "toNodeId": "node-464",
+      "toNodeId": "node-697",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -276,14 +276,14 @@
       "type": "leaf",
       "editorType": "Circuit Editor",
       "state": {
-       "docId": "circ-2"
+       "docId": "circ-6"
       }
      },
      {
       "type": "leaf",
       "editorType": "Diagram Editor",
       "state": {
-       "docId": "doc-164",
+       "docId": "doc-243",
        "orientation": "pqp",
        "view": {
         "fitted": true
@@ -296,7 +296,7 @@
     "type": "leaf",
     "editorType": "Dirac Formula Editor",
     "state": {
-     "docId": "circ-2"
+     "docId": "circ-6"
     }
    }
   ]

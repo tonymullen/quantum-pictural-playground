@@ -1,0 +1,70 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.1 A state, a box and an effect",
+ "description": "Blank starter: build ψ → f → π and read it in Dirac notation.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 1,
+  "proofs": 0
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-29",
+   "data": {
+    "name": "My diagram",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [],
+    "wires": []
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.62,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-29",
+       "orientation": "pqp"
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Dirac Formula Editor",
+      "state": {
+       "docId": "doc-29"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex01",
+  "chapter": 3,
+  "number": "3.1",
+  "title": "A state, a box and an effect",
+  "level": 1,
+  "statement": "In the Diagram Editor, add a **state**, a **box** and an **effect** with the toolbar buttons, and wire them into a column: drag from the state's output handle to the box's input, and from the box's output to the effect. Double-click a node to rename it: call them ψ, f and π.\n\nNow press **Generate** in the Dirac Formula Editor. Compare the order of the symbols in the formula with the order of the boxes in the picture.",
+  "done": "Generate shows $\\langle \\pi | f | \\psi \\rangle$, and you can say why the formula reads right to left while the diagram reads bottom to top.",
+  "book": "textbook/ch03.html#ex-3-1"
+ }
+}

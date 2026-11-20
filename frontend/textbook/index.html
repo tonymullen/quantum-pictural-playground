@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning Quantum Picturalism with the Quantum Pictural Playground</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="css/book.css">
+  <script type="module" src="js/book.js"></script>
+</head>
+<body>
+<div class="book">
+  <nav id="book-nav" aria-label="Chapters"></nav>
+  <main>
+    <p class="chapter-kicker">A companion to <em>Picturing Quantum Processes</em></p>
+    <h1>Learning Quantum Picturalism with the Quantum Pictural Playground</h1>
+    <p class="lead">A tutorial course in drawing, computing and proving with quantum processes, chapter by
+      chapter alongside Coecke and Kissinger’s <em>Picturing Quantum Processes</em>
+      <a class="cite" data-key="pqp"></a>.</p>
+
+    <h2 id="what" data-nav="What this book is">What this book is</h2>
+    <p><em>Picturing Quantum Processes</em> (from here on <strong>PQP</strong>) teaches quantum theory
+      through diagrams: processes are boxes, systems are wires, and you calculate by redrawing pictures.
+      This book doesn’t replace PQP. It is a workbook to use beside it. Each chapter follows the PQP chapter
+      with the same number, starting at Chapter 3, and has you build PQP’s key diagrams in the
+      <strong>Quantum Pictural Playground</strong>, check its equations, and solve exercises of increasing
+      difficulty.</p>
+    <p>The book has two aims:</p>
+    <ul>
+      <li><strong>To make you fluent in the Playground.</strong> Each feature is introduced in the chapter where
+        PQP first needs it, then used again in later chapters.</li>
+      <li><strong>To give you quantum picturalism as a working tool.</strong> You should come away able to use
+        diagrams to understand quantum information and to solve problems in it, not just to redraw known
+        results.</li>
+    </ul>
+    <p>Where it helps, the book also connects the pictures to the notation of most quantum-information
+      courses: Dirac notation and, later, density matrices. Those connections are marked <em>Two
+      notations</em>, are made term by term, and cite a standard source for the familiar side.</p>
+
+    <h2 id="how" data-nav="How to use it">How to use it</h2>
+    <ul>
+      <li><strong>Keep PQP open.</strong> The book cites PQP by section, equation and result number (for
+        example §3.4.4, (3.16), Theorem 3.22), using the authors’ freely available
+        <a href="https://www.cs.ox.ac.uk/people/aleks.kissinger/PQP.pdf">PDF</a>. The arguments are
+        PQP’s; here you build them.</li>
+      <li><strong>Keep the Playground open in another tab.</strong> Links marked ↗ open it on a particular
+        workbook. A link you open from the book never overwrites your saved work.</li>
+      <li><strong>Do the exercises in the Playground.</strong> Each exercise has a <em>starter workbook</em>,
+        found under <span class="ui">▤ Workbooks ▸ Demos ▸ Textbook</span> in a folder for its chapter. Its
+        <span class="ui">Exercise</span> panel shows the task and, for proofs, your progress.</li>
+      <li><strong>Use the hints sparingly.</strong> Each exercise has a few hints in the book, from a nudge to
+        an outline. There are no worked solutions. The Playground checks your work as you go, so you know
+        whether you have finished.</li>
+    </ul>
+    <p class="levels">Exercise levels: <strong>★ Warm-up</strong>, building or reproducing something with
+      guidance; <strong>★★ Practice</strong>, applying an idea to a new case; <strong>★★★
+      Challenge</strong>, a proof, an explanation or a small investigation.</p>
+
+    <h2 id="before" data-nav="Before you begin">Before you begin</h2>
+    <p>The Playground runs in your browser. Open it with the button in the sidebar, or with
+      <span class="ui">📖 Textbook</span> from the Playground back to here. A few things to know first:</p>
+    <ul>
+      <li>What you save is a <strong>workbook</strong>: its circuits, diagrams and proofs, and the panels that
+        show them. <span class="ui">▤ Workbooks</span> opens the Workbook Browser.</li>
+      <li><strong>Demos</strong>, including every textbook demo and exercise starter, are read-only. Change them as
+        much as you like, then use <span class="ui">Save a copy…</span> to keep your version in <strong>My
+        Workbooks</strong>.</li>
+      <li>The window is divided into <strong>panels</strong>, each showing one editor. Choose the editor in
+        the panel’s header menu. Split or merge panels by dragging a panel’s corner grip, and resize them by
+        dragging the borders between them.</li>
+    </ul>
+    <p>Chapter 3 begins with a guided tour.</p>
+
+    <div class="box caveat">
+      <p class="box-title">One process theory</p>
+      <p>PQP develops diagrams for any <em>process theory</em> (PQP §3.1.2), and uses several: functions,
+        relations, linear maps, quantum processes. The Playground computes in one of them: every wire is a
+        qubit, and a diagram is a linear map, or a quantum process once diagrams are doubled (PQP Chapter 6).
+        When a chapter’s point holds in every process theory, the book says so, and says where the
+        Playground can only illustrate it.</p>
+    </div>
+
+    <h2 id="chapters" data-nav="Chapters">Chapters</h2>
+    <ol class="toc-chapters" start="3">
+      <li><a href="ch03.html">Processes as diagrams</a></li>
+      <li class="soon">String diagrams <em>(in preparation)</em></li>
+      <li class="soon">Hilbert space from diagrams <em>(in preparation)</em></li>
+      <li class="soon">Quantum processes <em>(in preparation)</em></li>
+      <li class="soon">Quantum measurement <em>(in preparation)</em></li>
+      <li class="soon">Picturing classical-quantum processes <em>(in preparation)</em></li>
+      <li class="soon">Picturing phases and complementarity <em>(in preparation)</em></li>
+      <li class="soon">Quantum theory: the full picture <em>(in preparation)</em></li>
+      <li class="soon">Quantum foundations <em>(in preparation)</em></li>
+      <li class="soon">Quantum computation <em>(in preparation)</em></li>
+      <li class="soon">Quantum resources <em>(in preparation)</em></li>
+    </ol>
+
+    <section class="refs">
+      <h2 id="references" data-nav="References">References</h2>
+      <ol data-refs></ol>
+    </section>
+    <nav id="book-pager"></nav>
+  </main>
+</div>
+</body>
+</html>

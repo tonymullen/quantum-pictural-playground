@@ -1,0 +1,579 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.4 Only connectivity matters",
+ "description": "Four diagrams and two proofs to finish: which pairs are equal, and why?",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 4,
+  "proofs": 2
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-37",
+   "data": {
+    "name": "A",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-97",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-98",
+      "typeKey": "identity",
+      "x": 260,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-99",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 230,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-100",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 230,
+      "label": "g",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-54",
+      "fromNodeId": "node-97",
+      "fromPort": 0,
+      "toNodeId": "node-99",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-55",
+      "fromNodeId": "node-98",
+      "fromPort": 0,
+      "toNodeId": "node-100",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-38",
+   "data": {
+    "name": "A moved",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-101",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-102",
+      "typeKey": "identity",
+      "x": 260,
+      "y": 240,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-103",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 230,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-104",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 140,
+      "label": "g",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-56",
+      "fromNodeId": "node-101",
+      "fromPort": 0,
+      "toNodeId": "node-103",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-57",
+      "fromNodeId": "node-102",
+      "fromPort": 0,
+      "toNodeId": "node-104",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-39",
+   "data": {
+    "name": "B",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-105",
+      "typeKey": "state",
+      "x": 150,
+      "y": 320,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-106",
+      "typeKey": "state",
+      "x": 250,
+      "y": 320,
+      "label": "φ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-107",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 200,
+      "label": "m",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-58",
+      "fromNodeId": "node-105",
+      "fromPort": 0,
+      "toNodeId": "node-107",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-59",
+      "fromNodeId": "node-106",
+      "fromPort": 0,
+      "toNodeId": "node-107",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-40",
+   "data": {
+    "name": "B crossed",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-108",
+      "typeKey": "state",
+      "x": 150,
+      "y": 320,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-109",
+      "typeKey": "state",
+      "x": 250,
+      "y": 320,
+      "label": "φ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-110",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 200,
+      "label": "m",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-60",
+      "fromNodeId": "node-108",
+      "fromPort": 0,
+      "toNodeId": "node-110",
+      "toPort": 1,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-61",
+      "fromNodeId": "node-109",
+      "fromPort": 0,
+      "toNodeId": "node-110",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-41",
+   "data": {
+    "name": "A = ? step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-10",
+    "nodes": [
+     {
+      "id": "node-111",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-112",
+      "typeKey": "identity",
+      "x": 260,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-113",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 230,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-114",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 230,
+      "label": "g",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-62",
+      "fromNodeId": "node-111",
+      "fromPort": 0,
+      "toNodeId": "node-113",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-63",
+      "fromNodeId": "node-112",
+      "fromPort": 0,
+      "toNodeId": "node-114",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-42",
+   "data": {
+    "name": "B = ? step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-11",
+    "nodes": [
+     {
+      "id": "node-115",
+      "typeKey": "state",
+      "x": 150,
+      "y": 320,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-116",
+      "typeKey": "state",
+      "x": 250,
+      "y": 320,
+      "label": "φ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-117",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 200,
+      "label": "m",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-64",
+      "fromNodeId": "node-115",
+      "fromPort": 0,
+      "toNodeId": "node-117",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-65",
+      "fromNodeId": "node-116",
+      "fromPort": 0,
+      "toNodeId": "node-117",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-10",
+   "data": {
+    "name": "A = ?",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-41",
+      "relation": "≈",
+      "note": "",
+      "source": {
+       "id": "doc-37",
+       "name": "A"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-11",
+   "data": {
+    "name": "B = ?",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-42",
+      "relation": "≈",
+      "note": "",
+      "source": {
+       "id": "doc-39",
+       "name": "B"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.4,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-37",
+       "orientation": "pqp",
+       "view": {
+        "fitted": true
+       }
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Diagram Equation Editor",
+      "state": {
+       "proofId": "proof-10",
+       "selected": 0
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex04",
+  "chapter": 3,
+  "number": "3.4",
+  "title": "Only connectivity matters",
+  "level": 1,
+  "statement": "The workbook has four diagrams: **A**, **A moved**, **B** and **B crossed**. Each proof starts from one of them. In the proof **A = ?**, use **Insert diagram…** to add *A moved* as the next step; in **B = ?** (choose it in the Proof menu), add *B crossed*.\n\nOne proof checks and the other does not. Look closely at where each wire goes, and explain the difference in the second step's **rule…** box.",
+  "done": "A = A moved shows ✓; B = B crossed shows ✗; and your note says what distinguishes them (compare PQP equations (3.5) and (3.6)).",
+  "book": "textbook/ch03.html#ex-3-4"
+ }
+}

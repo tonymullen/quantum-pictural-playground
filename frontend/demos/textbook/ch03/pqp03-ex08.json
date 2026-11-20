@@ -1,0 +1,284 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.8 Dirac notation on one line",
+ "description": "Three diagrams to write in Dirac notation and verify.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 3,
+  "proofs": 0
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-61",
+   "data": {
+    "name": "A",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-191",
+      "typeKey": "state",
+      "x": 200,
+      "y": 300,
+      "label": "1",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-192",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 210,
+      "label": "X",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": {
+       "rows": 2,
+       "cols": 2,
+       "d": [
+        [
+         0,
+         0
+        ],
+        [
+         1,
+         0
+        ],
+        [
+         1,
+         0
+        ],
+        [
+         0,
+         0
+        ]
+       ]
+      },
+      "portXOffsets": null
+     },
+     {
+      "id": "node-193",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 120,
+      "label": "0",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-108",
+      "fromNodeId": "node-191",
+      "fromPort": 0,
+      "toNodeId": "node-192",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-109",
+      "fromNodeId": "node-192",
+      "fromPort": 0,
+      "toNodeId": "node-193",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-62",
+   "data": {
+    "name": "B",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-194",
+      "typeKey": "state",
+      "x": 150,
+      "y": 300,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-195",
+      "typeKey": "hadamard",
+      "x": 150,
+      "y": 200,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-196",
+      "typeKey": "state",
+      "x": 260,
+      "y": 250,
+      "label": "1",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-110",
+      "fromNodeId": "node-194",
+      "fromPort": 0,
+      "toNodeId": "node-195",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-63",
+   "data": {
+    "name": "C",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-197",
+      "typeKey": "state",
+      "x": 150,
+      "y": 280,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-198",
+      "typeKey": "effect",
+      "x": 150,
+      "y": 170,
+      "label": "0",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-199",
+      "typeKey": "state",
+      "x": 260,
+      "y": 230,
+      "label": "+",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-111",
+      "fromNodeId": "node-197",
+      "fromPort": 0,
+      "toNodeId": "node-198",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.5,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-61",
+       "orientation": "pqp",
+       "view": {
+        "fitted": true
+       }
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Dirac Formula Editor",
+      "state": {
+       "docId": "doc-61"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex08",
+  "chapter": 3,
+  "number": "3.8",
+  "title": "Dirac notation on one line",
+  "level": 2,
+  "statement": "For each of the diagrams **A**, **B** and **C**, write a Dirac expression in the Dirac Formula Editor (choose the diagram in its menu) and press **Verify**. Write your own before you look at Generate.\n\n- **A** is a state, a box and an effect: the box is the X gate, with matrix $\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}$.\n- **B** has two outputs. Write it twice: once with $\\otimes$, and once with the kets side by side, $|a\\rangle|b\\rangle$ or $|ab\\rangle$.\n- **C** has an effect on only one of two wires: you will need an identity, $I$, on the other.",
+  "done": "Verify shows ✓ Equivalent for A, for both forms of B, and for C.",
+  "book": "textbook/ch03.html#ex-3-8"
+ }
+}

@@ -1,0 +1,617 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.1 Composing processes",
+ "description": "Parallel (⊗) and sequential (∘) composition (PQP §3.2). The interchange law (g₁ ⊗ g₂) ∘ (f₁ ⊗ f₂) = (g₁ ∘ f₁) ⊗ (g₂ ∘ f₂), equation (3.16), is one picture drawn twice; an effect followed by a state is the two side by side; and a circuit — H, then CNOT — shown with its ∘⊗ layers.",
+ "summary": {
+  "circuits": 1,
+  "diagrams": 0,
+  "proofs": 2
+ },
+ "documents": [
+  {
+   "kind": "circuit",
+   "id": "circ-0",
+   "data": {
+    "name": "H, then CNOT",
+    "nQubits": 2,
+    "tensorOrder": "big-endian",
+    "inputs": [
+     "0",
+     "0"
+    ],
+    "outputs": [
+     "open",
+     "open"
+    ],
+    "columns": [
+     [
+      {
+       "gate": "H"
+      },
+      null
+     ],
+     [
+      {
+       "gate": "ctrl"
+      },
+      {
+       "gate": "X"
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-9",
+   "data": {
+    "name": "The interchange law (3.16) step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-2",
+    "nodes": [
+     {
+      "id": "node-21",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-22",
+      "typeKey": "identity",
+      "x": 260,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-23",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 250,
+      "label": "f₁",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-24",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 250,
+      "label": "f₂",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-25",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 150,
+      "label": "g₁",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-26",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 150,
+      "label": "g₂",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-14",
+      "fromNodeId": "node-21",
+      "fromPort": 0,
+      "toNodeId": "node-23",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-15",
+      "fromNodeId": "node-22",
+      "fromPort": 0,
+      "toNodeId": "node-24",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-16",
+      "fromNodeId": "node-23",
+      "fromPort": 0,
+      "toNodeId": "node-25",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-17",
+      "fromNodeId": "node-24",
+      "fromPort": 0,
+      "toNodeId": "node-26",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-10",
+   "data": {
+    "name": "The interchange law (3.16) step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-2",
+    "nodes": [
+     {
+      "id": "node-27",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-28",
+      "typeKey": "identity",
+      "x": 260,
+      "y": 300,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-29",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 280,
+      "label": "f₁",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-30",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 200,
+      "label": "f₂",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-31",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 200,
+      "label": "g₁",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-32",
+      "typeKey": "morphism",
+      "x": 260,
+      "y": 110,
+      "label": "g₂",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-18",
+      "fromNodeId": "node-27",
+      "fromPort": 0,
+      "toNodeId": "node-29",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-19",
+      "fromNodeId": "node-28",
+      "fromPort": 0,
+      "toNodeId": "node-30",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-20",
+      "fromNodeId": "node-29",
+      "fromPort": 0,
+      "toNodeId": "node-31",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-21",
+      "fromNodeId": "node-30",
+      "fromPort": 0,
+      "toNodeId": "node-32",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-11",
+   "data": {
+    "name": "An effect, then a state step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-3",
+    "nodes": [
+     {
+      "id": "node-33",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 280,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-34",
+      "typeKey": "state",
+      "x": 200,
+      "y": 160,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-12",
+   "data": {
+    "name": "An effect, then a state step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-3",
+    "nodes": [
+     {
+      "id": "node-35",
+      "typeKey": "effect",
+      "x": 140,
+      "y": 220,
+      "label": "π",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-36",
+      "typeKey": "state",
+      "x": 260,
+      "y": 220,
+      "label": "ψ",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-13",
+   "data": {
+    "name": "H, then CNOT · diagram",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": "circ-0",
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-43",
+      "typeKey": "x-spider",
+      "x": 120,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-44",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 520,
+      "label": "",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-45",
+      "typeKey": "hadamard",
+      "x": 120,
+      "y": 440,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-46",
+      "typeKey": "z-spider",
+      "x": 120,
+      "y": 360,
+      "label": "",
+      "inputs": 1,
+      "outputs": 2,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-47",
+      "typeKey": "x-spider",
+      "x": 230,
+      "y": 360,
+      "label": "",
+      "inputs": 2,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-48",
+      "typeKey": "scalar",
+      "x": 340,
+      "y": 520,
+      "label": "1/√2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": {
+       "rows": 1,
+       "cols": 1,
+       "d": [
+        [
+         0.7071067811865475,
+         0
+        ]
+       ]
+      },
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-26",
+      "fromNodeId": "node-43",
+      "fromPort": 0,
+      "toNodeId": "node-45",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-27",
+      "fromNodeId": "node-45",
+      "fromPort": 0,
+      "toNodeId": "node-46",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-28",
+      "fromNodeId": "node-44",
+      "fromPort": 0,
+      "toNodeId": "node-47",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-29",
+      "fromNodeId": "node-46",
+      "fromPort": 1,
+      "toNodeId": "node-47",
+      "toPort": 1,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-2",
+   "data": {
+    "name": "The interchange law (3.16)",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-9",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-10",
+      "relation": "=",
+      "note": "the same diagram: (3.16) is free in pictures",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-3",
+   "data": {
+    "name": "An effect, then a state",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-11",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-12",
+      "relation": "=",
+      "note": "ψ ∘ π = ψ ⊗ π: nothing is connected (PQP §3.2.4)",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.5,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-2",
+     "selected": 0
+    }
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.45,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Circuit Editor",
+      "state": {
+       "docId": "circ-0"
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-13",
+       "orientation": "pqp",
+       "structure": true,
+       "view": {
+        "fitted": true
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

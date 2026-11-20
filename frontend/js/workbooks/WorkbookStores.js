@@ -9,7 +9,7 @@
  *   readOnly        boolean
  *   label, note     shown in the browser
  *
- * DemoStore            — read-only; the demos shipped with the app (demos/*.json)
+ * DemoStore            — read-only; the demos shipped with the app (demos/index.json lists them)
  * LocalWorkbookStore   — My Workbooks kept in this browser (when there is no server)
  * RemoteWorkbookStore  — My Workbooks on the backend's API (any origin; see config.js)
  */
@@ -28,10 +28,22 @@ export class DemoStore {
       return r.json();
     });
   }
-  async list() { return (await this.fetchJSON(this.base + 'index.json')).demos; }
+  /**
+   * The index: { id, name, description, summary, folder?, file? } per demo.
+   * folder: where it sits in the Demos tree, e.g. ['Textbook', 'Chapter 3 · …', 'Exercises'];
+   * file: its path under demos/ (default <id>.json).
+   */
+  async list() {
+    if (!this._index) this._index = this.fetchJSON(this.base + 'index.json').then(j => j.demos, e => { this._index = null; throw e; });
+    return this._index;
+  }
   async load(id) {
     if (!/^[a-z0-9-]+$/.test(id)) throw new Error(`Bad demo id "${id}"`);
-    return this.fetchJSON(`${this.base}${id}.json`);
+    const entry = (await this.list()).find(d => d.id === id);
+    if (!entry) throw new Error(`No demo "${id}"`);
+    const file = entry.file || `${id}.json`;
+    if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*\.json$/.test(file)) throw new Error(`Bad demo file "${file}"`);
+    return this.fetchJSON(this.base + file);
   }
   async save() { throw new Error('Demos are read-only — save a copy to My Workbooks'); }
   async remove() { throw new Error('Demos are read-only'); }
@@ -43,7 +55,7 @@ export class LocalWorkbookStore {
   constructor({ storage = globalThis.localStorage, key = 'qpp.myWorkbooks.v1' } = {}) {
     this.readOnly = false;
     this.label = 'My Workbooks';
-    this.note = 'Saved in this browser — no server is running (start it with: cd server && npm start)';
+    this.note = 'Saved in this browser — no server is running (start it with: cd backend && npm start)';
     this.storage = storage;
     this.key = key;
   }

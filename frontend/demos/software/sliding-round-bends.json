@@ -11,16 +11,16 @@
  "documents": [
   {
    "kind": "diagram",
-   "id": "doc-43",
+   "id": "doc-122",
    "data": {
     "name": "A box round a cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-14",
+    "ownerProof": "proof-38",
     "nodes": [
      {
-      "id": "node-118",
+      "id": "node-351",
       "typeKey": "cup",
       "x": 180,
       "y": 260,
@@ -34,7 +34,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-119",
+      "id": "node-352",
       "typeKey": "morphism",
       "x": 168,
       "y": 160,
@@ -50,10 +50,10 @@
     ],
     "wires": [
      {
-      "id": "wire-57",
-      "fromNodeId": "node-118",
+      "id": "wire-181",
+      "fromNodeId": "node-351",
       "fromPort": 0,
-      "toNodeId": "node-119",
+      "toNodeId": "node-352",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -62,16 +62,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-45",
+   "id": "doc-124",
    "data": {
     "name": "A box round a cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-14",
+    "ownerProof": "proof-38",
     "nodes": [
      {
-      "id": "node-120",
+      "id": "node-353",
       "typeKey": "cup",
       "x": 180,
       "y": 260,
@@ -85,7 +85,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-122",
+      "id": "node-355",
       "typeKey": "morphism",
       "x": 192,
       "y": 174,
@@ -105,10 +105,10 @@
     ],
     "wires": [
      {
-      "id": "wire-59",
-      "fromNodeId": "node-120",
+      "id": "wire-183",
+      "fromNodeId": "node-353",
       "fromPort": 1,
-      "toNodeId": "node-122",
+      "toNodeId": "node-355",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -117,16 +117,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-48",
+   "id": "doc-127",
    "data": {
     "name": "A box round a cap step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-15",
+    "ownerProof": "proof-39",
     "nodes": [
      {
-      "id": "node-125",
+      "id": "node-358",
       "typeKey": "cap",
       "x": 180,
       "y": 120,
@@ -140,7 +140,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-126",
+      "id": "node-359",
       "typeKey": "morphism",
       "x": 168,
       "y": 220,
@@ -156,10 +156,10 @@
     ],
     "wires": [
      {
-      "id": "wire-61",
-      "fromNodeId": "node-126",
+      "id": "wire-185",
+      "fromNodeId": "node-359",
       "fromPort": 0,
-      "toNodeId": "node-125",
+      "toNodeId": "node-358",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -168,16 +168,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-50",
+   "id": "doc-129",
    "data": {
     "name": "A box round a cap step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-15",
+    "ownerProof": "proof-39",
     "nodes": [
      {
-      "id": "node-127",
+      "id": "node-360",
       "typeKey": "cap",
       "x": 180,
       "y": 120,
@@ -191,7 +191,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-129",
+      "id": "node-362",
       "typeKey": "morphism",
       "x": 192,
       "y": 206,
@@ -211,10 +211,10 @@
     ],
     "wires": [
      {
-      "id": "wire-63",
-      "fromNodeId": "node-129",
+      "id": "wire-187",
+      "fromNodeId": "node-362",
       "fromPort": 0,
-      "toNodeId": "node-127",
+      "toNodeId": "node-360",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -223,16 +223,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-57",
+   "id": "doc-136",
    "data": {
     "name": "The necklace step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-16",
+    "ownerProof": "proof-40",
     "nodes": [
      {
-      "id": "node-157",
+      "id": "node-390",
       "typeKey": "morphism",
       "x": 120,
       "y": 260,
@@ -246,7 +246,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-158",
+      "id": "node-391",
       "typeKey": "cap",
       "x": 160,
       "y": 150,
@@ -263,7 +263,7 @@
       ]
      },
      {
-      "id": "node-159",
+      "id": "node-392",
       "typeKey": "morphism",
       "x": 200,
       "y": 260,
@@ -277,7 +277,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-160",
+      "id": "node-393",
       "typeKey": "cup",
       "x": 240,
       "y": 370,
@@ -294,7 +294,7 @@
       ]
      },
      {
-      "id": "node-161",
+      "id": "node-394",
       "typeKey": "morphism",
       "x": 280,
       "y": 260,
@@ -310,34 +310,34 @@
     ],
     "wires": [
      {
-      "id": "wire-88",
-      "fromNodeId": "node-157",
+      "id": "wire-212",
+      "fromNodeId": "node-390",
       "fromPort": 0,
-      "toNodeId": "node-158",
+      "toNodeId": "node-391",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-89",
-      "fromNodeId": "node-160",
+      "id": "wire-213",
+      "fromNodeId": "node-393",
       "fromPort": 0,
-      "toNodeId": "node-159",
+      "toNodeId": "node-392",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-90",
-      "fromNodeId": "node-159",
+      "id": "wire-214",
+      "fromNodeId": "node-392",
       "fromPort": 0,
-      "toNodeId": "node-158",
+      "toNodeId": "node-391",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-91",
-      "fromNodeId": "node-160",
+      "id": "wire-215",
+      "fromNodeId": "node-393",
       "fromPort": 1,
-      "toNodeId": "node-161",
+      "toNodeId": "node-394",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -346,16 +346,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-59",
+   "id": "doc-138",
    "data": {
     "name": "The necklace step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-16",
+    "ownerProof": "proof-40",
     "nodes": [
      {
-      "id": "node-162",
+      "id": "node-395",
       "typeKey": "cap",
       "x": 160,
       "y": 150,
@@ -372,7 +372,7 @@
       ]
      },
      {
-      "id": "node-163",
+      "id": "node-396",
       "typeKey": "morphism",
       "x": 200,
       "y": 260,
@@ -386,7 +386,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-164",
+      "id": "node-397",
       "typeKey": "cup",
       "x": 240,
       "y": 370,
@@ -403,7 +403,7 @@
       ]
      },
      {
-      "id": "node-165",
+      "id": "node-398",
       "typeKey": "morphism",
       "x": 280,
       "y": 260,
@@ -417,7 +417,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-166",
+      "id": "node-399",
       "typeKey": "morphism",
       "x": 200,
       "y": 207,
@@ -437,34 +437,34 @@
     ],
     "wires": [
      {
-      "id": "wire-92",
-      "fromNodeId": "node-164",
+      "id": "wire-216",
+      "fromNodeId": "node-397",
       "fromPort": 0,
-      "toNodeId": "node-163",
+      "toNodeId": "node-396",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-93",
-      "fromNodeId": "node-164",
+      "id": "wire-217",
+      "fromNodeId": "node-397",
       "fromPort": 1,
-      "toNodeId": "node-165",
+      "toNodeId": "node-398",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-94",
-      "fromNodeId": "node-166",
+      "id": "wire-218",
+      "fromNodeId": "node-399",
       "fromPort": 0,
-      "toNodeId": "node-162",
+      "toNodeId": "node-395",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-95",
-      "fromNodeId": "node-163",
+      "id": "wire-219",
+      "fromNodeId": "node-396",
       "fromPort": 0,
-      "toNodeId": "node-166",
+      "toNodeId": "node-399",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -473,16 +473,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-61",
+   "id": "doc-140",
    "data": {
     "name": "The necklace step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-16",
+    "ownerProof": "proof-40",
     "nodes": [
      {
-      "id": "node-167",
+      "id": "node-400",
       "typeKey": "cap",
       "x": 160,
       "y": 150,
@@ -499,7 +499,7 @@
       ]
      },
      {
-      "id": "node-168",
+      "id": "node-401",
       "typeKey": "morphism",
       "x": 200,
       "y": 260,
@@ -513,7 +513,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-169",
+      "id": "node-402",
       "typeKey": "cup",
       "x": 240,
       "y": 370,
@@ -530,7 +530,7 @@
       ]
      },
      {
-      "id": "node-170",
+      "id": "node-403",
       "typeKey": "morphism",
       "x": 200,
       "y": 207,
@@ -548,7 +548,7 @@
       }
      },
      {
-      "id": "node-171",
+      "id": "node-404",
       "typeKey": "morphism",
       "x": 200,
       "y": 313,
@@ -568,34 +568,34 @@
     ],
     "wires": [
      {
-      "id": "wire-96",
-      "fromNodeId": "node-170",
+      "id": "wire-220",
+      "fromNodeId": "node-403",
       "fromPort": 0,
-      "toNodeId": "node-167",
+      "toNodeId": "node-400",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-97",
-      "fromNodeId": "node-168",
+      "id": "wire-221",
+      "fromNodeId": "node-401",
       "fromPort": 0,
-      "toNodeId": "node-170",
+      "toNodeId": "node-403",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-98",
-      "fromNodeId": "node-169",
+      "id": "wire-222",
+      "fromNodeId": "node-402",
       "fromPort": 0,
-      "toNodeId": "node-171",
+      "toNodeId": "node-404",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-99",
-      "fromNodeId": "node-171",
+      "id": "wire-223",
+      "fromNodeId": "node-404",
       "fromPort": 0,
-      "toNodeId": "node-168",
+      "toNodeId": "node-401",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -604,16 +604,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-63",
+   "id": "doc-142",
    "data": {
     "name": "The necklace step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-16",
+    "ownerProof": "proof-40",
     "nodes": [
      {
-      "id": "node-172",
+      "id": "node-405",
       "typeKey": "morphism",
       "x": 200,
       "y": 300,
@@ -627,7 +627,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-173",
+      "id": "node-406",
       "typeKey": "morphism",
       "x": 200,
       "y": 210,
@@ -645,7 +645,7 @@
       }
      },
      {
-      "id": "node-174",
+      "id": "node-407",
       "typeKey": "morphism",
       "x": 200,
       "y": 120,
@@ -661,18 +661,18 @@
     ],
     "wires": [
      {
-      "id": "wire-100",
-      "fromNodeId": "node-172",
+      "id": "wire-224",
+      "fromNodeId": "node-405",
       "fromPort": 0,
-      "toNodeId": "node-173",
+      "toNodeId": "node-406",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-101",
-      "fromNodeId": "node-173",
+      "id": "wire-225",
+      "fromNodeId": "node-406",
       "fromPort": 0,
-      "toNodeId": "node-174",
+      "toNodeId": "node-407",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -681,19 +681,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-14",
+   "id": "proof-38",
    "data": {
     "name": "A box round a cup",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-43",
+      "diagram": "doc-122",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-45",
+      "diagram": "doc-124",
       "relation": "=",
       "note": "slide (Prop. 4.30)",
       "source": null
@@ -703,19 +703,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-15",
+   "id": "proof-39",
    "data": {
     "name": "A box round a cap",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-48",
+      "diagram": "doc-127",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-50",
+      "diagram": "doc-129",
       "relation": "=",
       "note": "slide (Prop. 4.30)",
       "source": null
@@ -725,31 +725,31 @@
   },
   {
    "kind": "proof",
-   "id": "proof-16",
+   "id": "proof-40",
    "data": {
     "name": "The necklace",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-57",
+      "diagram": "doc-136",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-59",
+      "diagram": "doc-138",
       "relation": "=",
       "note": "slide a round the cap",
       "source": null
      },
      {
-      "diagram": "doc-61",
+      "diagram": "doc-140",
       "relation": "=",
       "note": "slide c round the cup",
       "source": null
      },
      {
-      "diagram": "doc-63",
+      "diagram": "doc-142",
       "relation": "=",
       "note": "yank the snake straight: (aᵀ b cᵀ)ᵀ = c bᵀ a",
       "source": null
@@ -767,7 +767,7 @@
     "type": "leaf",
     "editorType": "Diagram Equation Editor",
     "state": {
-     "proofId": "proof-14",
+     "proofId": "proof-38",
      "selected": 1
     }
    },
@@ -775,7 +775,7 @@
     "type": "leaf",
     "editorType": "Dirac Formula Editor",
     "state": {
-     "docId": "doc-43"
+     "docId": "doc-122"
     }
    }
   ]

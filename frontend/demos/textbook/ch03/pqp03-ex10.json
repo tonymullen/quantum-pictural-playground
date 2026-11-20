@@ -1,0 +1,245 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.10 What the checker checks",
+ "description": "Two look-alike claims, one ✓ and one ✗: diagram equations vs process equations.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 0,
+  "proofs": 2
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-71",
+   "data": {
+    "name": "H twice is nothing step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-20",
+    "nodes": [
+     {
+      "id": "node-221",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 260,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-222",
+      "typeKey": "hadamard",
+      "x": 200,
+      "y": 170,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-120",
+      "fromNodeId": "node-221",
+      "fromPort": 0,
+      "toNodeId": "node-222",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-72",
+   "data": {
+    "name": "H twice is nothing step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-20",
+    "nodes": [
+     {
+      "id": "node-223",
+      "typeKey": "identity",
+      "x": 200,
+      "y": 215,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-73",
+   "data": {
+    "name": "f twice is nothing? step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-21",
+    "nodes": [
+     {
+      "id": "node-224",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 260,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-225",
+      "typeKey": "morphism",
+      "x": 200,
+      "y": 170,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-121",
+      "fromNodeId": "node-224",
+      "fromPort": 0,
+      "toNodeId": "node-225",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-74",
+   "data": {
+    "name": "f twice is nothing? step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-21",
+    "nodes": [
+     {
+      "id": "node-226",
+      "typeKey": "identity",
+      "x": 200,
+      "y": 215,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-20",
+   "data": {
+    "name": "H twice is nothing",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-71",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-72",
+      "relation": "=",
+      "note": "",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-21",
+   "data": {
+    "name": "f twice is nothing?",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-73",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-74",
+      "relation": "=",
+      "note": "",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-20",
+     "selected": 1
+    }
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex10",
+  "chapter": 3,
+  "number": "3.10",
+  "title": "What the checker checks",
+  "level": 3,
+  "statement": "The two proofs look alike: **H twice is nothing** checks, **f twice is nothing?** does not.\n\n- (a) The Playground interprets every diagram in one process theory: linear maps on qubits (PQP Chapter 5). A box with a symbol for a label, like f, stands for *any* such map, and the checker tries random ones. Explain both results.\n- (b) PQP §3.1.4 distinguishes *diagram equations*, true in every process theory just by deforming the picture, from *process equations*, true in a particular theory. Which kind is each claim? Is either a diagram equation?\n- (c) Build one proof of each kind yourself: a diagram equation with symbolic boxes, and a process equation with concrete ones (a state labelled 0 or +, an H box, a number).",
+  "done": "You have answered (a) and (b) in the proofs' rule notes or on paper, and your two proofs from (c) show ✓.",
+  "book": "textbook/ch03.html#ex-3-10"
+ }
+}

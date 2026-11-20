@@ -116,8 +116,13 @@ function _topoSort(graph) {
   const q = [];
   for (const [id, d] of inDeg) if (d === 0) q.push(id);
   const sorted = [];
+  // Among nodes that are ready together, take the rightmost first: the list is
+  // reversed at the end, so side-by-side states print left to right (f |ψ⟩|φ⟩)
+  const key = id => (graph.layoutKey && graph.layoutKey.has(id) ? graph.layoutKey.get(id) : 0);
   while (q.length) {
-    const id = q.shift();
+    let best = 0;
+    for (let k = 1; k < q.length; k++) if (key(q[k]) > key(q[best])) best = k;
+    const [id] = q.splice(best, 1);
     sorted.push(graph.nodes.get(id));
     for (const e of graph.edges) {
       if (e.srcNodeId === id) {

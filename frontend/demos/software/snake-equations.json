@@ -11,16 +11,16 @@
  "documents": [
   {
    "kind": "diagram",
-   "id": "doc-34",
+   "id": "doc-113",
    "data": {
     "name": "Snake step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-10",
+    "ownerProof": "proof-34",
     "nodes": [
      {
-      "id": "node-102",
+      "id": "node-335",
       "typeKey": "cap",
       "x": 100,
       "y": 110,
@@ -34,7 +34,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-103",
+      "id": "node-336",
       "typeKey": "cup",
       "x": 160,
       "y": 210,
@@ -50,10 +50,10 @@
     ],
     "wires": [
      {
-      "id": "wire-50",
-      "fromNodeId": "node-103",
+      "id": "wire-174",
+      "fromNodeId": "node-336",
       "fromPort": 0,
-      "toNodeId": "node-102",
+      "toNodeId": "node-335",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -62,16 +62,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-35",
+   "id": "doc-114",
    "data": {
     "name": "Snake step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-10",
+    "ownerProof": "proof-34",
     "nodes": [
      {
-      "id": "node-104",
+      "id": "node-337",
       "typeKey": "identity",
       "x": 130,
       "y": 160,
@@ -90,16 +90,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-36",
+   "id": "doc-115",
    "data": {
     "name": "A box through a snake step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-11",
+    "ownerProof": "proof-35",
     "nodes": [
      {
-      "id": "node-105",
+      "id": "node-338",
       "typeKey": "morphism",
       "x": 88,
       "y": 210,
@@ -113,7 +113,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-106",
+      "id": "node-339",
       "typeKey": "cap",
       "x": 100,
       "y": 110,
@@ -127,7 +127,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-107",
+      "id": "node-340",
       "typeKey": "cup",
       "x": 160,
       "y": 280,
@@ -143,18 +143,18 @@
     ],
     "wires": [
      {
-      "id": "wire-51",
-      "fromNodeId": "node-105",
+      "id": "wire-175",
+      "fromNodeId": "node-338",
       "fromPort": 0,
-      "toNodeId": "node-106",
+      "toNodeId": "node-339",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-52",
-      "fromNodeId": "node-107",
+      "id": "wire-176",
+      "fromNodeId": "node-340",
       "fromPort": 0,
-      "toNodeId": "node-106",
+      "toNodeId": "node-339",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -163,16 +163,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-37",
+   "id": "doc-116",
    "data": {
     "name": "A box through a snake step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-11",
+    "ownerProof": "proof-35",
     "nodes": [
      {
-      "id": "node-108",
+      "id": "node-341",
       "typeKey": "morphism",
       "x": 130,
       "y": 190,
@@ -191,19 +191,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-10",
+   "id": "proof-34",
    "data": {
     "name": "Snake",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-34",
+      "diagram": "doc-113",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-35",
+      "diagram": "doc-114",
       "relation": "=",
       "note": "snake equation",
       "source": null
@@ -213,19 +213,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-11",
+   "id": "proof-35",
    "data": {
     "name": "A box through a snake",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-36",
+      "diagram": "doc-115",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-37",
+      "diagram": "doc-116",
       "relation": "=",
       "note": "yank the wire straight",
       "source": null
@@ -243,7 +243,7 @@
     "type": "leaf",
     "editorType": "Diagram Equation Editor",
     "state": {
-     "proofId": "proof-10",
+     "proofId": "proof-34",
      "selected": 0
     }
    },
@@ -251,7 +251,7 @@
     "type": "leaf",
     "editorType": "Dirac Formula Editor",
     "state": {
-     "docId": "doc-34"
+     "docId": "doc-113"
     }
    }
   ]

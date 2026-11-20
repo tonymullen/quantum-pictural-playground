@@ -12,7 +12,13 @@
  *       { kind: 'diagram', id, data: DiagramDocument.toJSON() },   // incl. generated diagrams & proof steps
  *       { kind: 'proof',   id, data: ProofDocument.toJSON() },
  *     ],
- *     layout: <layout spec>      // LayoutManager.serialize(): splits + { editorType, state }
+ *     layout: <layout spec>,     // LayoutManager.serialize(): splits + { editorType, state }
+ *     exercise?: {               // a textbook exercise's starter (and any copy saved from it)
+ *       id, chapter, number,     //   e.g. 'pqp03-ex04', 3, '3.4'
+ *       title, level,            //   level 1–3: ★ warm-up, ★★ practice, ★★★ challenge
+ *       statement, done,         //   the task and how you know you're done (MiniMarkup text)
+ *       book,                    //   where it is in the textbook, e.g. 'textbook/ch03.html#ex-3-4'
+ *     }
  *   }
  *
  * Ids inside a workbook are only labels: opening a workbook creates fresh
@@ -50,18 +56,20 @@ export function summaryText(s) {
  * Capture every document in the DocumentStore, plus a layout spec.
  * @returns {object} workbook JSON
  */
-export function captureWorkbook({ name, description = '' }, layout) {
+export function captureWorkbook({ name, description = '', exercise = null }, layout) {
   const docs = [];
   for (const d of DocumentStore.list('circuit')) docs.push({ kind: 'circuit', id: d.id, data: d.toJSON() });
   for (const d of DocumentStore.list('diagram')) docs.push({ kind: 'diagram', id: d.id, data: d.toJSON() });
   for (const d of DocumentStore.list('proof')) docs.push({ kind: 'proof', id: d.id, data: d.toJSON() });
-  return {
+  const wb = {
     format: FORMAT, version: VERSION, name, description,
     savedAt: new Date().toISOString(),
     summary: summarize(docs),
     documents: docs,
     layout: JSON.parse(JSON.stringify(layout || null)),
   };
+  if (exercise) wb.exercise = JSON.parse(JSON.stringify(exercise));
+  return wb;
 }
 
 /**

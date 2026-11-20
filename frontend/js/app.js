@@ -11,6 +11,7 @@ import CircuitEditor from './editors/CircuitEditor/CircuitEditor.js';
 import EquationEditor from './editors/EquationEditor/EquationEditor.js';
 import NumbersView from './editors/NumbersView/NumbersView.js';
 import WorkbookBrowser from './editors/WorkbookBrowser/WorkbookBrowser.js';
+import ExercisePanel from './editors/ExercisePanel/ExercisePanel.js';
 import LayoutManager from './layout/LayoutManager.js';
 import DocumentStore from './editors/DocumentStore.js';
 import CircuitDocument from './editors/CircuitEditor/CircuitDocument.js';
@@ -24,6 +25,7 @@ EditorRegistry.register(DiracEditor);
 EditorRegistry.register(EquationEditor);
 EditorRegistry.register(NumbersView);
 EditorRegistry.register(WorkbookBrowser);
+EditorRegistry.register(ExercisePanel);
 
 // ---- App bar: the open workbook, Save, Workbooks ----
 const bar = document.getElementById('app-bar');
@@ -33,7 +35,10 @@ const workbookEl = el('span', 'app-workbook');
 const saveBtn = el('button', 'wb-btn', 'Save');
 const browseBtn = el('button', 'wb-btn', '▤ Workbooks');
 browseBtn.title = 'Open the Workbook Browser in the focused panel';
-bar.append(title, el('span', 'app-sep', '·'), workbookEl, el('span', 'app-spacer'), saveBtn, browseBtn);
+const bookLink = el('a', 'wb-btn app-book', '📖 Textbook');
+bookLink.href = 'textbook/index.html'; bookLink.target = '_blank'; bookLink.rel = 'noopener';
+bookLink.title = 'Learning quantum picturalism with the Playground: the textbook (opens in a new tab)';
+bar.append(title, el('span', 'app-sep', '·'), workbookEl, el('span', 'app-spacer'), bookLink, saveBtn, browseBtn);
 
 /** Show the Workbook Browser (in its panel if one is open, otherwise in the focused panel). */
 function showBrowser() {
@@ -56,7 +61,7 @@ saveBtn.addEventListener('click', save);
 function renderBar() {
   const c = Session.current;
   const where = { demo: 'Demo', mine: 'My Workbooks', new: 'not saved' }[c.origin];
-  workbookEl.textContent = `${c.name} (${where})${Session.dirty ? ' ●' : ''}`;
+  workbookEl.textContent = `${c.exercise ? `Exercise ${c.exercise.number} · ` : ''}${c.name} (${where})${Session.dirty ? ' ●' : ''}`;
   workbookEl.title = Session.dirty ? 'Unsaved changes' : '';
   saveBtn.textContent = Session.canSave ? 'Save' : 'Save a copy…';
   saveBtn.disabled = Session.canSave && !Session.dirty;

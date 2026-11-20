@@ -1,0 +1,198 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.9 Zero eats everything",
+ "description": "A goal proof about the zero number (PQP §3.4.2), plus a question on paper.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 0,
+  "proofs": 1
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-67",
+   "data": {
+    "name": "Zero eats f step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-18",
+    "nodes": [
+     {
+      "id": "node-209",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 330,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-210",
+      "typeKey": "morphism",
+      "x": 140,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-211",
+      "typeKey": "state",
+      "x": 280,
+      "y": 270,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-212",
+      "typeKey": "effect",
+      "x": 280,
+      "y": 180,
+      "label": "1",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-116",
+      "fromNodeId": "node-209",
+      "fromPort": 0,
+      "toNodeId": "node-210",
+      "toPort": 0,
+      "wireType": "qubit"
+     },
+     {
+      "id": "wire-117",
+      "fromNodeId": "node-211",
+      "fromPort": 0,
+      "toNodeId": "node-212",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-68",
+   "data": {
+    "name": "Zero eats f step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-18",
+    "nodes": [
+     {
+      "id": "node-213",
+      "typeKey": "identity",
+      "x": 140,
+      "y": 260,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-214",
+      "typeKey": "scalar",
+      "x": 280,
+      "y": 230,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-18",
+   "data": {
+    "name": "Zero eats f",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-67",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-68",
+      "relation": "=",
+      "note": "",
+      "source": null
+     }
+    ],
+    "goal": {
+     "minSteps": 2,
+     "relation": "="
+    }
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-18",
+     "selected": 0
+    }
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex09",
+  "chapter": 3,
+  "number": "3.9",
+  "title": "Zero eats everything",
+  "level": 3,
+  "statement": "PQP §3.4.2: if part of a process is impossible, the whole process is — a zero process absorbs everything it is composed with (equations (3.27)). In the Playground the two sides of an equation must have the same wires, so \"zero\" here is the number 0 beside a plain wire.\n\n- (a) Prove the given equation in **at least two steps**, naming each rule. (Number nodes: a label that reads as a number is that number.)\n- (b) On paper: PQP Exercise 3.40 asks you to show that if $f \\approx 0$ then $f = 0$, in a theory with no zero-divisors. Prove it, and say where you use that λ and μ in Def. 3.39 are non-zero.",
+  "done": "The Exercise panel shows ✓ Solved, and you have a proof of (b).",
+  "book": "textbook/ch03.html#ex-3-9"
+ }
+}

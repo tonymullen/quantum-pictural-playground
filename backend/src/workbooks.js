@@ -40,6 +40,10 @@ export function validateWorkbook(wb) {
     if (!d || !KINDS.has(d.kind) || typeof d.id !== 'string' || !d.data || typeof d.data !== 'object') bad('a document is malformed');
   }
   if (!wb.layout || typeof wb.layout !== 'object') bad('layout missing');
+  if (wb.exercise !== undefined && wb.exercise !== null) {
+    if (typeof wb.exercise !== 'object' || Array.isArray(wb.exercise)) bad('exercise must be an object');
+    if (JSON.stringify(wb.exercise).length > 20000) bad('exercise too long');
+  }
 }
 
 const oid = id => {

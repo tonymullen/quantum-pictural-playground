@@ -1,6 +1,267 @@
 {
  "demos": [
   {
+   "id": "pqp03-tour",
+   "name": "3.0 Getting around the Playground",
+   "description": "The workbook used in the walkthrough at the start of Chapter 3: a state ψ, a box f and an effect π in the Diagram Editor (with its ∘⊗ reading switched on), the same diagram in Dirac notation, and a first proof — moving a box changes nothing, because only connectivity matters (PQP Cor. 3.5).",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 1
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Demos"
+   ],
+   "file": "textbook/ch03/pqp03-tour.json",
+   "book": "textbook/ch03.html#playground"
+  },
+  {
+   "id": "pqp03-composing",
+   "name": "3.1 Composing processes",
+   "description": "Parallel (⊗) and sequential (∘) composition (PQP §3.2). The interchange law (g₁ ⊗ g₂) ∘ (f₁ ⊗ f₂) = (g₁ ∘ f₁) ⊗ (g₂ ∘ f₂), equation (3.16), is one picture drawn twice; an effect followed by a state is the two side by side; and a circuit — H, then CNOT — shown with its ∘⊗ layers.",
+   "summary": {
+    "circuits": 1,
+    "diagrams": 0,
+    "proofs": 2
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Demos"
+   ],
+   "file": "textbook/ch03/pqp03-composing.json",
+   "book": "textbook/ch03.html#sec-3-2"
+  },
+  {
+   "id": "pqp03-special",
+   "name": "3.2 States, effects and numbers",
+   "description": "PQP §3.4: a state meets an effect and a number pops out. Here ⟨+|0⟩ = 1/√2 in the Diagram Editor, its Dirac form and its Numbers; ⟨1|0⟩ is the impossible number 0; and 2·f ≈ f, equal up to a number (PQP Def. 3.39).",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 2
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Demos"
+   ],
+   "file": "textbook/ch03/pqp03-special.json",
+   "book": "textbook/ch03.html#sec-3-4"
+  },
+  {
+   "id": "pqp03-ex01",
+   "name": "3.1 A state, a box and an effect",
+   "description": "Blank starter: build ψ → f → π and read it in Dirac notation.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 0
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex01.json",
+   "book": "textbook/ch03.html#ex-3-1",
+   "exercise": {
+    "number": "3.1",
+    "level": 1
+   }
+  },
+  {
+   "id": "pqp03-ex02",
+   "name": "3.2 Side by side, one after the other",
+   "description": "Two empty diagrams: build f ⊗ g and g ∘ f and compare their ∘⊗ readings and Dirac forms.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 2,
+    "proofs": 0
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex02.json",
+   "book": "textbook/ch03.html#ex-3-2",
+   "exercise": {
+    "number": "3.2",
+    "level": 1
+   }
+  },
+  {
+   "id": "pqp03-ex03",
+   "name": "3.3 Numbers from states and effects",
+   "description": "Blank starter: plug basis states into basis effects and read off the numbers.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 0
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex03.json",
+   "book": "textbook/ch03.html#ex-3-3",
+   "exercise": {
+    "number": "3.3",
+    "level": 1
+   }
+  },
+  {
+   "id": "pqp03-ex04",
+   "name": "3.4 Only connectivity matters",
+   "description": "Four diagrams and two proofs to finish: which pairs are equal, and why?",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 4,
+    "proofs": 2
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex04.json",
+   "book": "textbook/ch03.html#ex-3-4",
+   "exercise": {
+    "number": "3.4",
+    "level": 1
+   }
+  },
+  {
+   "id": "pqp03-ex05",
+   "name": "3.5 Equal up to a number",
+   "description": "A proof that fails with = : make it hold, then see why zero is special.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 1
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex05.json",
+   "book": "textbook/ch03.html#ex-3-5",
+   "exercise": {
+    "number": "3.5",
+    "level": 2
+   }
+  },
+  {
+   "id": "pqp03-ex06",
+   "name": "3.6 A circuit is a diagram",
+   "description": "A two-gate circuit: find its layers and write it as one ∘/⊗ formula.",
+   "summary": {
+    "circuits": 1,
+    "diagrams": 0,
+    "proofs": 0
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex06.json",
+   "book": "textbook/ch03.html#ex-3-6",
+   "exercise": {
+    "number": "3.6",
+    "level": 2
+   }
+  },
+  {
+   "id": "pqp03-ex07",
+   "name": "3.7 Diagram substitution",
+   "description": "A goal proof: replace part of a diagram using an equation (PQP §3.1.5).",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 1
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex07.json",
+   "book": "textbook/ch03.html#ex-3-7",
+   "exercise": {
+    "number": "3.7",
+    "level": 2
+   }
+  },
+  {
+   "id": "pqp03-ex08",
+   "name": "3.8 Dirac notation on one line",
+   "description": "Three diagrams to write in Dirac notation and verify.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 3,
+    "proofs": 0
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex08.json",
+   "book": "textbook/ch03.html#ex-3-8",
+   "exercise": {
+    "number": "3.8",
+    "level": 2
+   }
+  },
+  {
+   "id": "pqp03-ex09",
+   "name": "3.9 Zero eats everything",
+   "description": "A goal proof about the zero number (PQP §3.4.2), plus a question on paper.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 1
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex09.json",
+   "book": "textbook/ch03.html#ex-3-9",
+   "exercise": {
+    "number": "3.9",
+    "level": 3
+   }
+  },
+  {
+   "id": "pqp03-ex10",
+   "name": "3.10 What the checker checks",
+   "description": "Two look-alike claims, one ✓ and one ✗: diagram equations vs process equations.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 0,
+    "proofs": 2
+   },
+   "folder": [
+    "Textbook",
+    "Chapter 3 · Processes as diagrams",
+    "Exercises"
+   ],
+   "file": "textbook/ch03/pqp03-ex10.json",
+   "book": "textbook/ch03.html#ex-3-10",
+   "exercise": {
+    "number": "3.10",
+    "level": 3
+   }
+  },
+  {
    "id": "getting-started",
    "name": "Getting started: the Bell state",
    "description": "One state, four ways. The circuit (H, then CNOT, on |00⟩) prepares the Bell state; the Diagram Editor shows the same circuit as a PQP diagram; the proof simplifies that diagram, one checked rewrite at a time, to a cup; and the Dirac editor writes it out — click a saved formula to check another way of writing the same state. Edit the circuit and its diagram and Dirac follow (the proof keeps its own copies).",
@@ -8,7 +269,11 @@
     "circuits": 1,
     "diagrams": 0,
     "proofs": 1
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/getting-started.json"
   },
   {
    "id": "spider-rules",
@@ -18,7 +283,11 @@
     "circuits": 0,
     "diagrams": 0,
     "proofs": 4
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/spider-rules.json"
   },
   {
    "id": "snake-equations",
@@ -28,7 +297,11 @@
     "circuits": 0,
     "diagrams": 0,
     "proofs": 2
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/snake-equations.json"
   },
   {
    "id": "sliding-round-bends",
@@ -38,7 +311,11 @@
     "circuits": 0,
     "diagrams": 0,
     "proofs": 3
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/sliding-round-bends.json"
   },
   {
    "id": "pulling-taut",
@@ -48,7 +325,11 @@
     "circuits": 0,
     "diagrams": 1,
     "proofs": 5
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/pulling-taut.json"
   },
   {
    "id": "measurement-and-discarding",
@@ -58,7 +339,11 @@
     "circuits": 0,
     "diagrams": 1,
     "proofs": 5
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/measurement-and-discarding.json"
   },
   {
    "id": "causality",
@@ -68,7 +353,11 @@
     "circuits": 0,
     "diagrams": 0,
     "proofs": 5
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/causality.json"
   },
   {
    "id": "ghz-state",
@@ -78,7 +367,11 @@
     "circuits": 1,
     "diagrams": 0,
     "proofs": 0
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/ghz-state.json"
   },
   {
    "id": "teleportation",
@@ -88,7 +381,11 @@
     "circuits": 1,
     "diagrams": 0,
     "proofs": 1
-   }
+   },
+   "folder": [
+    "Software tour"
+   ],
+   "file": "software/teleportation.json"
   }
  ]
 }

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3 · Processes as diagrams — Learning Quantum Picturalism</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="css/book.css">
+  <script type="module" src="js/book.js"></script>
+</head>
+<body>
+<div class="book">
+  <nav id="book-nav" aria-label="Chapters"></nav>
+  <main>
+    <p class="chapter-kicker">Chapter 3</p>
+    <h1>Processes as diagrams</h1>
+    <p class="chapter-pqp">Follows PQP Chapter 3, §3.1–3.5 (printed pages 33–83) <a class="cite" data-key="pqp" data-loc="Ch. 3"></a>.
+      The starred advanced material in §3.6 is not covered.</p>
+
+    <p class="lead">PQP starts with the language itself: processes drawn as boxes, systems drawn as wires,
+      and equations between pictures. In this chapter you will learn to build diagrams in the Playground,
+      read them as formulas, and check equations between them. You will also meet Dirac notation, which
+      PQP presents as a one-line fragment of the diagrams.</p>
+
+    <!-- ============================================================ -->
+    <h2 id="playground" data-nav="In the Playground">In the Playground: a first tour</h2>
+    <p>Open the tour workbook. It opens the Playground in a new tab, so you can keep this page beside it:</p>
+    <p><a class="demo-link" data-demo="pqp03-tour">Open “3.0 Getting around the Playground” ↗</a></p>
+    <p>You will see three panels. Each has a header with a menu of editors, and buttons to split
+      (<span class="ui">⬌</span> <span class="ui">⬍</span>) or close (<span class="ui">✕</span>) it.</p>
+
+    <h3>The Diagram Editor (top left)</h3>
+    <figure class="qpp-figure" data-demo="pqp03-tour" data-diagram="ψ, f and π">
+      <figcaption>A state ψ, a box f and an effect π. In PQP’s convention a box’s inputs come in at the bottom and
+        its outputs leave at the top, so time runs upwards.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Add</strong> a node with the toolbar buttons: Z and X spiders, H, a box, cup, cap, swap, state,
+        effect, number (“scalar”), plain wire, white dot, discard. In this chapter you need only the box,
+        state, effect, number and wire.</li>
+      <li><strong>Wire</strong> by dragging from a port’s handle to another port. There are no tool modes:
+        dragging a node moves it, and dragging a handle wires it.</li>
+      <li><strong>Rename</strong> a node by double-clicking it. Change a box’s number of inputs and outputs in
+        the inspector, which shows the selected node.</li>
+      <li><strong>Select</strong> by clicking, or by Shift-clicking to add to the selection, or by dragging a
+        rectangle. Delete the selection with <kbd>Del</kbd> or <span class="ui">🗑</span>. Undo with
+        <kbd>Cmd/Ctrl</kbd>+<kbd>Z</kbd>.</li>
+      <li><strong>Pan</strong> with Alt+drag and <strong>zoom</strong> with the scroll wheel.</li>
+      <li>The <span class="ui">∘⊗</span> checkbox shows how the diagram reads as a formula. It is ticked in
+        this workbook; you will use it in the section on circuits.</li>
+    </ul>
+
+    <h3>The Dirac Formula Editor (bottom left)</h3>
+    <p>This editor is linked to a diagram, chosen in its menu. <span class="ui">Generate</span> writes the
+      diagram in Dirac notation. <span class="ui">Verify</span> checks a formula you have typed against the
+      diagram. Press Generate now and you get $\langle \pi | f | \psi \rangle$. What this notation means
+      is the last section of this chapter.</p>
+
+    <h3>The Diagram Equation Editor (right)</h3>
+    <p>A <em>proof</em> is a row of diagrams, $D_1, D_2, \ldots$. Between each pair is a relation, $=$ or
+      $\approx$, and a box for the rule used. The Playground checks every step against the one before:
+      ✓ means the two diagrams are equal, ✗ that they are not, and hovering over the mark explains why. Click
+      a step to edit it below the row. <span class="ui">＋ Step</span> copies the selected step as the next
+      one, which is the usual way to take a step. <span class="ui">Insert diagram…</span> copies in a diagram
+      from elsewhere in the workbook.</p>
+
+    <h3>Panels and workbooks</h3>
+    <ul>
+      <li><strong>Split</strong> a panel by dragging its top-right or bottom-left corner grip into it, and
+        <strong>merge</strong> it by dragging the grip onto a neighbour. <strong>Resize</strong> by dragging
+        the border between panels. Any panel can show any editor: pick one in the header menu.</li>
+      <li><span class="ui">▤ Workbooks</span> opens the Workbook Browser. This workbook is a Demo, so it is
+        read-only: if you change it, <span class="ui">Save a copy…</span> keeps your version in My
+        Workbooks.</li>
+      <li>Each exercise has a <strong>starter workbook</strong> with an <span class="ui">Exercise</span>
+        panel showing the task. The hints are here in the book.</li>
+    </ul>
+
+    <div class="box try">
+      <p class="box-title">Try it</p>
+      <p>In the Diagram Editor, drag the box f somewhere else. The Dirac formula doesn’t change: the
+        Playground, like PQP, cares only about what is connected to what. In the proof on the right, step
+        $D_2$ is $D_1$ with f moved, and the checker accepts $D_1 = D_2$. Now split the Dirac panel in two,
+        and switch one half to the <span class="ui">Numbers</span> editor. It has nothing to show yet,
+        because f is a symbol rather than a particular matrix.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-3-1" data-nav="Boxes, wires and process theories">Boxes, wires and process theories <small>(PQP §3.1.1–3.1.2)</small></h2>
+    <p>PQP calls anything with zero or more inputs and zero or more outputs a <em>process</em>, and draws it
+      as a box. Its input wires come in at the bottom and its output wires leave at the top (§3.1.1). The
+      wires carry labels called <em>system-types</em>, such as “real numbers”, “lists” or “bacon”, and an
+      output may be wired to an input only if their types match. PQP’s examples range from functions and
+      computer programs to cooking breakfast. The point is that the language of diagrams is about how
+      processes compose, whatever the processes are.</p>
+    <p>Which processes there are, and what wiring them together means, is fixed by a <em>process theory</em>
+      (Definition 3.1). A process theory gives the system-types, the processes between them, and a way of
+      interpreting any diagram of those processes as a single process. PQP’s list of examples
+      (Example 3.2) includes functions, relations, linear maps, classical processes and quantum processes.</p>
+
+    <div class="box caveat">
+      <p class="box-title">The Playground’s process theory</p>
+      <p>The Playground interprets diagrams in one process theory: <strong>linear maps on qubits</strong>.
+        Every wire has the same type, a qubit, and a box with $m$ inputs and $n$ outputs is a linear map from
+        $m$ qubits to $n$ qubits. PQP defines linear maps in Chapter 5. In this chapter, what matters is that
+        every diagram means something definite, so the Playground can compute with it and check
+        equations.</p>
+      <p>A box whose label is a symbol, like f, stands for an arbitrary linear map of the right shape. When
+        the checker meets one, it tries random choices; Exercise 3.10 looks at what that does and does not
+        show. A state or effect labelled 0, 1, + or − is a particular basis vector, and a number node whose
+        label reads as a number (2, 1/2, 0, 1/√2, −i) is that number.</p>
+    </div>
+
+    <h2 id="equations" data-nav="Equations between diagrams">Equations between diagrams <small>(PQP §3.1.3–3.1.5)</small></h2>
+    <p>A diagram is fully described by two things: which boxes it contains, and how they are connected.
+      Where the boxes sit on the page plays no part. PQP states this as Corollary 3.5: diagrams that can be
+      deformed into each other, without changing any connections, are equal. In short, <em>only
+      connectivity matters</em>. PQP backs up the pictures with <em>diagram formulas</em>, which name every
+      wire (Definitions 3.8–3.9), to show that diagrams are mathematics as rigorous as formulas. Once that is
+      established, PQP uses the pictures.</p>
+    <figure class="qpp-figure" data-demo="pqp03-tour" data-proof="Moving a box changes nothing">
+      <figcaption>Corollary 3.5 in the Playground: moving a box gives an equal diagram.</figcaption>
+    </figure>
+
+    <p>PQP distinguishes two kinds of equation (§3.1.4):</p>
+    <ul>
+      <li>A <strong>diagram equation</strong> holds in every process theory, because the two pictures can be
+        deformed into each other.</li>
+      <li>A <strong>process equation</strong> holds in a particular theory: the pictures differ, but in that
+        theory they mean the same process. PQP’s example, equation (3.5), is the identity
+        $2m - 2n = 2(m-n)$ drawn as two different diagrams.</li>
+    </ul>
+    <p>An equation also says which inputs and outputs correspond: in PQP’s pictures, by their positions on
+      the page. Flip the inputs on one side of (3.5) and you get the false equation (3.6), even though only
+      wires were rearranged. Exercise 3.4 has you find this in the Playground.</p>
+
+    <p>New equations come from old ones by <em>diagram substitution</em> (§3.1.5). If a piece of a diagram
+      matches one side of a known equation, you may cut it out and paste in the other side, connected
+      <em>in the same place</em>: the first input of the new piece to the wire that went to the first input
+      of the old one, and so on (Remark 3.16). In the Playground you do exactly this. Select the piece in a
+      proof step and paste a replacement over it (<kbd>Cmd/Ctrl</kbd>+<kbd>V</kbd>), and the wires reconnect
+      in order. Exercise 3.7 practises it.</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-3-2" data-nav="Circuits">Circuits: ⊗ and ∘ <small>(PQP §3.2)</small></h2>
+    <p>PQP builds diagrams from two operations (§3.2.1–3.2.2):</p>
+    <ul>
+      <li><strong>Parallel composition</strong> $f \otimes g$ puts $f$ and $g$ side by side: “$f$ takes place
+        while $g$ takes place”. It is associative, (3.11), and the empty diagram is its unit, (3.12).</li>
+      <li><strong>Sequential composition</strong> $g \circ f$ wires the outputs of $f$ into the inputs of
+        $g$: “$g$ takes place after $f$”. It too is associative, (3.13), and a plain wire is its unit,
+        (3.14).</li>
+    </ul>
+    <p>Note the order in $g \circ f$: the process written on the right happens first.</p>
+    <p>A <em>circuit</em> is a diagram built from boxes, identities and swaps using only $\otimes$ and $\circ$
+      (Definition 3.19). Theorem 3.22 characterises circuits by a property instead: a diagram is a circuit
+      exactly when it has no <em>directed cycle</em>, that is, when you cannot follow wires from a box’s
+      outputs and arrive back at its inputs. The proof slices the diagram into layers, and the
+      Playground’s <span class="ui">∘⊗</span> view draws exactly such a slicing. Each box goes in the layer
+      after the deepest box that feeds it; the layers are composed with $\circ$, and pieces side by side
+      within a layer with $\otimes$.</p>
+    <p><a class="demo-link" data-demo="pqp03-composing">Open “3.1 Composing processes” ↗</a></p>
+
+    <div class="box insight">
+      <p class="box-title">Why the picture helps: diagrams beat algebra (PQP §3.2.4)</p>
+      <p>Write circuits with $\otimes$ and $\circ$ alone, and you need extra equations to say when two
+        formulas mean the same circuit. The most striking is the <em>interchange law</em>:
+        \[ (g_1 \otimes g_2) \circ (f_1 \otimes f_2) \;=\; (g_1 \circ f_1) \otimes (g_2 \circ f_2) \qquad (3.16) \]
+        As formulas these look different. As diagrams they are the same picture, so in the diagrammatic
+        language (3.16) holds automatically. Compressing a two-dimensional picture onto one line forces
+        brackets on us, and then equations to undo the damage.</p>
+      <figure class="qpp-figure" data-demo="pqp03-composing" data-proof="The interchange law (3.16)">
+        <figcaption>Drawn as two layers, or as two columns: one diagram, so the checker accepts =.</figcaption>
+      </figure>
+      <p>A consequence PQP derives from (3.12), (3.14) and (3.16): an effect followed by a state, with nothing
+        connecting them, is the same as the two side by side.</p>
+      <figure class="qpp-figure" data-demo="pqp03-composing" data-proof="An effect, then a state">
+      </figure>
+    </div>
+
+    <p>Remark 3.25 explains the name: these are the circuits of quantum computing, and the Playground’s
+      <span class="ui">Circuit Editor</span> builds them. The demo workbook has one, an H gate followed by a
+      CNOT, with its PQP diagram and ∘⊗ layers. Chapter 4 will add cups and caps, which give diagrams
+      that are not circuits but are still very useful.</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-3-3" data-nav="Functions and relations">Functions and relations <small>(PQP §3.3)</small></h2>
+    <p>PQP’s first two concrete process theories both have sets as their types:</p>
+    <ul>
+      <li>In <strong>functions</strong> (§3.3.2), a box is a function. Sequential composition is the usual
+        composition of functions, (3.18), and parallel composition applies two functions to the two halves of
+        a pair, (3.19).</li>
+      <li>In <strong>relations</strong> (§3.3.3), a box relates each input to any number of outputs, possibly
+        none. A relation is a function with added non-determinism. Relations compose by “there is a path from
+        $a$ to $c$”, (3.21), and side by side by (3.22).</li>
+    </ul>
+    <p>Functions are a <em>sub-theory</em> of relations (§3.3.4). Their types are the same, but they have
+      very different properties as process theories, and PQP says that the extra relations are what make
+      relations behave more like linear maps.</p>
+
+    <div class="box paper">
+      <p class="box-title">On paper</p>
+      <p>The Playground computes only with linear maps, so work through PQP Exercises 3.29–3.31 by hand. They
+        ask which function the swap is, what some composites of NOT and CNOT compute, and what a relation built
+        from three given relations is, using PQP’s four-step recipe after (3.23).</p>
+      <p>One part of Exercise 3.30 can also be done in the Playground. On the basis states $|0\rangle$ and
+        $|1\rangle$, the Circuit Editor’s X and CNOT gates act just like the functions NOT and CNOT. Build
+        Exercise 3.30’s circuits there and read the results in the Dirac editor. Chapter 5 explains why this
+        works (PQP §5.3.4).</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-3-4" data-nav="States, effects and numbers">States, effects and numbers <small>(PQP §3.4.1–3.4.3)</small></h2>
+    <p>Three kinds of process are special (§3.4.1):</p>
+    <ul>
+      <li>A <strong>state</strong> has no inputs. Operationally it is a preparation procedure.</li>
+      <li>An <strong>effect</strong> has no outputs. Operationally it is a test that came out “yes”.</li>
+      <li>A <strong>number</strong> has neither inputs nor outputs.</li>
+    </ul>
+    <p>Plug a state into an effect and a number appears. PQP’s <em>generalised Born rule</em>, (3.25), reads
+      this number as the probability that the test succeeds on that state.</p>
+    <p>In PQP’s pictures, numbers can float anywhere in a diagram, and their “little dance”, (3.24), shows that
+      multiplying them is commutative in every process theory. This is the Eckmann–Hilton argument of
+      Remark 3.33.</p>
+    <p><a class="demo-link" data-demo="pqp03-special">Open “3.2 States, effects and numbers” ↗</a></p>
+    <figure class="qpp-figure" data-demo="pqp03-special" data-diagram="⟨+|0⟩">
+      <figcaption>The state $|0\rangle$ (bottom) plugged into the effect $\langle +|$ (top). The Playground
+        computes the number $\tfrac{1}{\sqrt 2}$.</figcaption>
+    </figure>
+
+    <div class="box caveat">
+      <p class="box-title">Amplitudes, not yet probabilities</p>
+      <p>In linear maps, the Playground’s theory, the number from a state and an effect is a complex number,
+        an amplitude, not a probability: $\langle +|0\rangle = 1/\sqrt 2$. PQP anticipates this in
+        Remark 3.34. Probabilities come out directly once diagrams are <em>doubled</em> into quantum maps
+        (PQP Chapter 6, from §6.1.1), and the Playground does that too.</p>
+    </div>
+
+    <p><strong>Zero</strong> (§3.4.2). If a state makes an effect impossible, their number is the
+      “impossible” number, 0. Anything composed with an impossible process is impossible, so a zero process
+      absorbs everything around it, (3.27). Note that 0 is not the empty diagram: the empty diagram changes
+      nothing, while 0 swallows everything.</p>
+    <figure class="qpp-figure" data-demo="pqp03-special" data-proof="⟨1|0⟩ is impossible"></figure>
+
+    <p><strong>Equal up to a number</strong> (§3.4.3). Often only the shape of a process matters, not its
+      overall factor. PQP writes $f \approx g$ when $\lambda f = \mu g$ for some <em>non-zero</em> numbers
+      $\lambda, \mu$ (Definition 3.39). This is the Playground’s $\approx$: the checker accepts $\approx$
+      when the two sides differ by a non-zero factor, and says what the factor is. Without the non-zero
+      condition everything would be $\approx$ everything else, since $0 \cdot f = 0 = 0 \cdot g$.</p>
+    <figure class="qpp-figure" data-demo="pqp03-special" data-proof="2·f is f up to a number"></figure>
+
+    <!-- ============================================================ -->
+    <h2 id="dirac" data-nav="Dirac notation">Dirac notation <small>(PQP §3.4.4)</small></h2>
+    <p>Most quantum-information texts write processes in <em>Dirac notation</em>, introduced by Dirac, who
+      also named its two halves the <em>bra</em> and the <em>ket</em> <a class="cite" data-key="dirac1939"></a>.
+      PQP §3.4.4 presents it as what is left of a diagram when it has to fit on a single typewritten line.
+      Cut the diagram up, turn the pieces sideways, and write them in a row. This section makes that
+      dictionary explicit, and gives the standard meaning of each piece from a widely used textbook,
+      Nielsen and Chuang <a class="cite" data-key="nc2010"></a>.</p>
+
+    <section class="two-notations">
+      <p class="box-title">Two notations: diagrams and Dirac notation</p>
+      <p>Left: the picture and PQP’s rule for writing it on a line (PQP §3.4.4, rules D1–D10). Middle: the
+        same thing in Dirac notation as used in quantum information. Right: where each correspondence is
+        stated.</p>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th class="pqp">Picture (PQP)</th><th class="familiar">Dirac notation</th><th>Meaning, and source</th></tr></thead>
+        <tbody>
+          <tr><td>a state ψ</td><td>$|\psi\rangle$, a <em>ket</em></td>
+            <td class="source">a vector. PQP D1; <a class="cite" data-key="nc2010" data-loc="Fig. 2.1"></a></td></tr>
+          <tr><td>an effect π</td><td>$\langle \pi|$, a <em>bra</em></td>
+            <td class="source">a dual vector. PQP D2; <a class="cite" data-key="nc2010" data-loc="Fig. 2.1"></a>. See the caveat below.</td></tr>
+          <tr><td>a state ψ plugged into an effect π</td><td>$\langle \pi|\psi\rangle$</td>
+            <td class="source">a number, the inner product. PQP D3; <a class="cite" data-key="nc2010" data-loc="Fig. 2.1, §2.1.4"></a></td></tr>
+          <tr><td>a state ψ above an effect π, not connected</td><td>$|\psi\rangle\langle\pi|$</td>
+            <td class="source">the outer product, a process with one input and one output. PQP D4; <a class="cite" data-key="nc2010" data-loc="§2.1.4"></a></td></tr>
+          <tr><td>a box f</td><td>$f$</td>
+            <td class="source">a linear operator. PQP D5</td></tr>
+          <tr><td>g above f, wired together ($g \circ f$)</td><td>$g\,f$</td>
+            <td class="source">composition, read right to left: $f$ happens first. PQP D6; “$BA$” for “$B$ after $A$” in <a class="cite" data-key="nc2010" data-loc="§2.1.2"></a></td></tr>
+          <tr><td>states ψ and φ side by side</td><td>$|\psi\varphi\rangle = |\psi\rangle|\varphi\rangle = |\psi\rangle \otimes |\varphi\rangle$</td>
+            <td class="source">a state of the joint system, the tensor product. PQP D8; the abbreviations $|v\rangle|w\rangle$, $|vw\rangle$ in <a class="cite" data-key="nc2010" data-loc="§2.1.7"></a></td></tr>
+          <tr><td>effects π and ξ side by side</td><td>$\langle \pi \xi|$</td>
+            <td class="source">PQP D9</td></tr>
+          <tr><td>f and g side by side</td><td>$f \otimes g$</td>
+            <td class="source">the tensor product of operators. PQP §3.2.1, D10; <a class="cite" data-key="nc2010" data-loc="§2.1.7"></a></td></tr>
+          <tr><td>a number λ</td><td>$\lambda$</td>
+            <td class="source">a complex number, in linear maps. PQP §3.4.1, Remark 3.34</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p><strong>Caveat: bras.</strong> In Nielsen and Chuang, $\langle\psi|$ is always the <em>dual</em> of
+        the ket $|\psi\rangle$, its conjugate transpose (Fig. 2.1). In PQP Chapter 3, $\langle\pi|$ is just the
+        name of an effect π, and nothing yet relates it to a state with the same name. PQP says it has
+        departed slightly from the usual Dirac notation here (Remark 3.41), and supplies the missing link,
+        turning a ket into a bra, in §4.3.3. The Playground follows PQP: an effect labelled π is a bra named
+        π, while an effect labelled 0, 1, + or − is that basis bra.</p>
+      <p><strong>In the Playground:</strong> <span class="ui">Generate</span> writes a diagram by these rules.
+        The Dirac editor reads two kets side by side as their tensor product, $|0\rangle|+\rangle = |0+\rangle$,
+        as Nielsen and Chuang do (§2.1.7); a ket followed by a bra, $|0\rangle\langle 1|$, is still the outer
+        product.</p>
+    </section>
+
+    <div class="box insight">
+      <p class="box-title">Why the picture helps: where one line runs out</p>
+      <p>The rules work smoothly for states, effects and boxes stacked in a column. They break down for boxes
+        side by side, with several wires in and out. Then you have to write $\otimes$ explicitly, or pad with
+        identities, $f \otimes I$, or use subscripts that only make sense if you already know the system (PQP’s
+        D10). Brackets and the extra equations of §3.2.4 come back with them. The diagram needs none of
+        this, because it uses the second dimension of the page. Exercise 3.8 lets you feel the difference.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="exercises" data-nav="Exercises">Exercises</h2>
+    <p>Each exercise has a starter workbook. Open it with the button, or find it under
+      <span class="ui">▤ Workbooks ▸ Demos ▸ Textbook ▸ Chapter 3 · Processes as diagrams ▸ Exercises</span>. Its
+      <span class="ui">Exercise</span> panel repeats the task. Save a copy if you want to keep your work.</p>
+
+    <section class="exercise" data-exercise="pqp03-ex01">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>A node’s ports are on its edges: inputs at the bottom, outputs at the top. Start a drag on the
+          state’s output handle and let go on the box’s input.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>Dirac notation puts what happens first on the right (see the table above). Which of ψ, f and π
+          happens first?</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex02">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>Both diagrams already exist. Switch between them with the <span class="ui">Diagram:</span> menu in the
+          Diagram Editor’s bar, and point the Dirac editor at either one with its own menu.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>In the ∘⊗ view a box sits one layer above the deepest box that feeds it. Boxes fed by nothing sit
+          in the first layer.</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>Nielsen and Chuang write $BA$ for “$B$ after $A$” (§2.1.2). In $g\,f$, which box is $B$?</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex03">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>For $\langle 1|0\rangle$, the state is labelled 0 and sits at the bottom, and the effect is
+          labelled 1 and sits at the top.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>PQP §3.4.2: a number that says a test can <em>never</em> succeed on a state is the impossible
+          number.</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex04">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>Select $D_1$ first; Insert diagram… adds its copy right after the selected step.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>In B and B crossed, look at which of m’s two inputs each state goes into.</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>An equation matches inputs by position (PQP §3.1.4, after (3.6)). Moving boxes keeps every
+          connection; swapping which input a wire enters does not, unless m happens to treat its two inputs
+          alike. The checker tries a random m.</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex05">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>Hover over the ✗ between the steps: the checker says what factor separates the two sides.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>For (b): $D_2$ must be exactly $2 \cdot f$. Which number node makes it so?</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>For (c): if $\lambda$ or $\mu$ could be 0, what would $0 \cdot f = 0 \cdot g$ say about any two
+          processes $f$ and $g$?</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex06">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>Go layer by layer from the bottom: the starting state $|00\rangle$; then H on the first wire with
+          nothing ($I$) on the second; then the CNOT.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>Write it right to left, the last layer leftmost. The editor knows $H$, $I$,
+          $\operatorname{CNOT}$ (type <code>\operatorname{CNOT}</code>) and $|00\rangle$. Use brackets around a
+          $\otimes$.</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>For (c): wire a box’s output back into its own input. Follow the wire and you return to where you
+          started: a directed cycle.</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex07">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>If pasting adds the wire instead of replacing the H boxes, check that exactly the two H boxes are
+          selected in the step. The piece you replace must have one input and one output, like the
+          wire.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>The rule box takes any text, for example “H H = 1 (substitution)”.</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex08">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>The pieces you need: kets $|0\rangle$, $|1\rangle$, $|+\rangle$; the bra $\langle 0|$; $X$, $H$, the
+          identity $I$; and $\otimes$ (<code>\otimes</code>).</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>A: read the diagram bottom to top and write it right to left.</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>C: the effect acts on the first wire only, so it is $\langle 0| \otimes I$ applied to the two
+          states together.</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex09">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>Part of $D_1$ is a number in disguise. Make it the number it is, first.</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>Then use (3.27): zero beside f is the zero process, just as zero beside a plain wire is. The
+          checker can confirm the step.</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>For (b): $f \approx 0$ gives non-zero $\lambda$ and $\mu$ with $\lambda f = \mu \cdot 0$. What is
+          the right-hand side? Now use the assumption of no zero-divisors.</p></details>
+    </section>
+
+    <section class="exercise" data-exercise="pqp03-ex10">
+      <details class="hint" data-n="1"><summary>Hint 1</summary>
+        <p>The checker’s ✗ says it found an f with $f \circ f \neq 1$. Does that mean <em>no</em> f has
+          $f \circ f = 1$?</p></details>
+      <details class="hint" data-n="2"><summary>Hint 2</summary>
+        <p>A diagram equation needs to know nothing about its boxes: the two pictures must deform into each
+          other. Can two H boxes in a row be deformed into a plain wire?</p></details>
+      <details class="hint" data-n="3"><summary>Hint 3</summary>
+        <p>For (c): earlier exercises in this chapter have examples of both kinds.</p></details>
+    </section>
+
+    <!-- ============================================================ -->
+    <h2 id="summary" data-nav="Summary">Summary</h2>
+    <div class="table-scroll">
+    <table class="summary">
+      <thead><tr><th>Idea</th><th>PQP</th><th>In the Playground</th></tr></thead>
+      <tbody>
+        <tr><td>A process is a box; a system is a wire; time runs upwards</td><td>§3.1.1</td><td>Diagram Editor (PQP orientation)</td></tr>
+        <tr><td>A process theory says what diagrams mean</td><td>Def. 3.1</td><td>Linear maps on qubits</td></tr>
+        <tr><td>Only connectivity matters</td><td>Cor. 3.5</td><td>Moving nodes changes nothing; the checker agrees</td></tr>
+        <tr><td>Diagram equations vs process equations</td><td>§3.1.4</td><td>The checker checks process equations in linear maps</td></tr>
+        <tr><td>Diagram substitution, in the same place</td><td>§3.1.5, Rem. 3.16</td><td>Select, paste: wires reconnect in order</td></tr>
+        <tr><td>$\otimes$ and $\circ$; circuits have no directed cycles</td><td>§3.2, Thm. 3.22</td><td>The ∘⊗ view; the Circuit Editor</td></tr>
+        <tr><td>The interchange law comes free</td><td>(3.16)</td><td>Two drawings, one diagram: =</td></tr>
+        <tr><td>States, effects, numbers; the generalised Born rule</td><td>§3.4.1, (3.25)</td><td>Basis labels 0, 1, +, −; number labels</td></tr>
+        <tr><td>Zero absorbs everything</td><td>(3.27)</td><td>A number labelled 0</td></tr>
+        <tr><td>Equal up to a non-zero number</td><td>Def. 3.39</td><td>The relation ≈</td></tr>
+        <tr><td>Dirac notation is a one-line fragment of the diagrams</td><td>§3.4.4</td><td>Generate and Verify in the Dirac editor</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <section class="refs">
+      <h2 id="references" data-nav="References">References</h2>
+      <ol data-refs></ol>
+    </section>
+    <nav id="book-pager"></nav>
+  </main>
+</div>
+</body>
+</html>

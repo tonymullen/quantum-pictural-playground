@@ -1,7 +1,8 @@
 /**
  * WorkbookSession — the workbook that is open right now.
  *
- *   current = { name, description, origin: 'demo'|'mine'|'new', storeId }
+ *   current = { name, description, origin: 'demo'|'mine'|'new', storeId, exercise }
+ *             (exercise: the textbook exercise this workbook is a starter for, or null)
  *   dirty   — true once anything changes after opening or saving
  *
  * Opening a workbook replaces every document and every panel. Demos are
@@ -17,7 +18,7 @@ const Session = {
   stores: { demo: new DemoStore(), mine: new LocalWorkbookStore() },
   /** The signed-in user (from the server), or null when there is no server. */
   user: null,
-  current: { name: 'Untitled workbook', description: '', origin: 'new', storeId: null },
+  current: { name: 'Untitled workbook', description: '', origin: 'new', storeId: null, exercise: null },
   dirty: false,
   _layout: null,
   _loading: false,
@@ -58,7 +59,7 @@ const Session = {
 
   /** The open workbook as JSON (documents + layout). */
   capture(name = this.current.name) {
-    return captureWorkbook({ name, description: this.current.description }, this._layout.serialize());
+    return captureWorkbook({ name, description: this.current.description, exercise: this.current.exercise }, this._layout.serialize());
   },
 
   /** Open a workbook from a store ('demo' or 'mine'). */
@@ -73,7 +74,7 @@ const Session = {
     try {
       const { layout } = openWorkbookDocuments(wb);
       this._layout.loadLayout(layout || this._layout.constructor.defaultSpec());
-      this.current = { name: wb.name, description: wb.description || '', origin, storeId };
+      this.current = { name: wb.name, description: wb.description || '', origin, storeId, exercise: wb.exercise || null };
     } finally {
       this._loading = false;
       this.dirty = false;
@@ -87,7 +88,7 @@ const Session = {
     try {
       DocumentStore.clear();
       this._layout.loadLayout(this._layout.constructor.defaultSpec());
-      this.current = { name, description: '', origin: 'new', storeId: null };
+      this.current = { name, description: '', origin: 'new', storeId: null, exercise: null };
     } finally {
       this._loading = false;
       this.dirty = false;

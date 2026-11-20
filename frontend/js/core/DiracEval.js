@@ -269,14 +269,22 @@ function _mul(A, B) {
 }
 
 function _evalProduct(factors) {
-  let result = null;
+  const ts = [];
   for (const f of factors) {
     const t = _eval(f);
     if (!t) return null;
-    result = result ? _mul(result, t) : t;
+    // Kets side by side are their tensor product, |v⟩|w⟩ = |v⟩ ⊗ |w⟩ (Nielsen & Chuang §2.1.7;
+    // PQP §3.4.4 D8), and so are bras side by side, ⟨v|⟨w| = ⟨v| ⊗ ⟨w|
+    const prev = ts[ts.length - 1];
+    if (prev && ((_isKet(prev) && _isKet(t)) || (_isBra(prev) && _isBra(t)))) ts[ts.length - 1] = Tensor.kron(prev, t);
+    else ts.push(t);
   }
+  let result = null;
+  for (const t of ts) result = result ? _mul(result, t) : t;
   return result;
 }
+const _isKet = t => t.cols === 1 && t.rows > 1;
+const _isBra = t => t.rows === 1 && t.cols > 1;
 
 function _evalTensor(factors) {
   let result = null;

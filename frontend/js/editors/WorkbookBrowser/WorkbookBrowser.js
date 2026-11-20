@@ -28,7 +28,7 @@ export default class WorkbookBrowser {
     this.container = containerEl;
     this.lists = { demo: [], mine: [] };
     this.errors = { demo: '', mine: '' };
-    this.collapsed = { demo: false, mine: false };
+    this.collapsed = {};      // folder key → true (closed) / false (open), once the user toggles it
     this.selected = (options.state && options.state.selected) || null;   // { origin, id }
     this.pending = null;     // inline form/confirmation: { kind, ... }
 
@@ -148,37 +148,85 @@ export default class WorkbookBrowser {
   renderTree() {
     const t = this.treeEl;
     t.innerHTML = '';
+    this._visible = [];
     for (const origin of ['demo', 'mine']) {
       const store = Session.stores[origin];
       const folder = document.createElement('div');
       folder.className = 'wb-folder';
-      const head = document.createElement('div');
-      head.className = 'wb-folder-head';
-      head.textContent = `${this.collapsed[origin] ? '▸' : '▾'} ${store.label}`;
-      head.title = store.note;
-      head.addEventListener('click', () => { this.collapsed[origin] = !this.collapsed[origin]; this.renderTree(); });
-      folder.appendChild(head);
-      if (!this.collapsed[origin]) {
+      const open = !this._isCollapsed(origin, [], []);
+      folder.appendChild(this._folderHead(origin, [], store.label, store.note, open, 0));
+      if (open) {
         folder.appendChild(this._span(store.note, 'wb-folder-note'));
         if (this.errors[origin]) folder.appendChild(this._span(this.errors[origin], 'wb-error'));
         else if (!this.lists[origin].length) folder.appendChild(this._span(
           origin === 'mine' ? 'Nothing saved yet — use “Save a copy…”' : 'No demos found', 'wb-empty'));
-        for (const item of this.lists[origin]) folder.appendChild(this._treeItem(origin, item));
+        this._renderLevel(folder, origin, [], this.lists[origin], 1);
       }
       t.appendChild(folder);
     }
   }
 
-  _treeItem(origin, item) {
+  /**
+   * One level of the tree: items with no further folder, and a sub-folder per
+   * next folder name, in the order they first appear in the list.
+   */
+  _renderLevel(parentEl, origin, path, items, depth) {
+    const groups = [];        // { name, items } | { item }
+    const byName = new Map();
+    for (const item of items) {
+      const f = item.folder || [];
+      const name = f[path.length];
+      if (name === undefined) { groups.push({ item }); continue; }
+      if (!byName.has(name)) { const g = { name, items: [] }; byName.set(name, g); groups.push(g); }
+      byName.get(name).items.push(item);
+    }
+    for (const g of groups) {
+      if (g.item) { parentEl.appendChild(this._treeItem(origin, g.item, depth)); continue; }
+      const sub = [...path, g.name];
+      const open = !this._isCollapsed(origin, sub, g.items);
+      const el = document.createElement('div');
+      el.className = 'wb-subfolder';
+      el.appendChild(this._folderHead(origin, sub, g.name, '', open, depth));
+      if (open) this._renderLevel(el, origin, sub, g.items, depth + 1);
+      parentEl.appendChild(el);
+    }
+  }
+
+  _folderKey(origin, path) { return [origin, ...path].join('\u0000'); }
+
+  /** A folder is open if the user opened it, or (by default) if it is a top level or holds the open or selected workbook. */
+  _isCollapsed(origin, path, items) {
+    const k = this._folderKey(origin, path);
+    if (k in this.collapsed) return this.collapsed[k];
+    if (path.length <= 1 && !(path.length === 1 && origin === 'demo' && path[0] === 'Software tour')) return false;
+    const holds = it => (Session.current.origin === origin && Session.current.storeId === it.id)
+      || (this.selected && this.selected.origin === origin && this.selected.id === it.id);
+    return !items.some(holds);
+  }
+
+  _folderHead(origin, path, label, title, open, depth) {
+    const head = document.createElement('div');
+    head.className = depth ? 'wb-folder-head wb-subfolder-head' : 'wb-folder-head';
+    head.style.paddingLeft = `${10 + depth * 14}px`;
+    head.textContent = `${open ? '▾' : '▸'} ${label}`;
+    if (title) head.title = title;
+    head.addEventListener('click', () => { this.collapsed[this._folderKey(origin, path)] = open; this.renderTree(); });
+    return head;
+  }
+
+  _treeItem(origin, item, depth = 1) {
     const row = document.createElement('div');
     const sel = this.selected && this.selected.origin === origin && this.selected.id === item.id;
     const isOpen = Session.current.origin === origin && Session.current.storeId === item.id;
     row.className = 'wb-item' + (sel ? ' selected' : '') + (isOpen ? ' is-open' : '');
+    row.style.paddingLeft = `${10 + depth * 14}px`;
     row.dataset.origin = origin; row.dataset.id = item.id;
-    row.append(this._span('▤', 'wb-icon'), this._span(item.name, 'wb-item-name'), this._span(summaryText(item.summary), 'wb-item-summary'));
+    row.append(this._span(item.exercise ? '✎' : '▤', 'wb-icon'), this._span(item.name, 'wb-item-name'),
+      this._span(item.exercise ? `Exercise · ${'★'.repeat(item.exercise.level || 1)}` : summaryText(item.summary), 'wb-item-summary'));
     row.title = 'Double-click to open';
     row.addEventListener('mousedown', () => { this._select({ origin, id: item.id }); this.treeEl.focus({ preventScroll: true }); });
     row.addEventListener('dblclick', () => this._confirmReplace({ kind: 'open', origin, id: item.id, name: item.name }));
+    this._visible.push({ origin, id: item.id, item });
     return row;
   }
 
@@ -189,11 +237,8 @@ export default class WorkbookBrowser {
     this.renderDetails();
   }
 
-  _flat() {
-    const out = [];
-    for (const origin of ['demo', 'mine']) if (!this.collapsed[origin]) for (const it of this.lists[origin]) out.push({ origin, id: it.id, item: it });
-    return out;
-  }
+  /** The workbooks visible in the tree, top to bottom (for the arrow keys). */
+  _flat() { return this._visible || []; }
 
   _onKey(e) {
     const flat = this._flat();
@@ -235,6 +280,12 @@ export default class WorkbookBrowser {
     d.appendChild(this._span(`${Session.stores[sel.origin].label}${item.savedAt && sel.origin === 'mine' ? ' · saved ' + new Date(item.savedAt).toLocaleString() : ''}`, 'wb-dim'));
     d.appendChild(this._span(summaryText(item.summary), 'wb-summary'));
     if (item.description) { const para = document.createElement('p'); para.textContent = item.description; d.appendChild(para); }
+    if (item.book && /^textbook\/[\w./#-]+$/.test(item.book)) {
+      const a = document.createElement('a');
+      a.className = 'wb-book-link'; a.href = item.book; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = item.exercise ? '📖 This exercise in the textbook' : '📖 Read this in the textbook';
+      d.appendChild(a);
+    }
 
     if (p && p.kind === 'delete' && p.id === item.id) {
       d.appendChild(this._confirmBox(`Delete “${item.name}” from My Workbooks?`, 'This cannot be undone.', 'Delete',

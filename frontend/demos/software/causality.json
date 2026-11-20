@@ -11,16 +11,16 @@
  "documents": [
   {
    "kind": "diagram",
-   "id": "doc-138",
+   "id": "doc-217",
    "data": {
     "name": "Composing causal processes step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-40",
+    "ownerProof": "proof-64",
     "nodes": [
      {
-      "id": "node-400",
+      "id": "node-633",
       "typeKey": "morphism",
       "x": 200,
       "y": 330,
@@ -45,7 +45,7 @@
       }
      },
      {
-      "id": "node-401",
+      "id": "node-634",
       "typeKey": "morphism",
       "x": 188,
       "y": 220,
@@ -69,7 +69,7 @@
       }
      },
      {
-      "id": "node-402",
+      "id": "node-635",
       "typeKey": "discard",
       "x": 188,
       "y": 130,
@@ -83,7 +83,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-403",
+      "id": "node-636",
       "typeKey": "dot",
       "x": 250,
       "y": 230,
@@ -105,26 +105,26 @@
     ],
     "wires": [
      {
-      "id": "wire-273",
-      "fromNodeId": "node-400",
+      "id": "wire-397",
+      "fromNodeId": "node-633",
       "fromPort": 0,
-      "toNodeId": "node-401",
+      "toNodeId": "node-634",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-274",
-      "fromNodeId": "node-401",
+      "id": "wire-398",
+      "fromNodeId": "node-634",
       "fromPort": 0,
-      "toNodeId": "node-402",
+      "toNodeId": "node-635",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-275",
-      "fromNodeId": "node-400",
+      "id": "wire-399",
+      "fromNodeId": "node-633",
       "fromPort": 1,
-      "toNodeId": "node-403",
+      "toNodeId": "node-636",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -133,16 +133,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-139",
+   "id": "doc-218",
    "data": {
     "name": "Composing causal processes step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-40",
+    "ownerProof": "proof-64",
     "nodes": [
      {
-      "id": "node-404",
+      "id": "node-637",
       "typeKey": "morphism",
       "x": 200,
       "y": 330,
@@ -167,7 +167,7 @@
       }
      },
      {
-      "id": "node-405",
+      "id": "node-638",
       "typeKey": "discard",
       "x": 188,
       "y": 230,
@@ -181,7 +181,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-406",
+      "id": "node-639",
       "typeKey": "dot",
       "x": 250,
       "y": 230,
@@ -203,18 +203,18 @@
     ],
     "wires": [
      {
-      "id": "wire-276",
-      "fromNodeId": "node-404",
+      "id": "wire-400",
+      "fromNodeId": "node-637",
       "fromPort": 0,
-      "toNodeId": "node-405",
+      "toNodeId": "node-638",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-277",
-      "fromNodeId": "node-404",
+      "id": "wire-401",
+      "fromNodeId": "node-637",
       "fromPort": 1,
-      "toNodeId": "node-406",
+      "toNodeId": "node-639",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -223,16 +223,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-140",
+   "id": "doc-219",
    "data": {
     "name": "Composing causal processes step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-40",
+    "ownerProof": "proof-64",
     "nodes": [
      {
-      "id": "node-407",
+      "id": "node-640",
       "typeKey": "discard",
       "x": 200,
       "y": 280,
@@ -251,16 +251,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-141",
+   "id": "doc-220",
    "data": {
     "name": "Measuring is causal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-41",
+    "ownerProof": "proof-65",
     "nodes": [
      {
-      "id": "node-408",
+      "id": "node-641",
       "typeKey": "dot",
       "x": 200,
       "y": 240,
@@ -282,7 +282,7 @@
       }
      },
      {
-      "id": "node-409",
+      "id": "node-642",
       "typeKey": "dot",
       "x": 200,
       "y": 150,
@@ -304,10 +304,10 @@
     ],
     "wires": [
      {
-      "id": "wire-278",
-      "fromNodeId": "node-408",
+      "id": "wire-402",
+      "fromNodeId": "node-641",
       "fromPort": 0,
-      "toNodeId": "node-409",
+      "toNodeId": "node-642",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -316,7 +316,7 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-142",
+   "id": "doc-221",
    "data": {
     "name": "Measuring is causal step",
     "tensorOrder": "big-endian",
@@ -324,10 +324,10 @@
      "i"
     ],
     "derivedFrom": null,
-    "ownerProof": "proof-41",
+    "ownerProof": "proof-65",
     "nodes": [
      {
-      "id": "node-410",
+      "id": "node-643",
       "typeKey": "dot",
       "x": 200,
       "y": 240,
@@ -349,7 +349,7 @@
       }
      },
      {
-      "id": "node-411",
+      "id": "node-644",
       "typeKey": "effect",
       "x": 200,
       "y": 150,
@@ -365,10 +365,10 @@
     ],
     "wires": [
      {
-      "id": "wire-279",
-      "fromNodeId": "node-410",
+      "id": "wire-403",
+      "fromNodeId": "node-643",
       "fromPort": 0,
-      "toNodeId": "node-411",
+      "toNodeId": "node-644",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -377,7 +377,7 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-143",
+   "id": "doc-222",
    "data": {
     "name": "Measuring is causal step",
     "tensorOrder": "big-endian",
@@ -385,10 +385,10 @@
      "i"
     ],
     "derivedFrom": null,
-    "ownerProof": "proof-41",
+    "ownerProof": "proof-65",
     "nodes": [
      {
-      "id": "node-412",
+      "id": "node-645",
       "typeKey": "effect",
       "x": 200,
       "y": 190,
@@ -408,16 +408,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-144",
+   "id": "doc-223",
    "data": {
     "name": "Measuring is causal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-41",
+    "ownerProof": "proof-65",
     "nodes": [
      {
-      "id": "node-413",
+      "id": "node-646",
       "typeKey": "discard",
       "x": 200,
       "y": 190,
@@ -436,16 +436,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-145",
+   "id": "doc-224",
    "data": {
     "name": "A unitary undoes itself step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-42",
+    "ownerProof": "proof-66",
     "nodes": [
      {
-      "id": "node-414",
+      "id": "node-647",
       "typeKey": "morphism",
       "x": 200,
       "y": 240,
@@ -459,7 +459,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-415",
+      "id": "node-648",
       "typeKey": "morphism",
       "x": 200,
       "y": 140,
@@ -479,10 +479,10 @@
     ],
     "wires": [
      {
-      "id": "wire-280",
-      "fromNodeId": "node-414",
+      "id": "wire-404",
+      "fromNodeId": "node-647",
       "fromPort": 0,
-      "toNodeId": "node-415",
+      "toNodeId": "node-648",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -491,16 +491,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-146",
+   "id": "doc-225",
    "data": {
     "name": "A unitary undoes itself step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-42",
+    "ownerProof": "proof-66",
     "nodes": [
      {
-      "id": "node-416",
+      "id": "node-649",
       "typeKey": "identity",
       "x": 200,
       "y": 190,
@@ -519,16 +519,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-147",
+   "id": "doc-226",
    "data": {
     "name": "A doubled isometry is causal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-43",
+    "ownerProof": "proof-67",
     "nodes": [
      {
-      "id": "node-417",
+      "id": "node-650",
       "typeKey": "morphism",
       "x": 200,
       "y": 240,
@@ -543,7 +543,7 @@
       "thick": true
      },
      {
-      "id": "node-418",
+      "id": "node-651",
       "typeKey": "discard",
       "x": 188,
       "y": 140,
@@ -557,7 +557,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-419",
+      "id": "node-652",
       "typeKey": "discard",
       "x": 212,
       "y": 140,
@@ -573,18 +573,18 @@
     ],
     "wires": [
      {
-      "id": "wire-281",
-      "fromNodeId": "node-417",
+      "id": "wire-405",
+      "fromNodeId": "node-650",
       "fromPort": 0,
-      "toNodeId": "node-418",
+      "toNodeId": "node-651",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-282",
-      "fromNodeId": "node-417",
+      "id": "wire-406",
+      "fromNodeId": "node-650",
       "fromPort": 1,
-      "toNodeId": "node-419",
+      "toNodeId": "node-652",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -593,16 +593,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-148",
+   "id": "doc-227",
    "data": {
     "name": "A doubled isometry is causal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-43",
+    "ownerProof": "proof-67",
     "nodes": [
      {
-      "id": "node-420",
+      "id": "node-653",
       "typeKey": "discard",
       "x": 200,
       "y": 190,
@@ -621,7 +621,7 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-149",
+   "id": "doc-228",
    "data": {
     "name": "Resolution of the identity step",
     "tensorOrder": "big-endian",
@@ -629,10 +629,10 @@
      "i"
     ],
     "derivedFrom": null,
-    "ownerProof": "proof-44",
+    "ownerProof": "proof-68",
     "nodes": [
      {
-      "id": "node-421",
+      "id": "node-654",
       "typeKey": "effect",
       "x": 200,
       "y": 240,
@@ -646,7 +646,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-422",
+      "id": "node-655",
       "typeKey": "state",
       "x": 200,
       "y": 140,
@@ -665,16 +665,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-150",
+   "id": "doc-229",
    "data": {
     "name": "Resolution of the identity step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-44",
+    "ownerProof": "proof-68",
     "nodes": [
      {
-      "id": "node-423",
+      "id": "node-656",
       "typeKey": "identity",
       "x": 200,
       "y": 190,
@@ -693,7 +693,7 @@
   },
   {
    "kind": "proof",
-   "id": "proof-40",
+   "id": "proof-64",
    "data": {
     "name": "Composing causal processes",
     "assumptions": {
@@ -702,19 +702,19 @@
     },
     "steps": [
      {
-      "diagram": "doc-138",
+      "diagram": "doc-217",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-139",
+      "diagram": "doc-218",
       "relation": "=",
       "note": "Ψ is causal",
       "source": null
      },
      {
-      "diagram": "doc-140",
+      "diagram": "doc-219",
       "relation": "=",
       "note": "Φ is causal",
       "source": null
@@ -724,31 +724,31 @@
   },
   {
    "kind": "proof",
-   "id": "proof-41",
+   "id": "proof-65",
    "data": {
     "name": "Measuring is causal",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-141",
+      "diagram": "doc-220",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-142",
+      "diagram": "doc-221",
       "relation": "=",
       "note": "delete = Σᵢ ⟨i|  (8.14)",
       "source": null
      },
      {
-      "diagram": "doc-143",
+      "diagram": "doc-222",
       "relation": "=",
       "note": "measuring then ⟨i| = doubled ⟨i|  (8.6)",
       "source": null
      },
      {
-      "diagram": "doc-144",
+      "diagram": "doc-223",
       "relation": "=",
       "note": "Σᵢ doubled ⟨i| = ⏚  (5.37)",
       "source": null
@@ -758,7 +758,7 @@
   },
   {
    "kind": "proof",
-   "id": "proof-42",
+   "id": "proof-66",
    "data": {
     "name": "A unitary undoes itself",
     "assumptions": {
@@ -766,13 +766,13 @@
     },
     "steps": [
      {
-      "diagram": "doc-145",
+      "diagram": "doc-224",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-146",
+      "diagram": "doc-225",
       "relation": "=",
       "note": "U†U = 1",
       "source": null
@@ -782,7 +782,7 @@
   },
   {
    "kind": "proof",
-   "id": "proof-43",
+   "id": "proof-67",
    "data": {
     "name": "A doubled isometry is causal",
     "assumptions": {
@@ -790,13 +790,13 @@
     },
     "steps": [
      {
-      "diagram": "doc-147",
+      "diagram": "doc-226",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-148",
+      "diagram": "doc-227",
       "relation": "=",
       "note": "V̂ is causal since V†V = 1",
       "source": null
@@ -806,19 +806,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-44",
+   "id": "proof-68",
    "data": {
     "name": "Resolution of the identity",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-149",
+      "diagram": "doc-228",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-150",
+      "diagram": "doc-229",
       "relation": "=",
       "note": "Σᵢ |i⟩⟨i| = 1",
       "source": null
@@ -831,7 +831,7 @@
   "type": "leaf",
   "editorType": "Diagram Equation Editor",
   "state": {
-   "proofId": "proof-40",
+   "proofId": "proof-64",
    "selected": 0
   }
  }

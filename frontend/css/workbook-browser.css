@@ -110,3 +110,7 @@ body { display: flex; flex-direction: column; }
   background: rgba(204, 167, 0, 0.06); max-width: 60ch;
 }
 .wb-confirm-text { color: var(--text-bright); }
+.wb-subfolder-head { font-weight: 500; color: var(--text-primary); }
+.wb-book-link { color: var(--accent, #4fc1ff); text-decoration: none; }
+.wb-book-link:hover { text-decoration: underline; }
+#app-bar a.app-book { text-decoration: none; display: inline-flex; align-items: center; }

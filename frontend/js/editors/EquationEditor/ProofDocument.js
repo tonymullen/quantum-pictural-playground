@@ -8,6 +8,12 @@
  *
  * Step diagrams are registered in the DocumentStore (so they can also be
  * opened in a Diagram Editor panel) and carry ownerProof = this proof's id.
+ * A proof can be an exercise's goal: goal = { minSteps, relation } locks the first and
+ * last steps (the given equation, D₁ … Dₙ) and the student fills in the steps
+ * between. It is solved when every step checks, there are at least minSteps
+ * steps in between, the chain proves the goal's relation (a goal of = is not
+ * met by ≈), and each step is labelled with the rule it uses.
+ *
  * The proof notifies its listeners when its structure changes or when any
  * step diagram changes. Structural edits are undoable; edits inside a step
  * diagram use that diagram's own undo.
@@ -33,6 +39,8 @@ export default class ProofDocument {
     this.steps = [];
     /** What the proof assumes about its symbols, e.g. { Φ: 'causal', U: 'unitary' } (PQP: "for causal Φ"). */
     this.assumptions = {};
+    /** An exercise goal: { minSteps } — the first and last steps are given and locked. */
+    this.goal = null;
     this._listeners = new Set();
     this._undoStack = [];
     this._redoStack = [];
@@ -47,14 +55,17 @@ export default class ProofDocument {
 
   /** Plain data: steps refer to their diagrams by id (saved alongside). */
   toJSON() {
-    return { name: this.name, assumptions: { ...this.assumptions }, steps: this.steps.map(s => ({
+    const out = { name: this.name, assumptions: { ...this.assumptions }, steps: this.steps.map(s => ({
       diagram: s.diagram.id, relation: s.relation, note: s.note, source: s.source })) };
+    if (this.goal) out.goal = { ...this.goal };
+    return out;
   }
 
   /** Rebuild a proof whose step diagrams are already restored (diagramById: saved id → document). */
   static fromJSON(data, diagramById, mapId = id => id) {
     const p = new ProofDocument(data.name);
     p.assumptions = { ...(data.assumptions || {}) };
+    if (data.goal) p.goal = { minSteps: 1, ...data.goal };
     p.steps = data.steps.map(st => {
       const diagram = diagramById.get(st.diagram);
       if (!diagram) throw new Error(`Proof "${data.name}" refers to a missing diagram`);
@@ -67,6 +78,15 @@ export default class ProofDocument {
   }
 
   /* ---- Steps ---- */
+
+  /** Is step i given by the exercise (so it cannot be changed, moved or deleted)? */
+  isLocked(i) { return !!this.goal && (i === 0 || i === this.steps.length - 1); }
+
+  /** Where a new step may go: in an exercise, strictly between the given first and last steps. */
+  _clampNew(at) {
+    if (!this.goal || this.steps.length < 2) return at;
+    return Math.max(1, Math.min(at, this.steps.length - 1));
+  }
 
   /** Add an empty step at index `at` (default: end). Returns its index. */
   addEmptyStep(at = this.steps.length) {
@@ -101,7 +121,7 @@ export default class ProofDocument {
   /** source → step: replace step i with a fresh copy of its source (undoable in the step). */
   updateFromSource(i) {
     const src = this.sourceOf(i);
-    if (!src) return false;
+    if (!src || this.isLocked(i)) return false;
     this.steps[i].diagram.replaceWithCopyOf(src);
     return true;
   }
@@ -123,6 +143,7 @@ export default class ProofDocument {
   }
 
   removeStep(i) {
+    if (this.isLocked(i)) return false;
     this._edit(() => {
       const [st] = this.steps.splice(i, 1);
       this._release(st);
@@ -130,6 +151,7 @@ export default class ProofDocument {
   }
 
   moveStep(from, to) {
+    if (this.isLocked(from) || (this.goal && (to <= 0 || to >= this.steps.length - 1))) return false;
     this._edit(() => {
       const [st] = this.steps.splice(from, 1);
       this.steps.splice(Math.max(0, Math.min(to, this.steps.length)), 0, st);
@@ -189,6 +211,36 @@ export default class ProofDocument {
     return { status, relation, results, firstBad };
   }
 
+  /**
+   * An exercise's progress: solved once every step checks, there are enough
+   * steps between the given ones, and every step names its rule.
+   * @returns {{ solved: boolean, message: string, check: object }|null} null if the proof has no goal
+   */
+  goalStatus(check = this.checkAll()) {
+    if (!this.goal) return null;
+    const n = this.steps.length, between = n - 2, need = this.goal.minSteps || 1;
+    const SUB = k => String(k).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+    const claim = `D${SUB(1)} ${check.relation} D${SUB(n)}`;
+    if (check.status !== 'ok') {
+      const i = check.firstBad;
+      return { solved: false, check, message: i > 0
+        ? `Not yet: step D${SUB(i)} → D${SUB(i + 1)} does not check — ${check.results[i].hint}`
+        : 'Not yet: add steps between the given first and last diagrams' };
+    }
+    if (between < need) {
+      return { solved: false, check, message: `The claim ${claim} is true — now prove it: add ${need === 1 ? 'at least one step' : `at least ${need} steps`} between D${SUB(1)} and D${SUB(n)} (＋ Step), each made by one rule` };
+    }
+    if (this.goal.relation === '=' && check.relation !== '=') {
+      const loose = this.steps.slice(1).map((st, k) => (st.relation === '≈' ? k + 2 : null)).filter(Boolean);
+      return { solved: false, check, message: `Every step checks, but the claim is D${SUB(1)} = D${SUB(n)} and ${loose.map(k => `D${SUB(k - 1)} → D${SUB(k)}`).join(', ')} only claims ≈. Can you show = there?` };
+    }
+    const unlabelled = this.steps.slice(1).map((st, k) => (st.note.trim() ? null : k + 2)).filter(Boolean);
+    if (unlabelled.length) {
+      return { solved: false, check, message: `Every step checks. Last thing: say which rule each step uses (the “rule…” box before ${unlabelled.map(k => `D${SUB(k)}`).join(', ')})` };
+    }
+    return { solved: true, check, message: `✓ Solved — ${claim}, every step checks and names its rule` };
+  }
+
   /* ---- Undo / redo of the structure ---- */
 
   undo() {
@@ -208,7 +260,7 @@ export default class ProofDocument {
   /* ---- Internals ---- */
 
   _addStep(diagram, at, source) {
-    at = Math.max(0, Math.min(at, this.steps.length));
+    at = this._clampNew(Math.max(0, Math.min(at, this.steps.length)));
     this._edit(() => {
       diagram.ownerProof = this.id;
       diagram.name = `${this.name} step`;

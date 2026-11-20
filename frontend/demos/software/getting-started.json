@@ -11,7 +11,7 @@
  "documents": [
   {
    "kind": "circuit",
-   "id": "circ-0",
+   "id": "circ-4",
    "data": {
     "name": "Bell state",
     "nQubits": 2,
@@ -44,16 +44,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-0",
+   "id": "doc-79",
    "data": {
     "name": "Bell state · diagram",
     "tensorOrder": "big-endian",
     "sumIndices": [],
-    "derivedFrom": "circ-0",
+    "derivedFrom": "circ-4",
     "ownerProof": null,
     "nodes": [
      {
-      "id": "node-6",
+      "id": "node-239",
       "typeKey": "x-spider",
       "x": 120,
       "y": 520,
@@ -67,7 +67,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-7",
+      "id": "node-240",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -81,7 +81,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-8",
+      "id": "node-241",
       "typeKey": "hadamard",
       "x": 120,
       "y": 440,
@@ -95,7 +95,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-9",
+      "id": "node-242",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -109,7 +109,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-10",
+      "id": "node-243",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -123,7 +123,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-11",
+      "id": "node-244",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -148,34 +148,34 @@
     ],
     "wires": [
      {
-      "id": "wire-4",
-      "fromNodeId": "node-6",
+      "id": "wire-128",
+      "fromNodeId": "node-239",
       "fromPort": 0,
-      "toNodeId": "node-8",
+      "toNodeId": "node-241",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-5",
-      "fromNodeId": "node-8",
+      "id": "wire-129",
+      "fromNodeId": "node-241",
       "fromPort": 0,
-      "toNodeId": "node-9",
+      "toNodeId": "node-242",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-6",
-      "fromNodeId": "node-7",
+      "id": "wire-130",
+      "fromNodeId": "node-240",
       "fromPort": 0,
-      "toNodeId": "node-10",
+      "toNodeId": "node-243",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-7",
-      "fromNodeId": "node-9",
+      "id": "wire-131",
+      "fromNodeId": "node-242",
       "fromPort": 1,
-      "toNodeId": "node-10",
+      "toNodeId": "node-243",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -184,16 +184,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-1",
+   "id": "doc-80",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-12",
+      "id": "node-245",
       "typeKey": "x-spider",
       "x": 120,
       "y": 520,
@@ -207,7 +207,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-13",
+      "id": "node-246",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -221,7 +221,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-14",
+      "id": "node-247",
       "typeKey": "hadamard",
       "x": 120,
       "y": 440,
@@ -235,7 +235,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-15",
+      "id": "node-248",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -249,7 +249,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-16",
+      "id": "node-249",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -263,7 +263,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-17",
+      "id": "node-250",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -288,34 +288,34 @@
     ],
     "wires": [
      {
-      "id": "wire-8",
-      "fromNodeId": "node-12",
+      "id": "wire-132",
+      "fromNodeId": "node-245",
       "fromPort": 0,
-      "toNodeId": "node-14",
+      "toNodeId": "node-247",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-9",
-      "fromNodeId": "node-14",
+      "id": "wire-133",
+      "fromNodeId": "node-247",
       "fromPort": 0,
-      "toNodeId": "node-15",
+      "toNodeId": "node-248",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-10",
-      "fromNodeId": "node-13",
+      "id": "wire-134",
+      "fromNodeId": "node-246",
       "fromPort": 0,
-      "toNodeId": "node-16",
+      "toNodeId": "node-249",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-11",
-      "fromNodeId": "node-15",
+      "id": "wire-135",
+      "fromNodeId": "node-248",
       "fromPort": 1,
-      "toNodeId": "node-16",
+      "toNodeId": "node-249",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -324,16 +324,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-2",
+   "id": "doc-81",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-18",
+      "id": "node-251",
       "typeKey": "z-spider",
       "x": 120,
       "y": 520,
@@ -347,7 +347,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-19",
+      "id": "node-252",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -361,7 +361,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-20",
+      "id": "node-253",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -375,7 +375,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-21",
+      "id": "node-254",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -389,7 +389,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-22",
+      "id": "node-255",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -414,26 +414,26 @@
     ],
     "wires": [
      {
-      "id": "wire-12",
-      "fromNodeId": "node-18",
+      "id": "wire-136",
+      "fromNodeId": "node-251",
       "fromPort": 0,
-      "toNodeId": "node-20",
+      "toNodeId": "node-253",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-13",
-      "fromNodeId": "node-19",
+      "id": "wire-137",
+      "fromNodeId": "node-252",
       "fromPort": 0,
-      "toNodeId": "node-21",
+      "toNodeId": "node-254",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-14",
-      "fromNodeId": "node-20",
+      "id": "wire-138",
+      "fromNodeId": "node-253",
       "fromPort": 1,
-      "toNodeId": "node-21",
+      "toNodeId": "node-254",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -442,16 +442,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-3",
+   "id": "doc-82",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-23",
+      "id": "node-256",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -465,7 +465,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-24",
+      "id": "node-257",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -479,7 +479,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-25",
+      "id": "node-258",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -493,7 +493,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-26",
+      "id": "node-259",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -518,18 +518,18 @@
     ],
     "wires": [
      {
-      "id": "wire-15",
-      "fromNodeId": "node-23",
+      "id": "wire-139",
+      "fromNodeId": "node-256",
       "fromPort": 0,
-      "toNodeId": "node-25",
+      "toNodeId": "node-258",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-16",
-      "fromNodeId": "node-24",
+      "id": "wire-140",
+      "fromNodeId": "node-257",
       "fromPort": 1,
-      "toNodeId": "node-25",
+      "toNodeId": "node-258",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -538,16 +538,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-4",
+   "id": "doc-83",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-27",
+      "id": "node-260",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -561,7 +561,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-28",
+      "id": "node-261",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -575,7 +575,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-29",
+      "id": "node-262",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -600,10 +600,10 @@
     ],
     "wires": [
      {
-      "id": "wire-17",
-      "fromNodeId": "node-27",
+      "id": "wire-141",
+      "fromNodeId": "node-260",
       "fromPort": 1,
-      "toNodeId": "node-28",
+      "toNodeId": "node-261",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -612,16 +612,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-5",
+   "id": "doc-84",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-30",
+      "id": "node-263",
       "typeKey": "z-spider",
       "x": 170,
       "y": 360,
@@ -635,7 +635,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-31",
+      "id": "node-264",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -663,16 +663,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-6",
+   "id": "doc-85",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-32",
+      "id": "node-265",
       "typeKey": "cup",
       "x": 170,
       "y": 360,
@@ -686,7 +686,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-33",
+      "id": "node-266",
       "typeKey": "scalar",
       "x": 340,
       "y": 520,
@@ -714,16 +714,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-7",
+   "id": "doc-86",
    "data": {
     "name": "Bell state = cup step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-0",
+    "ownerProof": "proof-24",
     "nodes": [
      {
-      "id": "node-34",
+      "id": "node-267",
       "typeKey": "cup",
       "x": 170,
       "y": 360,
@@ -742,52 +742,52 @@
   },
   {
    "kind": "proof",
-   "id": "proof-0",
+   "id": "proof-24",
    "data": {
     "name": "Bell state = cup",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-1",
+      "diagram": "doc-80",
       "relation": "≈",
       "note": "",
       "source": {
-       "id": "doc-0",
+       "id": "doc-79",
        "name": "Bell state · diagram"
       }
      },
      {
-      "diagram": "doc-2",
+      "diagram": "doc-81",
       "relation": "=",
       "note": "colour change: H turns the X state into a Z state",
       "source": null
      },
      {
-      "diagram": "doc-3",
+      "diagram": "doc-82",
       "relation": "=",
       "note": "spider fusion (Z)",
       "source": null
      },
      {
-      "diagram": "doc-4",
+      "diagram": "doc-83",
       "relation": "=",
       "note": "spider fusion (X)",
       "source": null
      },
      {
-      "diagram": "doc-5",
+      "diagram": "doc-84",
       "relation": "=",
       "note": "identity removal",
       "source": null
      },
      {
-      "diagram": "doc-6",
+      "diagram": "doc-85",
       "relation": "=",
       "note": "a phase-free Z spider with two outputs is a cup",
       "source": null
      },
      {
-      "diagram": "doc-7",
+      "diagram": "doc-86",
       "relation": "≈",
       "note": "drop the scalar",
       "source": null
@@ -810,14 +810,14 @@
       "type": "leaf",
       "editorType": "Circuit Editor",
       "state": {
-       "docId": "circ-0"
+       "docId": "circ-4"
       }
      },
      {
       "type": "leaf",
       "editorType": "Diagram Equation Editor",
       "state": {
-       "proofId": "proof-0",
+       "proofId": "proof-24",
        "selected": 0
       }
      }
@@ -832,7 +832,7 @@
       "type": "leaf",
       "editorType": "Diagram Editor",
       "state": {
-       "docId": "doc-0",
+       "docId": "doc-79",
        "orientation": "pqp",
        "view": {
         "fitted": true
@@ -843,7 +843,7 @@
       "type": "leaf",
       "editorType": "Dirac Formula Editor",
       "state": {
-       "docId": "circ-0",
+       "docId": "circ-4",
        "formulas": [
         "\\frac{1}{\\sqrt{2}}(|00\\rangle + |11\\rangle)",
         "|\\Phi^+\\rangle",

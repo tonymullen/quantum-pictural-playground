@@ -1,0 +1,84 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.3 Numbers from states and effects",
+ "description": "Blank starter: plug basis states into basis effects and read off the numbers.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 1,
+  "proofs": 0
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-35",
+   "data": {
+    "name": "⟨0|0⟩",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [],
+    "wires": []
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.55,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-35",
+       "orientation": "pqp"
+      }
+     },
+     {
+      "type": "split",
+      "direction": "horizontal",
+      "ratio": 0.5,
+      "children": [
+       {
+        "type": "leaf",
+        "editorType": "Dirac Formula Editor",
+        "state": {
+         "docId": "doc-35"
+        }
+       },
+       {
+        "type": "leaf",
+        "editorType": "Numbers",
+        "state": {
+         "docId": "doc-35"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex03",
+  "chapter": 3,
+  "number": "3.3",
+  "title": "Numbers from states and effects",
+  "level": 1,
+  "statement": "A state or effect labelled **0**, **1**, **+** or **−** is that basis vector, $|0\\rangle$, $|1\\rangle$, $|+\\rangle$ or $|-\\rangle$ (any other label is a symbol). Build three small diagrams, each a state wired into an effect: $\\langle 0|0\\rangle$, $\\langle 1|0\\rangle$ and $\\langle +|0\\rangle$ (use ＋ New in the Diagram Editor's bar for each).\n\nRead each number in the Dirac Formula Editor (Generate) and in the Numbers panel.",
+  "done": "You have the three numbers, and you can say which one PQP would call *impossible* (§3.4.2) and why.",
+  "book": "textbook/ch03.html#ex-3-3"
+ }
+}

@@ -1,0 +1,134 @@
+/* ===== Learning Quantum Picturalism — the textbook ===== */
+:root {
+  --paper: #fbfaf7;
+  --ink: #23221f;
+  --ink-soft: #5d5a53;
+  --rule: #e2ded5;
+  --panel: #f2efe8;
+  --accent: #1d6fa5;
+  --accent-soft: #e3eef6;
+  --pqp: #3b7d3a;          /* the PQP column */
+  --familiar: #8a4f9e;     /* the familiar-notation column */
+  --warn: #9a6a00;
+  --figure-bg: #1e1e1e;    /* the Playground's own canvas colour */
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', Consolas, 'Courier New', monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1b1b1a; --ink: #e6e3dc; --ink-soft: #a7a298; --rule: #3a3833; --panel: #252422;
+    --accent: #6cb6ea; --accent-soft: #1e3242; --pqp: #8fcf7f; --familiar: #d3a0e3; --warn: #e0b54a;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 16px; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.6 var(--serif); }
+
+.book { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 100vh; }
+@media (max-width: 900px) { .book { grid-template-columns: 1fr; } #book-nav { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--rule); } }
+
+/* ---- Sidebar ---- */
+#book-nav {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  padding: 22px 18px; border-right: 1px solid var(--rule); background: var(--panel);
+  font: 14px/1.45 var(--sans);
+}
+#book-nav a { color: var(--ink); text-decoration: none; }
+#book-nav a:hover { color: var(--accent); }
+#book-nav .nav-home { display: block; font-weight: 700; font-size: 15px; margin-bottom: 14px; }
+#book-nav ol { list-style: none; margin: 0; padding: 0; }
+.nav-chapters > li { margin: 2px 0; }
+.nav-chapters > li > a { display: block; padding: 3px 6px; border-radius: 4px; }
+.nav-chapters > li.current > a { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-soon { padding: 3px 6px; color: var(--ink-soft); opacity: 0.6; }
+.nav-sections { margin: 4px 0 8px 14px !important; border-left: 2px solid var(--rule); }
+.nav-sections li a { display: block; padding: 2px 8px; font-size: 13px; color: var(--ink-soft) !important; }
+.nav-sections li a:hover { color: var(--accent) !important; }
+#book-nav .nav-extra { display: block; margin-top: 12px; padding: 3px 6px; }
+#book-nav .current { color: var(--accent); font-weight: 600; }
+
+/* ---- Main text ---- */
+main { max-width: 820px; padding: 40px 48px 80px; }
+@media (max-width: 600px) { main { padding: 24px 16px 60px; } }
+h1 { font-size: 2.1em; line-height: 1.2; margin: 0 0 0.2em; font-weight: 600; }
+.chapter-kicker { font: 600 13px var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0; }
+.chapter-pqp { font: 14px var(--sans); color: var(--ink-soft); margin: 0 0 2em; }
+h2 { font-size: 1.45em; margin: 2.2em 0 0.5em; padding-top: 0.4em; border-top: 1px solid var(--rule); font-weight: 600; }
+h3 { font-size: 1.15em; margin: 1.6em 0 0.4em; font-weight: 600; }
+p, li { hyphens: auto; }
+a { color: var(--accent); }
+code, kbd { font: 0.85em var(--mono); background: var(--panel); padding: 0.05em 0.3em; border-radius: 3px; }
+kbd { border: 1px solid var(--rule); border-bottom-width: 2px; }
+.ui { font: 600 0.88em var(--sans); background: var(--panel); padding: 0.05em 0.35em; border-radius: 3px; white-space: nowrap; }
+.lead { font-size: 1.08em; color: var(--ink-soft); }
+
+/* ---- Boxes ---- */
+.box { margin: 1.4em 0; padding: 14px 18px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); }
+.box > :first-child { margin-top: 0; }
+.box > :last-child { margin-bottom: 0; }
+.box-title { font: 700 13px var(--sans); letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 6px; }
+.box.try { border-left: 4px solid var(--accent); }
+.box.try .box-title { color: var(--accent); }
+.box.paper { border-left: 4px solid var(--warn); }
+.box.paper .box-title { color: var(--warn); }
+.box.caveat { border-left: 4px solid var(--ink-soft); }
+.box.insight .box-title { color: var(--pqp); }
+.box.insight { border-left: 4px solid var(--pqp); }
+
+/* "Two notations": PQP and the familiar formalism, side by side, with sources */
+.two-notations { margin: 1.6em 0; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.two-notations > .box-title { padding: 10px 16px; margin: 0; background: var(--panel); border-bottom: 1px solid var(--rule); }
+.two-notations > p { padding: 0 16px; }
+.two-notations table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+.two-notations th { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+.two-notations th.pqp { color: var(--pqp); }
+.two-notations th.familiar { color: var(--familiar); }
+.two-notations td { padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.two-notations tr:last-child td { border-bottom: none; }
+.two-notations td.source { font: 13px var(--sans); color: var(--ink-soft); }
+.table-scroll { overflow-x: auto; }
+
+/* ---- Figures (drawn by the Playground's own code) ---- */
+figure.qpp-figure { margin: 1.4em 0; }
+figure.qpp-figure .fig-body {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 10px; background: var(--figure-bg); border-radius: 6px; width: fit-content; max-width: 100%;
+}
+figure.qpp-figure .fig-canvas { display: block; max-width: 100%; height: auto; }
+.fig-rel { display: flex; flex-direction: column; align-items: center; color: #e0e0e0; font-family: var(--sans); max-width: 110px; text-align: center; }
+.fig-rel-sym { font-size: 26px; line-height: 1; }
+.fig-rel-note { font-size: 11px; color: #a8a8a8; margin-top: 4px; }
+figure.qpp-figure figcaption { font: 14px/1.45 var(--sans); color: var(--ink-soft); margin-top: 6px; max-width: 70ch; }
+figure.qpp-figure .fig-open { display: inline-block; margin-top: 4px; font: 13px var(--sans); }
+.fig-error { color: #f4a; font: 13px var(--sans); }
+figure.qpp-figure.inline { display: inline-block; margin: 0; vertical-align: middle; }
+figure.qpp-figure.small .fig-body { padding: 4px; }
+
+/* ---- Exercises ---- */
+.exercise { margin: 1.6em 0; padding: 16px 20px; border: 1px solid var(--rule); border-radius: 8px; }
+.exercise-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; margin-bottom: 6px; }
+.exercise-head h3 { margin: 0; font-size: 1.1em; }
+.exercise-level { font: 600 12px var(--sans); color: var(--ink-soft); }
+.exercise-level.l3 { color: var(--warn); }
+.exercise .done { border-left: 3px solid var(--accent); padding-left: 10px; color: var(--ink-soft); }
+.exercise .starter { display: inline-block; font: 600 14px var(--sans); margin: 4px 0 8px; padding: 5px 12px; border-radius: 5px; background: var(--accent); color: #fff; text-decoration: none; }
+.exercise .starter:hover { filter: brightness(1.1); }
+details.hint { margin: 6px 0; font-size: 0.95em; }
+details.hint summary { cursor: pointer; font: 600 14px var(--sans); color: var(--accent); }
+details.hint[open] { background: var(--accent-soft); border-radius: 5px; padding: 4px 12px 8px; }
+.levels { font: 14px var(--sans); }
+
+/* ---- Pager, references ---- */
+#book-pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 3em; padding-top: 1em; border-top: 1px solid var(--rule); font: 15px var(--sans); }
+#book-pager a { text-decoration: none; }
+.refs ol { padding-left: 1.4em; font-size: 0.95em; }
+.refs li { margin-bottom: 0.6em; }
+.ref-note, .ref-checked { font: 13px var(--sans); color: var(--ink-soft); }
+a.cite { text-decoration: none; font-size: 0.92em; white-space: nowrap; }
+.cite-missing { color: #c00 !important; }
+.toc-chapters li { margin: 0.3em 0; }
+.toc-chapters .soon { color: var(--ink-soft); }

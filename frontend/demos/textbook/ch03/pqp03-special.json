@@ -1,0 +1,357 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.2 States, effects and numbers",
+ "description": "PQP §3.4: a state meets an effect and a number pops out. Here ⟨+|0⟩ = 1/√2 in the Diagram Editor, its Dirac form and its Numbers; ⟨1|0⟩ is the impossible number 0; and 2·f ≈ f, equal up to a number (PQP Def. 3.39).",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 1,
+  "proofs": 2
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-19",
+   "data": {
+    "name": "⟨+|0⟩",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [
+     {
+      "id": "node-77",
+      "typeKey": "state",
+      "x": 200,
+      "y": 260,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-78",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 160,
+      "label": "+",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-46",
+      "fromNodeId": "node-77",
+      "fromPort": 0,
+      "toNodeId": "node-78",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-20",
+   "data": {
+    "name": "⟨1|0⟩ is impossible step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-6",
+    "nodes": [
+     {
+      "id": "node-79",
+      "typeKey": "state",
+      "x": 200,
+      "y": 260,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-80",
+      "typeKey": "effect",
+      "x": 200,
+      "y": 160,
+      "label": "1",
+      "inputs": 1,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-47",
+      "fromNodeId": "node-79",
+      "fromPort": 0,
+      "toNodeId": "node-80",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-21",
+   "data": {
+    "name": "⟨1|0⟩ is impossible step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-6",
+    "nodes": [
+     {
+      "id": "node-81",
+      "typeKey": "scalar",
+      "x": 200,
+      "y": 210,
+      "label": "0",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-22",
+   "data": {
+    "name": "2·f is f up to a number step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-7",
+    "nodes": [
+     {
+      "id": "node-82",
+      "typeKey": "scalar",
+      "x": 120,
+      "y": 220,
+      "label": "2",
+      "inputs": 0,
+      "outputs": 0,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-83",
+      "typeKey": "identity",
+      "x": 220,
+      "y": 320,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-84",
+      "typeKey": "morphism",
+      "x": 220,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-48",
+      "fromNodeId": "node-83",
+      "fromPort": 0,
+      "toNodeId": "node-84",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-23",
+   "data": {
+    "name": "2·f is f up to a number step",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": "proof-7",
+    "nodes": [
+     {
+      "id": "node-85",
+      "typeKey": "identity",
+      "x": 220,
+      "y": 320,
+      "label": "",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     },
+     {
+      "id": "node-86",
+      "typeKey": "morphism",
+      "x": 220,
+      "y": 220,
+      "label": "f",
+      "inputs": 1,
+      "outputs": 1,
+      "phase": null,
+      "symbolicForm": null,
+      "provenance": null,
+      "tensor": null,
+      "portXOffsets": null
+     }
+    ],
+    "wires": [
+     {
+      "id": "wire-49",
+      "fromNodeId": "node-85",
+      "fromPort": 0,
+      "toNodeId": "node-86",
+      "toPort": 0,
+      "wireType": "qubit"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-6",
+   "data": {
+    "name": "⟨1|0⟩ is impossible",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-20",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-21",
+      "relation": "=",
+      "note": "⟨1|0⟩ = 0: the zero number (PQP §3.4.2)",
+      "source": null
+     }
+    ]
+   }
+  },
+  {
+   "kind": "proof",
+   "id": "proof-7",
+   "data": {
+    "name": "2·f is f up to a number",
+    "assumptions": {},
+    "steps": [
+     {
+      "diagram": "doc-22",
+      "relation": "≈",
+      "note": "",
+      "source": null
+     },
+     {
+      "diagram": "doc-23",
+      "relation": "≈",
+      "note": "equal up to a number (PQP Def. 3.39)",
+      "source": null
+     }
+    ]
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.5,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Diagram Equation Editor",
+    "state": {
+     "proofId": "proof-7",
+     "selected": 1
+    }
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.5,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-19",
+       "orientation": "pqp",
+       "view": {
+        "fitted": true
+       }
+      }
+     },
+     {
+      "type": "split",
+      "direction": "horizontal",
+      "ratio": 0.5,
+      "children": [
+       {
+        "type": "leaf",
+        "editorType": "Dirac Formula Editor",
+        "state": {
+         "docId": "doc-19"
+        }
+       },
+       {
+        "type": "leaf",
+        "editorType": "Numbers",
+        "state": {
+         "docId": "doc-19"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

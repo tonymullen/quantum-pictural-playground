@@ -1,0 +1,84 @@
+{
+ "format": "qpp-workbook",
+ "version": 1,
+ "name": "3.2 Side by side, one after the other",
+ "description": "Two empty diagrams: build f ⊗ g and g ∘ f and compare their ∘⊗ readings and Dirac forms.",
+ "summary": {
+  "circuits": 0,
+  "diagrams": 2,
+  "proofs": 0
+ },
+ "documents": [
+  {
+   "kind": "diagram",
+   "id": "doc-31",
+   "data": {
+    "name": "f ⊗ g",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [],
+    "wires": []
+   }
+  },
+  {
+   "kind": "diagram",
+   "id": "doc-32",
+   "data": {
+    "name": "g ∘ f",
+    "tensorOrder": "big-endian",
+    "sumIndices": [],
+    "derivedFrom": null,
+    "ownerProof": null,
+    "nodes": [],
+    "wires": []
+   }
+  }
+ ],
+ "layout": {
+  "type": "split",
+  "direction": "horizontal",
+  "ratio": 0.27,
+  "children": [
+   {
+    "type": "leaf",
+    "editorType": "Exercise",
+    "state": {}
+   },
+   {
+    "type": "split",
+    "direction": "vertical",
+    "ratio": 0.62,
+    "children": [
+     {
+      "type": "leaf",
+      "editorType": "Diagram Editor",
+      "state": {
+       "docId": "doc-31",
+       "orientation": "pqp",
+       "structure": true
+      }
+     },
+     {
+      "type": "leaf",
+      "editorType": "Dirac Formula Editor",
+      "state": {
+       "docId": "doc-31"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "exercise": {
+  "id": "pqp03-ex02",
+  "chapter": 3,
+  "number": "3.2",
+  "title": "Side by side, one after the other",
+  "level": 1,
+  "statement": "In the diagram **f ⊗ g**, put two boxes f and g side by side, each on its own wire. In the diagram **g ∘ f** (choose it in the top panel's diagram menu), wire f's output into g's input, with g above f.\n\nTick **∘⊗** in the Diagram Editor's bar to see each diagram as layers composed in sequence, with pieces side by side in a layer. Then Generate each one in the Dirac Formula Editor (it follows the diagram chosen in its menu).",
+  "done": "Generate gives $f \\otimes g$ for the first and $g\\,f$ for the second, and the ∘⊗ view shows one layer with a ⊗ in it, and two layers joined by ∘.",
+  "book": "textbook/ch03.html#ex-3-2"
+ }
+}

@@ -11,16 +11,16 @@
  "documents": [
   {
    "kind": "diagram",
-   "id": "doc-16",
+   "id": "doc-95",
    "data": {
     "name": "Spider fusion step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-2",
+    "ownerProof": "proof-26",
     "nodes": [
      {
-      "id": "node-70",
+      "id": "node-303",
       "typeKey": "z-spider",
       "x": 200,
       "y": 240,
@@ -34,7 +34,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-71",
+      "id": "node-304",
       "typeKey": "z-spider",
       "x": 200,
       "y": 140,
@@ -50,10 +50,10 @@
     ],
     "wires": [
      {
-      "id": "wire-36",
-      "fromNodeId": "node-70",
+      "id": "wire-160",
+      "fromNodeId": "node-303",
       "fromPort": 0,
-      "toNodeId": "node-71",
+      "toNodeId": "node-304",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -62,16 +62,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-17",
+   "id": "doc-96",
    "data": {
     "name": "Spider fusion step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-2",
+    "ownerProof": "proof-26",
     "nodes": [
      {
-      "id": "node-72",
+      "id": "node-305",
       "typeKey": "z-spider",
       "x": 200,
       "y": 190,
@@ -90,16 +90,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-18",
+   "id": "doc-97",
    "data": {
     "name": "Colour change step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-3",
+    "ownerProof": "proof-27",
     "nodes": [
      {
-      "id": "node-73",
+      "id": "node-306",
       "typeKey": "hadamard",
       "x": 200,
       "y": 270,
@@ -113,7 +113,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-74",
+      "id": "node-307",
       "typeKey": "z-spider",
       "x": 200,
       "y": 190,
@@ -127,7 +127,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-75",
+      "id": "node-308",
       "typeKey": "hadamard",
       "x": 200,
       "y": 110,
@@ -143,18 +143,18 @@
     ],
     "wires": [
      {
-      "id": "wire-37",
-      "fromNodeId": "node-73",
+      "id": "wire-161",
+      "fromNodeId": "node-306",
       "fromPort": 0,
-      "toNodeId": "node-74",
+      "toNodeId": "node-307",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-38",
-      "fromNodeId": "node-74",
+      "id": "wire-162",
+      "fromNodeId": "node-307",
       "fromPort": 0,
-      "toNodeId": "node-75",
+      "toNodeId": "node-308",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -163,16 +163,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-19",
+   "id": "doc-98",
    "data": {
     "name": "Colour change step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-3",
+    "ownerProof": "proof-27",
     "nodes": [
      {
-      "id": "node-76",
+      "id": "node-309",
       "typeKey": "x-spider",
       "x": 200,
       "y": 190,
@@ -191,16 +191,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-20",
+   "id": "doc-99",
    "data": {
     "name": "π-copy step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-4",
+    "ownerProof": "proof-28",
     "nodes": [
      {
-      "id": "node-77",
+      "id": "node-310",
       "typeKey": "x-spider",
       "x": 200,
       "y": 270,
@@ -214,7 +214,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-78",
+      "id": "node-311",
       "typeKey": "z-spider",
       "x": 200,
       "y": 180,
@@ -230,10 +230,10 @@
     ],
     "wires": [
      {
-      "id": "wire-39",
-      "fromNodeId": "node-77",
+      "id": "wire-163",
+      "fromNodeId": "node-310",
       "fromPort": 0,
-      "toNodeId": "node-78",
+      "toNodeId": "node-311",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -242,16 +242,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-21",
+   "id": "doc-100",
    "data": {
     "name": "π-copy step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-4",
+    "ownerProof": "proof-28",
     "nodes": [
      {
-      "id": "node-79",
+      "id": "node-312",
       "typeKey": "z-spider",
       "x": 200,
       "y": 270,
@@ -265,7 +265,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-80",
+      "id": "node-313",
       "typeKey": "x-spider",
       "x": 160,
       "y": 170,
@@ -279,7 +279,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-81",
+      "id": "node-314",
       "typeKey": "x-spider",
       "x": 240,
       "y": 170,
@@ -295,18 +295,18 @@
     ],
     "wires": [
      {
-      "id": "wire-40",
-      "fromNodeId": "node-79",
+      "id": "wire-164",
+      "fromNodeId": "node-312",
       "fromPort": 0,
-      "toNodeId": "node-80",
+      "toNodeId": "node-313",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-41",
-      "fromNodeId": "node-79",
+      "id": "wire-165",
+      "fromNodeId": "node-312",
       "fromPort": 1,
-      "toNodeId": "node-81",
+      "toNodeId": "node-314",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -315,16 +315,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-22",
+   "id": "doc-101",
    "data": {
     "name": "Identity removal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-5",
+    "ownerProof": "proof-29",
     "nodes": [
      {
-      "id": "node-82",
+      "id": "node-315",
       "typeKey": "hadamard",
       "x": 200,
       "y": 250,
@@ -338,7 +338,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-83",
+      "id": "node-316",
       "typeKey": "hadamard",
       "x": 200,
       "y": 150,
@@ -354,10 +354,10 @@
     ],
     "wires": [
      {
-      "id": "wire-42",
-      "fromNodeId": "node-82",
+      "id": "wire-166",
+      "fromNodeId": "node-315",
       "fromPort": 0,
-      "toNodeId": "node-83",
+      "toNodeId": "node-316",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -366,16 +366,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-23",
+   "id": "doc-102",
    "data": {
     "name": "Identity removal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-5",
+    "ownerProof": "proof-29",
     "nodes": [
      {
-      "id": "node-84",
+      "id": "node-317",
       "typeKey": "z-spider",
       "x": 200,
       "y": 200,
@@ -394,16 +394,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-24",
+   "id": "doc-103",
    "data": {
     "name": "Identity removal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-5",
+    "ownerProof": "proof-29",
     "nodes": [
      {
-      "id": "node-85",
+      "id": "node-318",
       "typeKey": "identity",
       "x": 200,
       "y": 200,
@@ -422,19 +422,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-2",
+   "id": "proof-26",
    "data": {
     "name": "Spider fusion",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-16",
+      "diagram": "doc-95",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-17",
+      "diagram": "doc-96",
       "relation": "=",
       "note": "spider fusion",
       "source": null
@@ -444,19 +444,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-3",
+   "id": "proof-27",
    "data": {
     "name": "Colour change",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-18",
+      "diagram": "doc-97",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-19",
+      "diagram": "doc-98",
       "relation": "=",
       "note": "colour change",
       "source": null
@@ -466,19 +466,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-4",
+   "id": "proof-28",
    "data": {
     "name": "π-copy",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-20",
+      "diagram": "doc-99",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-21",
+      "diagram": "doc-100",
       "relation": "=",
       "note": "π-copy",
       "source": null
@@ -488,25 +488,25 @@
   },
   {
    "kind": "proof",
-   "id": "proof-5",
+   "id": "proof-29",
    "data": {
     "name": "Identity removal",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-22",
+      "diagram": "doc-101",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-23",
+      "diagram": "doc-102",
       "relation": "=",
       "note": "H twice is a plain wire (a phase-free spider)",
       "source": null
      },
      {
-      "diagram": "doc-24",
+      "diagram": "doc-103",
       "relation": "=",
       "note": "identity removal",
       "source": null
@@ -524,7 +524,7 @@
     "type": "leaf",
     "editorType": "Diagram Equation Editor",
     "state": {
-     "proofId": "proof-2",
+     "proofId": "proof-26",
      "selected": 1
     }
    },
@@ -532,7 +532,7 @@
     "type": "leaf",
     "editorType": "Dirac Formula Editor",
     "state": {
-     "docId": "doc-16"
+     "docId": "doc-95"
     }
    }
   ]
