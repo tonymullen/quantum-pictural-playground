@@ -21,7 +21,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **A workbook** is what you save: its circuits, diagrams and proofs, the links between them, and the panel layout (with each panel's state)
 - **Workbook Browser** — **Demos** (shipped with the app, read-only) and **My Workbooks** in one tree; open, save, save a copy, rename, delete
 - **Demos** open with their own layout; edit freely, then **Save a copy** to keep your changes
-- **My Workbooks** are saved on the server (MongoDB, `server/`) when it is running, and in this browser otherwise. Saves from a stale tab are refused rather than overwriting newer work
+- **My Workbooks** are saved on the server (MongoDB, `backend/`) when it is running, and in this browser otherwise. Saves from a stale tab are refused rather than overwriting newer work
 
 ### Circuit Editor
 - **Quirk-style circuits** — drag gates onto wires; controls, anti-controls, swaps, phase gates
@@ -101,85 +101,44 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 ## Getting Started
 
 No build step required — pure vanilla ES modules + one CDN dependency (KaTeX).
+The frontend and backend are independent: deploy them separately.
 
-With the server (My Workbooks saved in MongoDB — see [server/README.md](server/README.md)):
+**Frontend** (`frontend/`): static files. Copy the folder's contents to any
+web directory (e.g. a subfolder of `public_html`) and serve them with any HTTP
+server; every path in the app is relative. For local work, serve `frontend/`
+with your own server, e.g. `cd frontend && python3 -m http.server 8000`, and
+open **http://localhost:8000**. It must be served over HTTP (not `file://`).
+
+Set where the backend is in **`frontend/config.js`** (`apiBase`). With no
+backend, My Workbooks is kept in the visitor's browser; on `localhost` the app
+tries `http://localhost:8080/api` by default.
+
+**Backend** (`backend/`, optional): a JSON API only (Express + MongoDB), called
+by the frontend across origins. See [backend/README.md](backend/README.md).
 
 ```bash
-cd QuantumPicturalPlayground/server
+cd backend
 npm install
-npm start                      # serves the app and the API on http://localhost:8080
+ALLOWED_ORIGINS=http://localhost:8000 npm start   # API on http://localhost:8080/api
 ```
 
-Or without it (My Workbooks then stays in this browser):
-
-```bash
-cd QuantumPicturalPlayground
-python3 serve.py 8080          # static dev server with no-cache headers
-```
-
-Open **http://localhost:8080** in your browser.
-Run tests at **http://localhost:8080/tests/test-fixtures.html**, and the server's with `cd server && npm test`.
-
-> **Note:** Must be served over HTTP (not `file://`). Both servers send
-> no-cache headers on everything, including ES modules.
-
----
-
-## Usage
-
-### Diagram Editor
-
-| Action | How |
-|---|---|
-| Add node | Toolbar shape button, or **☰** palette (click/drag) |
-| Wire nodes | Drag from a port handle (dot) to a port on another node — or onto the node |
-| Join two spiders | Hover/select a spider, drag its **+** handle onto another spider — both gain a leg, drawn straight between them (e.g. the CNOT's control–target wire) |
-| Re-route / remove wire | Drag a connected port's handle to another port; drop on empty space to remove |
-| Edit label/phase | **Double-click** node, or the **Label** field in the inspector |
-| Change leg count | **In / Out ±** in the inspector (spiders, boxes); **−** removes an unconnected leg first |
-| Remove a specific leg | Click its dot to select it, then 🗑 (or **Delete**) |
-| Transpose / adjoint / conjugate | Select a box, state or effect: **ᵀ** (rotate 180°), **†** (reflect top↔bottom), **‾** (reflect left↔right) in the inspector |
-| Rewrite (fusion, colour change, π-copy, …) | Select one spider (or two connected ones); the inspector's **Rewrite** row lists the rules that apply. In the Diagram Editor it rewrites in place (Cmd+Z undoes); in a proof it adds the next step |
-| Pull taut | **⟿** in the toolbar, or **T**: a preview of the wires straightening (scrub it back and forth), then **Apply** (Enter) or **Cancel** (Esc). In a proof, **⟿ Taut step** adds the result as the next step (=, "pull taut") |
-| Slide a box round a bend | Select a box on a cup or cap leg: click its **↷** handle (or press **S**) — it moves to the other leg as its transpose (PQP Prop. 4.30); the map is unchanged |
-| Doubled (thick) generator | Select it, tick **Thick** in the inspector — the quantum process f̂ = f̄ ⊗ f, drawn with thick lines |
-| General quantum process | A thick box/state/effect: choose **General process** (instead of *Pure (doubled)*) |
-| Measure, encode, copy, delete | A **white dot** (palette ◉) — select one of its legs and choose **Thin** (classical) or **Thick** (quantum) |
-| Discard | **⏚** in the palette (takes a thick wire) |
-| Select / move | Click; **Shift+click** multi; drag box-select; **Cmd+A** all; drag to move the selection |
-| Delete | 🗑 button (or **Delete**/**Backspace**) deletes the selection |
-| Copy / cut a piece | Select nodes, **Cmd+C** / **Cmd+X** (or **⧉**). The piece takes the wires between them; every other port is one of its legs (the inspector shows how many: "3 nodes selected · 1 in, 2 out"). One clipboard serves every panel, including proof steps |
-| Paste | **Cmd+V** (or **📋**) at the pointer, selected and ready to drag; **Cmd+D** duplicates |
-| Replace a selection (a rewrite) | Select a region and **Cmd+V** a piece with the same legs (thick/thin matching, left to right): the region is swapped out and its wires reconnected in order. A lone spider fits any region and takes its legs, so fusing spiders is: copy Z(α+β), select Z(α) and Z(β), Cmd+V. A piece that doesn't fit is pasted beside it, with the reason; **Shift+Cmd+V** always pastes beside |
-| Plug in | Drag a node so one of its free ports comes near a free port it fits (output ↔ input, same thickness): a preview line shows, and dropping wires them |
-| Pan / Zoom | **Alt+drag** or middle-mouse / **Scroll wheel** |
-| Undo / Redo | **Cmd+Z** / **Cmd+Shift+Z** |
-| Switch diagram | **Diagram** dropdown; **＋ New** to create |
-
-### Dirac Formula Editor
-
-| Action | How |
-|---|---|
-| Enter formula | Type LaTeX — preview updates live |
-| Insert snippet | Click a snippet button (kets, bras, ⊗, †, etc.) |
-| Link to a diagram or circuit | **Linked to** dropdown — the generated expression appears and is verified at once (your own expression for the previous document goes to the saved list) |
-| Generate Dirac | Click **Generate** — translates diagram to LaTeX |
-| Verify | Click **Verify** — checks expression against diagram |
-| A quantum process | Familiar: `\rho \mapsto \sum_{i} \|i\rangle\langle i\| \rho \|i\rangle\langle i\|`, `\rho \mapsto \mathrm{tr}(\rho)`, or a density operator `\frac{1}{2}(\|0\rangle\langle 0\| + \|1\rangle\langle 1\|)`. PQP: `\sum_i \|i\rangle \otimes \widehat{\langle i\|}` (`\hat{…}` works too). **Write in** switches the generated form; **Use** on either column puts it in |
-| Save / recall | **＋ Save Formula**; click to reload |
-
-### Layout
-
-| Action | How |
-|---|---|
-| Split panel | **⬌** / **⬍** in header, or drag corner grip |
-| Close panel | **✕** in header |
-| Resize | Drag divider between panels |
-| Change editor | Dropdown in panel header |
+Tests: open `tests/test-fixtures.html` from the served frontend; the backend's
+with `cd backend && npm test`.
 
 ---
 
 ## Architecture
+
+```
+frontend/                 # the app: static files, no build step
+  index.html, css/, js/   #   (js/ below)
+  demos/                  #   Demo workbooks (JSON, generated by tools/build-demos.mjs)
+  tests/                  #   browser unit tests (tests/test-fixtures.html)
+  tools/                  #   build-demos.mjs
+  config.js               #   deployment setting: where the backend's API is
+backend/                  # Express + MongoDB JSON API (users, workbooks); deployed separately
+docs/                     # design notes and README images
+```
 
 ```
 js/
@@ -360,7 +319,7 @@ by port positioning, drawing, interpretation, and boundary ordering.
 |---|---|
 | Architecture analysis | `docs/existing-architecture.md` |
 | Compute-location decision | `docs/decision-compute.md` |
-| Demo workbooks | `demos/*.json` — regenerate with `node tools/build-demos.mjs` (every demo proof must check) |
+| Demo workbooks | `frontend/demos/*.json` — regenerate with `node frontend/tools/build-demos.mjs` (every demo proof must check) |
 | Component-decomposition fix | `docs/fix-disconnected-components.md` |
 | Shape/scalar/direction fix | `docs/fix-bra-ket-shape-scalar.md` |
 
@@ -368,7 +327,7 @@ by port positioning, drawing, interpretation, and boundary ordering.
 
 ## Tests
 
-Open **http://localhost:8080/tests/test-fixtures.html** in a browser.
+Open `tests/test-fixtures.html` from the served frontend in a browser.
 Tests cover: component decomposition, cup/cap tensors, CNOT recognition,
 scalar folding, round-trip (generate → parse → eval → verify), shape
 mismatch rejection, and direction correctness.
