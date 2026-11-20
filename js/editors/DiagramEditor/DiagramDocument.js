@@ -39,7 +39,33 @@ export default class DiagramDocument {
   /** Register a callback that is invoked on any data change. */
   onChange(fn) { this._listeners.add(fn); }
   offChange(fn) { this._listeners.delete(fn); }
-  _notify() { for (const fn of this._listeners) fn(this); }
+  _notify() { this.fitBends(); for (const fn of this._listeners) fn(this); }
+
+  /**
+   * Cups and caps follow what they are wired to: with both legs wired, each
+   * port sits straight under (over) the end it connects to, so the bend is
+   * as wide as its legs are apart. (Legs to another cup/cap don't count —
+   * the two would chase each other.)
+   */
+  fitBends() {
+    for (const n of this.nodes.values()) {
+      if (!n.isBend()) continue;
+      const dir = n.type.shape === 'cup' ? 'out' : 'in';
+      const xs = [0, 1].map(i => {
+        const w = this.wireOnPort(n.id, dir, i);
+        if (!w) return null;
+        const m = this.nodes.get(dir === 'out' ? w.toNodeId : w.fromNodeId);
+        if (!m || m === n || m.isBend()) return null;
+        return (dir === 'out' ? m.getInputPort(w.toPort) : m.getOutputPort(w.fromPort)).x;
+      });
+      if (xs[0] === null || xs[1] === null) continue;
+      let [a, b] = xs;
+      const MIN = 12;                              // never pinch to nothing
+      if (Math.abs(b - a) < MIN) { const mid = (a + b) / 2, s = b >= a ? 1 : -1; a = mid - s * MIN / 2; b = mid + s * MIN / 2; }
+      n.x = (a + b) / 2;
+      n.portXOffsets = [a - n.x, b - n.x];
+    }
+  }
 
   /* ---- Serialization (workbooks) ---- */
 
@@ -80,6 +106,7 @@ export default class DiagramDocument {
       w.wireType = wd.wireType || 'qubit';
       doc.wires.push(w);
     }
+    doc.fitBends();
     return doc;
   }
 

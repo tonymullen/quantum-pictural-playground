@@ -15,6 +15,7 @@
  *   - Cmd+V                   → paste; with a selection whose legs match, replace it (a rewrite)
  *   - Shift+Cmd+V / Cmd+D     → paste beside / duplicate, never replacing
  *   - Drop a node near a free port it fits → plugged in (wired)
+ *   - T / the taut button       → pull the wires taut: an animated preview, then Apply (↵) or Cancel (Esc)
  *   - Alt+drag / middle-drag  → pan; wheel → zoom
  */
 import DiagramNode, { uprightText } from './DiagramNode.js';
@@ -22,6 +23,10 @@ import { ORIENTATIONS, orient, unorient } from '../../core/FlowDirection.js';
 import DiagramWire, { wireCurve, straightCurve, strokeCurve } from './DiagramWire.js';
 import diagramToIR from '../../core/DiagramToIR.js';
 import { Clipboard, copyFragment, pasteFragment, fits, replaceRegion, regionBoundary, plugCandidates, describeLegs } from './Fragment.js';
+import DiagramDocument from './DiagramDocument.js';
+import { pullTautChecked, stringPaths, resample } from './PullTaut.js';
+import { rulesFor, applyRewrite } from './Rewrites.js';
+import Highlight from '../../core/Highlight.js';
 
 // Handle sizes are in SCREEN pixels (converted with px()), so ports, wires and
 // the + handle stay grabbable however far the view is zoomed out.
@@ -60,7 +65,7 @@ export default class DiagramCanvas {
     this.hover = null;     // { kind:'port', nodeId, dir, port } | { kind:'node'|'wire', ... }
     this.selectedPort = null; // { nodeId, dir, port } — a selected leg (view state)
     // Port indices can shift on any edit, so a selected leg does not survive one
-    this._onDocChange = () => { this.selectedPort = null; this.draw(); this._selectionChanged(); };
+    this._onDocChange = () => { this.selectedPort = null; if (this._taut) this._endTaut(); this._emitHover(null); this.draw(); this._selectionChanged(); };
     this.doc.onChange(this._onDocChange);
     this.wrapEl = document.createElement('div');
     this.wrapEl.className = 'diagram-canvas-wrap';
@@ -74,6 +79,33 @@ export default class DiagramCanvas {
     // Follow our own box too (e.g. a toolbar above wraps onto another line)
     this._ro = new ResizeObserver(() => this.resize());
     this._ro.observe(this.wrapEl);
+    // Hover-linking (Highlight.js): glow the nodes another view points at
+    this._source = 'canvas-' + Math.random().toString(36).slice(2, 8);
+    this._offHighlight = Highlight.on(h => this._onHighlight(h));
+  }
+
+  _onHighlight(h) {
+    if (h.source === this._source) return;
+    let ids = null;
+    if (!h.clear) {
+      if (h.docId === this.doc.id && h.nodeIds && h.nodeIds.length) ids = new Set(h.nodeIds);
+      else if (h.circuitId && h.circuitId === this.doc.derivedFrom && h.columns)
+        ids = new Set([...this.nodes.values()].filter(n => h.columns.includes(n.circuitT)).map(n => n.id));
+    }
+    const key = ids ? [...ids].sort().join() : '';
+    if (key === (this._hlKey || '')) return;
+    this._hl = ids && ids.size ? ids : null; this._hlKey = key;
+    this.draw();
+  }
+
+  /** Tell the other views which node is under the pointer. */
+  _emitHover(node) {
+    const id = node ? node.id : null;
+    if (id === this._emittedHover) return;
+    this._emittedHover = id;
+    if (!node) { Highlight.clear(this._source); return; }
+    Highlight.emit({ docId: this.doc.id, nodeIds: [node.id], circuitId: this.doc.derivedFrom || null,
+      columns: node.circuitT !== undefined ? [node.circuitT] : null }, this._source);
   }
 
   _retryResize(attempt) {
@@ -94,6 +126,7 @@ export default class DiagramCanvas {
 
   /** Switch to a different document (called by the editor selector). */
   setDocument(doc) {
+    if (this._taut) this._endTaut();
     this.doc.offChange(this._onDocChange);
     this.doc = doc;
     this.doc.onChange(this._onDocChange);
@@ -338,7 +371,12 @@ export default class DiagramCanvas {
   /** Notify other viewers that data changed. */
   _commit() { this.doc.commit(); }
 
-  _selectionChanged() { if (this.hooks.onSelectionChange) this.hooks.onSelectionChange(); }
+  _selectionChanged() {
+    if (this.hooks.onSelectionChange) this.hooks.onSelectionChange();
+    // e.g. the Numbers panel shows the matrix of the selection
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('qpp:selection',
+      { detail: { docId: this.doc.id, nodeIds: this.selectedNodes().map(n => n.id) } }));
+  }
 
   /** Change the view orientation (drawing only) and refit the view. */
   setOrientation(id) {
@@ -412,10 +450,23 @@ export default class DiagramCanvas {
     ctx.transform(o.a, o.b, o.c, o.d, 0, 0);
     ctx.__orient = o;
     this._drawGrid(ctx, w, h);
+    if (this._taut) {                          // the pull-taut preview draws the frame itself
+      this._drawTaut(ctx);
+      ctx.restore();
+      this._drawFlowArrow();
+      return;
+    }
     const g = this.gesture;
     for (const wire of this.wires) {
       if (g && g.kind === 'wire' && g.detached === wire) continue;
       wire.draw(ctx, this.nodes);
+    }
+    if (this.showStructure) this._drawStructure(ctx);
+    for (const id of this._hl || []) {                   // what another view points at (hover-linking)
+      const n = this.nodes.get(id);
+      if (!n) continue;
+      ctx.save(); ctx.fillStyle = 'rgba(255, 196, 0, 0.22)'; ctx.strokeStyle = '#ffc400'; ctx.lineWidth = this.px(2);
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.radius + this.px(10), 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
     }
     for (const node of this.nodes.values()) node.draw(ctx);
     for (const id of this._errorNodes || []) {           // ring nodes with errors in red
@@ -432,6 +483,87 @@ export default class DiagramCanvas {
     this._drawFlowArrow();
     this._drawSum();
     if (g && g.kind === 'rect') this._drawSelRect();
+  }
+
+  /**
+   * The ∘/⊗ structure (a view option): layers by how far each process is
+   * from the inputs — composed in sequence, bottom to top — and within a
+   * layer, the pieces side by side. Spiders joined by a leg (a CNOT's two
+   * halves) are one piece of one layer. Scalars stand apart.
+   */
+  _drawStructure(ctx) {
+    const nodes = [...this.nodes.values()].filter(n => n.type.key !== 'scalar');
+    if (!nodes.length) return;
+    // pieces: nodes joined by spider–spider legs
+    const parent = new Map(nodes.map(n => [n.id, n.id]));
+    const find = x => { while (parent.get(x) !== x) x = parent.get(x); return x; };
+    // a leg joining spiders side by side (a CNOT's two halves): it runs across, not up
+    const legPair = w => {
+      const a = this.nodes.get(w.fromNodeId), b = this.nodes.get(w.toNodeId);
+      return a && b && a.isFlexible() && b.isFlexible() && Math.abs(b.y - a.y) < 0.5 * Math.abs(b.x - a.x);
+    };
+    for (const w of this.wires) if (legPair(w) && parent.has(w.fromNodeId) && parent.has(w.toNodeId)) parent.set(find(w.fromNodeId), find(w.toNodeId));
+    // depth of a piece: one more than the deepest piece feeding it
+    const pieceOf = id => find(id), depth = new Map();
+    const feeds = new Map();
+    for (const w of this.wires) {
+      if (legPair(w) || !parent.has(w.fromNodeId) || !parent.has(w.toNodeId)) continue;
+      const a = pieceOf(w.fromNodeId), b = pieceOf(w.toNodeId);
+      if (a === b) continue;
+      if (!feeds.has(b)) feeds.set(b, new Set());
+      feeds.get(b).add(a);
+    }
+    const visiting = new Set();
+    const dOf = p => {
+      if (depth.has(p)) return depth.get(p);
+      if (visiting.has(p)) return 0;                     // a loop (a trace): stop
+      visiting.add(p);
+      let d = 0;
+      for (const q of feeds.get(p) || []) d = Math.max(d, dOf(q) + 1);
+      visiting.delete(p); depth.set(p, d); return d;
+    };
+    const layers = new Map();
+    for (const n of nodes) {
+      const d = dOf(pieceOf(n.id));
+      if (!layers.has(d)) layers.set(d, new Map());
+      const pieces = layers.get(d), p = pieceOf(n.id);
+      if (!pieces.has(p)) pieces.set(p, []);
+      pieces.get(p).push(n);
+    }
+    const box = ns => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const n of ns) { x0 = Math.min(x0, n.x - n.radius); x1 = Math.max(x1, n.x + n.radius); y0 = Math.min(y0, n.y - n.radius); y1 = Math.max(y1, n.y + n.radius); }
+      return { x0, y0, x1, y1 };
+    };
+    ctx.save();
+    const pad = this.px(10);
+    const order = [...layers.keys()].sort((a, b) => a - b);
+    let prev = null;
+    order.forEach((d, k) => {
+      const pieces = [...layers.get(d).values()];
+      const b = box(pieces.flat());
+      // the layer
+      ctx.strokeStyle = 'rgba(197, 134, 192, 0.85)'; ctx.lineWidth = this.px(1.5); ctx.setLineDash([this.px(6), this.px(4)]);
+      ctx.strokeRect(b.x0 - pad * 1.6, b.y0 - pad, (b.x1 - b.x0) + pad * 3.2, (b.y1 - b.y0) + pad * 2);
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(197, 134, 192, 0.95)'; ctx.font = `${this.px(11)}px sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      uprightText(ctx, `${k + 1}`, b.x0 - pad * 1.6 + this.px(6), b.y1 + pad - this.px(7));
+      // ⊗ between the pieces side by side
+      const sorted = pieces.map(ns => ({ ns, b: box(ns) })).sort((p, q) => p.b.x0 - q.b.x0);
+      ctx.font = `bold ${this.px(15)}px serif`; ctx.textAlign = 'center';
+      for (let i = 1; i < sorted.length; i++) {
+        const l = sorted[i - 1].b, r = sorted[i].b;
+        uprightText(ctx, '⊗', (l.x1 + r.x0) / 2, (b.y0 + b.y1) / 2);
+      }
+      // ∘ between this layer and the one before (below it)
+      if (prev) {
+        ctx.font = `${this.px(26)}px serif`; ctx.textAlign = 'center';
+        const y = (prev.y0 + b.y1) / 2, x = Math.min(prev.x0, b.x0) - pad * 3.4;
+        uprightText(ctx, '∘', x, y);
+      }
+      prev = b;
+    });
+    ctx.restore();
   }
 
   /** Port-handle highlights: hovered port, and valid targets while wiring. */
@@ -779,7 +911,7 @@ export default class DiagramCanvas {
     c.addEventListener('mousedown', e => this._onMouseDown(e));
     window.addEventListener('mousemove', this._mm = e => this._onMouseMove(e));
     window.addEventListener('mouseup', this._mu = e => this._onMouseUp(e));
-    c.addEventListener('mouseleave', () => { if (!this.gesture) { this.hover = null; this.draw(); } });
+    c.addEventListener('mouseleave', () => { this._emitHover(null); if (!this.gesture) { this.hover = null; this.draw(); } });
     c.addEventListener('wheel', e => this._onWheel(e), { passive: false });
     c.addEventListener('dblclick', e => this._onDblClick(e));
     c.addEventListener('contextmenu', e => e.preventDefault());
@@ -793,7 +925,301 @@ export default class DiagramCanvas {
     return { sx, sy, ...this._screenToWorld(sx, sy) };
   }
 
+  /* ---- Rewrites (Rewrites.js) ---- */
+
+  /**
+   * Apply a rewrite rule to the selection, as one undoable edit. A proof's
+   * step editor may take the request instead (hooks.onRewriteRequest), to
+   * make the result the next step.
+   */
+  rewrite(ruleId) {
+    const ids = this.selectedNodes().map(n => n.id);
+    if (this.hooks.onRewriteRequest && this.hooks.onRewriteRequest(ruleId, ids)) return null;
+    const rule = rulesFor(this.doc, ids).find(r => r.id === ruleId);
+    if (!rule) { this._showToast('That rewrite does not apply to the selection', 'warn'); return null; }
+    const snapshot = this.doc._snapshot();
+    const res = applyRewrite(this.doc, rule);
+    if (!res.ok) { this._showToast(res.why, 'warn'); return res; }
+    this.doc.pushUndo(snapshot);
+    this._deselectAll();
+    for (const n of res.nodes) if (this.nodes.has(n.id)) n.selected = true;
+    this._commit(); this._selectionChanged();
+    this._showToast(`${rule.name}: ${res.relation === '=' ? 'equal' : 'equal up to a scalar'}${res.scalar ? ` (scalar ${res.scalar} added)` : ''}`, 'info');
+    return res;
+  }
+
+  /* ---- Pull taut: an animated, non-destructive preview, then Apply or Cancel ---- */
+
+  /**
+   * Show the wires being pulled taut (PullTaut.js). Nothing changes until
+   * Apply; the scrubber runs the motion back and forth.
+   */
+  previewPullTaut() {
+    if (this._taut) return;
+    const after = new DiagramDocument('taut');
+    after._restore(this.doc._snapshot());
+    after.tensorOrder = this.doc.tensorOrder; after.sumIndices = [...(this.doc.sumIndices || [])];
+    const report = pullTautChecked(after);
+    if (!report.ok) { this._showToast(report.why, 'warn'); return; }
+    const N = 120;
+    // Pair each string before with the same string after: by its ends and beads; strings
+    // with only open ends look alike, so those are paired left to right
+    const beforePaths = stringPaths(this.doc), afterAll = stringPaths(after);
+    const group = list => { const g = new Map(); for (const p of list) { if (!g.has(p.key)) g.set(p.key, []); g.get(p.key).push(p); } for (const v of g.values()) v.sort((a, b) => a.points[0].x - b.points[0].x); return g; };
+    const bG = group(beforePaths), aG = group(afterAll);
+    const match = new Map();
+    for (const [k, bs] of bG) bs.forEach((bp, i) => match.set(bp, (aG.get(k) || [])[i]));
+    const pairs = [], morphWires = new Set(), morphNodes = new Set();
+    for (const bp of beforePaths) {
+      const ap = match.get(bp);
+      if (!ap || bp.points.length < 2 || ap.points.length < 2) continue;
+      const unchanged = bp.wires.every(w => after.wires.some(x => x.id === w.id)) && bp.wiring.every(id => after.nodes.has(id))
+        && bp.beads.every(b => { const n = after.nodes.get(b.id), o = this.doc.nodes.get(b.id); return n && Math.hypot(n.x - o.x, n.y - o.y) < 1; });
+      if (unchanged) continue;
+      const A = resample(bp.points, N), B = resample(ap.points, N);
+      const beads = bp.beads.map(b => {
+        const ab = ap.beads.find(x => x.id === b.id);
+        return { id: b.id, fb: A.frac(b.at), fa: ab ? B.frac(ab.at) : A.frac(b.at), rot: 0 };
+      });
+      pairs.push(this._prepareMorph({ A: A.points, B: B.points, beads, thick: bp.thick }));
+      for (const w of bp.wires) morphWires.add(w.id);
+      for (const w of ap.wires) morphWires.add(w.id);
+      for (const id of bp.wiring) morphNodes.add(id);
+      for (const id of ap.wiring) morphNodes.add(id);
+      for (const b of bp.beads) morphNodes.add(b.id);
+    }
+    this._taut = { after, report, pairs, morphWires, morphNodes, t: 0, playing: true };
+    this._fitBoth(this.doc, after);
+    // Each bead's whole turn: the turn its end state needs (0, or a half turn for
+    // one that comes out transposed), taken the way the string itself turns as it
+    // is pulled — follow the string's direction at the bead through the motion.
+    const K = 240, wrap = x => { while (x > Math.PI) x -= 2 * Math.PI; while (x <= -Math.PI) x += 2 * Math.PI; return x; };
+    for (const pr of pairs) {
+      const frames = [];
+      for (let k = 0; k <= K; k++) frames.push(this._morph(pr, k / K));
+      for (const b of pr.beads) {
+        const need = wrap(this._tangent(pr.B, b.fa) - this._tangent(pr.A, b.fb));
+        let total = 0, prev = this._tangent(frames[0], b.fb);
+        for (let k = 1; k <= K; k++) {
+          const a = this._tangent(frames[k], b.fb + (b.fa - b.fb) * (k / K));
+          total += wrap(a - prev); prev = a;
+        }
+        // the end state fixes the turn up to whole turns: take the one nearest what the string did
+        b.turn = need + 2 * Math.PI * Math.round((total - need) / (2 * Math.PI));
+        b.stringTurn = total;
+      }
+    }
+    this._showTautBar();
+    this._playTaut(1);
+  }
+
+  /** Fit the view to two diagrams at once (the preview's start and end). */
+  _fitBoth(a, b) {
+    const r = this.canvas.getBoundingClientRect();
+    const nodes = [...a.nodes.values(), ...b.nodes.values()];
+    if (!nodes.length || !r.width || !r.height) return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const n of nodes) {
+      const p = orient(this.orientation, n.x, n.y), pad = n.radius + 24;
+      x0 = Math.min(x0, p.x - pad); x1 = Math.max(x1, p.x + pad); y0 = Math.min(y0, p.y - pad); y1 = Math.max(y1, p.y + pad);
+    }
+    const margin = Math.min(40, r.width * 0.1, r.height * 0.1), barRoom = 56;   // keep clear of the controls
+    this.zoom = Math.max(0.35, Math.min(1.6, (r.width - 2 * margin) / (x1 - x0), (r.height - 2 * margin - barRoom) / (y1 - y0)));
+    this.panX = r.width / 2 - ((x0 + x1) / 2) * this.zoom;
+    this.panY = (r.height - barRoom) / 2 - ((y0 + y1) / 2) * this.zoom;
+    this._fitted = false;
+  }
+
+  /**
+   * How a string moves while it is pulled taut: its ends travel to their new
+   * places, and the string keeps its shape *relative to the line between its
+   * ends* while that shape's bulges shrink away (and any bend it must keep
+   * grows in). So a snake straightens and swings upright, rather than each
+   * point sliding straight across to its new place.
+   */
+  _prepareMorph(pr) {
+    const N = pr.A.length;
+    const frame = (P, Q) => {
+      const dx = Q.x - P.x, dy = Q.y - P.y, L = Math.hypot(dx, dy);
+      return L < 1e-6 ? null : { L, c: { x: dx / L, y: dy / L }, n: { x: -dy / L, y: dx / L } };
+    };
+    // each point's offset from the straight line between the ends, in that line's frame
+    const offsets = (pts, f) => pts.map((p, i) => {
+      const s = i / (N - 1), bx = pts[0].x + s * (pts[N - 1].x - pts[0].x), by = pts[0].y + s * (pts[N - 1].y - pts[0].y);
+      const dx = p.x - bx, dy = p.y - by;
+      return { u: dx * f.c.x + dy * f.c.y, v: dx * f.n.x + dy * f.n.y };
+    });
+    const fA = frame(pr.A[0], pr.A[N - 1]), fB = frame(pr.B[0], pr.B[N - 1]);
+    if (fA && fB) { pr.dA = offsets(pr.A, fA); pr.dB = offsets(pr.B, fB); }
+    return pr;
+  }
+
+  /** The string's points at (eased) time t. */
+  _morph(pr, t) {
+    const N = pr.A.length;
+    const lerp = (a, b) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    const E0 = lerp(pr.A[0], pr.B[0]), E1 = lerp(pr.A[N - 1], pr.B[N - 1]);
+    const dx = E1.x - E0.x, dy = E1.y - E0.y, L = Math.hypot(dx, dy);
+    if (!pr.dA || L < 1e-6) return pr.A.map((p, i) => lerp(p, pr.B[i]));
+    const c = { x: dx / L, y: dy / L }, n = { x: -dy / L, y: dx / L };
+    // the old shape's slack fades a little ahead of the new shape's bend growing in
+    const wA = 1 - Math.min(1, t * 1.15), wB = Math.max(0, (t - 0.15) / 0.85);
+    return pr.A.map((_, i) => {
+      const s = i / (N - 1);
+      const u = pr.dA[i].u * wA + pr.dB[i].u * wB, v = pr.dA[i].v * wA + pr.dB[i].v * wB;
+      return { x: E0.x + s * dx + c.x * u + n.x * v, y: E0.y + s * dy + c.y * u + n.y * v };
+    });
+  }
+
+  _tangent(pts, f) {
+    const i = Math.max(0, Math.min(pts.length - 2, Math.round(f * (pts.length - 1))));
+    const a = pts[Math.max(0, i - 2)], b = pts[Math.min(pts.length - 1, i + 2)];
+    return Math.atan2(b.y - a.y, b.x - a.x);
+  }
+
+  /** Animate the preview to t = target (0 or 1). */
+  _playTaut(target) {
+    const T = this._taut;
+    if (!T) return;
+    cancelAnimationFrame(this._tautRaf);
+    const t0 = T.t, start = performance.now(), dur = 1500 * Math.abs(target - t0) || 1;
+    const step = now => {
+      if (!this._taut) return;
+      const k = Math.min(1, (now - start) / dur);
+      T.t = t0 + (target - t0) * k;
+      this._syncTautBar();
+      this.draw();
+      if (k < 1) this._tautRaf = requestAnimationFrame(step);
+    };
+    this._tautRaf = requestAnimationFrame(step);
+  }
+
+  /** One frame: nodes at their in-between places, changed strings morphing, beads riding them. */
+  _drawTaut(ctx) {
+    const T = this._taut, before = this.doc, after = T.after;
+    const ease = x => (x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2);
+    const t = ease(T.t);
+    const saved = new Map();
+    const place = (n, x, y) => { if (!saved.has(n)) saved.set(n, { x: n.x, y: n.y }); n.x = x; n.y = y; };
+    // Nodes in both: slide between their places (anchors nudged, ends aligned)
+    for (const [id, n] of before.nodes) {
+      const m = after.nodes.get(id);
+      if (m && !T.morphNodes.has(id)) place(n, n.x + (m.x - n.x) * t, n.y + (m.y - n.y) * t);
+    }
+    for (const [id, m] of after.nodes) {
+      const n = before.nodes.get(id);
+      if (n) place(m, saved.has(n) ? n.x : m.x, saved.has(n) ? n.y : m.y);
+    }
+    // Unchanged wires (and wires that only exist on one side, cross-fading)
+    const alpha = (a, fn) => { ctx.save(); ctx.globalAlpha = a; fn(); ctx.restore(); };
+    const afterIds = new Set(after.wires.map(w => w.id)), beforeIds = new Set(before.wires.map(w => w.id));
+    for (const w of before.wires) {
+      if (T.morphWires.has(w.id)) continue;
+      alpha(afterIds.has(w.id) ? 1 : 1 - t, () => w.draw(ctx, before.nodes));
+    }
+    for (const w of after.wires) if (!beforeIds.has(w.id) && !T.morphWires.has(w.id)) alpha(t, () => w.draw(ctx, after.nodes));
+    // The strings being pulled taut
+    const beadAt = new Map();
+    for (const pr of T.pairs) {
+      const pts = this._morph(pr, t);
+      ctx.save();
+      ctx.strokeStyle = '#b0b0b0'; ctx.lineWidth = pr.thick ? 5 : 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+      for (const p of pts.slice(1)) ctx.lineTo(p.x, p.y);
+      ctx.stroke(); ctx.restore();
+      for (const b of pr.beads) {
+        const f = b.fb + (b.fa - b.fb) * t;
+        const i = f * (pts.length - 1), i0 = Math.floor(i), i1 = Math.min(pts.length - 1, i0 + 1);
+        const p = { x: pts[i0].x + (pts[i1].x - pts[i0].x) * (i - i0), y: pts[i0].y + (pts[i1].y - pts[i0].y) * (i - i0) };
+        // turn smoothly through the middle of the motion
+        const s = Math.max(0, Math.min(1, (t - 0.15) / 0.7));
+        const rot = b.turn * (s * s * (3 - 2 * s));
+        b.rot = rot;
+        beadAt.set(b.id, { p, rot });
+      }
+    }
+    // Nodes: unchanged and sliding ones; beads on their string, turning with it
+    for (const [id, n] of before.nodes) {
+      if (T.morphNodes.has(id) && !beadAt.has(id)) continue;         // wiring now drawn as the string
+      if (beadAt.has(id)) {
+        const { p, rot } = beadAt.get(id);
+        place(n, p.x, p.y);
+        // the shape turns; its label stays upright (the shape shows the transpose, as in a still diagram)
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(rot); ctx.translate(-p.x, -p.y);
+        n.draw(ctx, { label: false }); ctx.restore();
+        n.drawLabel(ctx);
+        continue;
+      }
+      alpha(after.nodes.has(id) ? 1 : 1 - t, () => n.draw(ctx));
+    }
+    // New nodes (a kept bend, a plain wire at a diagram input/output) appear at the end
+    for (const [id, m] of after.nodes) {
+      if (before.nodes.has(id)) continue;
+      if (m.type.key === 'cup' || m.type.key === 'cap' || m.type.key === 'identity') {
+        if (t > 0.98) m.draw(ctx);              // until then the moving string draws its shape
+      } else alpha(t, () => m.draw(ctx));
+    }
+    for (const [n, p] of saved) { n.x = p.x; n.y = p.y; }
+  }
+
+  _showTautBar() {
+    const T = this._taut, r = T.report;
+    const bar = this._tautBar = document.createElement('div');
+    bar.className = 'taut-bar';
+    const parts = [];
+    if (r.removed) parts.push(`${r.removed} pulled out`);
+    if (r.beadsTransposed) parts.push(`${r.beadsTransposed} transposed`);
+    const label = document.createElement('span');
+    label.className = 'taut-label';
+    label.textContent = `Taut: ${parts.join(' · ') || 'straightened'} · = ✓`;
+    label.title = `${r.removed} bend(s), crossing(s) or plain wire(s) pulled out; ${r.beadsTransposed} box(es) slid round a bend and came out transposed. Checked equal to the original.`;
+    const play = document.createElement('button'); play.className = 'taut-btn'; play.title = 'Play again';
+    play.addEventListener('click', () => { T.t = T.t > 0.5 ? 0 : T.t; this._playTaut(1); });
+    play.textContent = '▶';
+    const range = this._tautRange = document.createElement('input');
+    range.type = 'range'; range.min = 0; range.max = 1000; range.value = 0; range.className = 'taut-range';
+    range.title = 'Scrub: drag back and forth';
+    range.addEventListener('input', () => { cancelAnimationFrame(this._tautRaf); T.t = range.value / 1000; this.draw(); });
+    const apply = document.createElement('button'); apply.className = 'taut-btn primary'; apply.textContent = 'Apply';
+    apply.title = 'Keep the taut diagram (Enter) — one undoable edit';
+    apply.addEventListener('click', () => this.applyPullTaut());
+    const cancel = document.createElement('button'); cancel.className = 'taut-btn'; cancel.textContent = 'Cancel';
+    cancel.title = 'Leave the diagram as it was (Esc)';
+    cancel.addEventListener('click', () => this.cancelPullTaut());
+    bar.append(label, play, range, apply, cancel);
+    bar.addEventListener('mousedown', e => e.stopPropagation());
+    this.wrapEl.appendChild(bar);
+  }
+
+  _syncTautBar() { if (this._tautRange) this._tautRange.value = Math.round(this._taut.t * 1000); }
+
+  applyPullTaut() {
+    const T = this._taut;
+    if (!T) return;
+    this._endTaut();
+    this.doc.pushUndo();
+    const keep = { order: this.doc.tensorOrder, sums: this.doc.sumIndices };
+    this.doc._restore(T.after._snapshot());
+    this.doc.tensorOrder = keep.order; this.doc.sumIndices = keep.sums;
+    this._commit();
+    this._selectionChanged();
+    if (this.hooks.onPullTaut) this.hooks.onPullTaut(T.report);
+  }
+
+  cancelPullTaut() {
+    if (!this._taut) return;
+    this._endTaut(); this.draw();
+    if (this.hooks.onPullTautCancel) this.hooks.onPullTautCancel();
+  }
+
+  _endTaut() {
+    cancelAnimationFrame(this._tautRaf);
+    this._taut = null;
+    if (this._tautBar) { this._tautBar.remove(); this._tautBar = null; this._tautRange = null; }
+  }
+
   _onMouseDown(e) {
+    if (this._taut) return;                    // the preview is not editable
     // preventScroll: focusing must not scroll an ancestor (that would move the
     // content under the pointer between the press and a double-click)
     this.canvas.focus({ preventScroll: true });
@@ -892,12 +1318,14 @@ export default class DiagramCanvas {
         : hover.kind === 'node' ? 'move' : 'pointer';
       const key = h => h ? `${h.kind}:${h.nodeId}:${h.dir}:${h.port}` : '';
       if (key(hover) !== key(this.hover)) { this.hover = hover; this.draw(); }
+      this._emitHover(hover && hover.nodeId ? this.nodes.get(hover.nodeId) : null);
       return;
     }
     if (g.kind === 'move') {
       if (!g.moved && Math.hypot(sx - g.sx, sy - g.sy) < DRAG_THRESHOLD) return;
       g.moved = true;
       for (const [n, o] of g.origins) { n.x = o.x + (x - g.wx); n.y = o.y + (y - g.wy); }
+      this.doc.fitBends();
       g.plugs = plugCandidates(this.doc, new Set([...g.origins.keys()].map(n => n.id)), this.px(PLUG_R));
       this.draw();
     } else if (g.kind === 'wire') {
@@ -1039,6 +1467,12 @@ export default class DiagramCanvas {
 
   _onKeyDown(e) {
     const mod = e.ctrlKey || e.metaKey;
+    if (this._taut) {
+      if (e.key === 'Enter') { e.preventDefault(); this.applyPullTaut(); }
+      else if (e.key === 'Escape') { e.preventDefault(); this.cancelPullTaut(); }
+      return;
+    }
+    if ((e.key === 't' || e.key === 'T') && !mod && !e.altKey) { e.preventDefault(); this.previewPullTaut(); return; }
     if ((e.key === 's' || e.key === 'S') && !mod && !e.altKey) {
       const hs = this._slideHandles();
       if (hs.length) { e.preventDefault(); this.slide(hs[0].node, hs[0].opt); this._selectionChanged(); }
@@ -1097,6 +1531,7 @@ export default class DiagramCanvas {
   }
 
   destroy() {
+    if (this._offHighlight) this._offHighlight();
     if (this._ro) this._ro.disconnect();
     this.doc.offChange(this._onDocChange);
     window.removeEventListener('mousemove', this._mm);

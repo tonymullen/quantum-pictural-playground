@@ -10,6 +10,7 @@
  */
 import DocumentStore from '../DocumentStore.js';
 import SyncController from '../../core/SyncController.js';
+import Highlight from '../../core/Highlight.js';
 
 export default class DiracEditor {
   static get typeName() { return 'Dirac Formula Editor'; }
@@ -47,6 +48,42 @@ export default class DiracEditor {
       this._refreshDocSelect();
     };
     window.addEventListener('qpp:show-circuit', this._onShowCircuit);
+
+    // Hover-linking: a term of the generated expression ↔ the diagram nodes / circuit steps it comes from
+    this.renderEl.addEventListener('mouseover', e => this._hoverTerm(e.target.closest && e.target.closest('[data-qpp]')));
+    this.renderEl.addEventListener('mouseleave', () => this._hoverTerm(null));
+    this._offHighlight = Highlight.on(h => this._onHighlight(h));
+  }
+
+  /** The pointer is over term k of the generated expression (or nothing). */
+  _hoverTerm(el) {
+    const k = el ? Number(el.dataset.qpp) : -1;
+    if (k === this._hoverK) return;
+    this._hoverK = k;
+    this._markTerms(k >= 0 ? [k] : []);
+    const doc = this.syncController && this.syncController.doc;
+    const link = k >= 0 && this._gen && this._gen.links && this._gen.links[k];
+    if (!doc || !link) { Highlight.clear('dirac'); return; }
+    Highlight.emit({ docId: doc.id, circuitId: doc.kind === 'circuit' ? doc.id : null, ...link }, 'dirac');
+  }
+
+  /** Another view highlights something: light up the terms that come from it. */
+  _onHighlight(h) {
+    if (h.source === 'dirac') return;
+    const doc = this.syncController && this.syncController.doc;
+    if (h.clear || !doc || !this._gen || !this._gen.links) { this._markTerms([]); return; }
+    const mine = doc.kind === 'circuit' ? h.circuitId === doc.id : h.docId === doc.id;
+    if (!mine) { this._markTerms([]); return; }
+    const hit = this._gen.links.map((l, k) => {
+      const nodes = l.nodeIds && h.nodeIds && l.nodeIds.some(id => h.nodeIds.includes(id));
+      const cols = l.columns && h.columns && l.columns.some(c => h.columns.includes(c));
+      return nodes || cols ? k : -1;
+    }).filter(k => k >= 0);
+    this._markTerms(hit);
+  }
+
+  _markTerms(ks) {
+    for (const el of this.renderEl.querySelectorAll('[data-qpp]')) el.classList.toggle('qpp-hl', ks.includes(Number(el.dataset.qpp)));
   }
 
   /* ---- Document selector ---- */
@@ -190,6 +227,7 @@ export default class DiracEditor {
     const sc = this.syncController;
     const result = sc.generateDirac();
     const latex = this._chosen(result);
+    this._gen = result;
     this._showInfoPanel(this._chosenInfo(result));
     this._showComparison(result);
     this.textarea.value = latex || '';
@@ -302,6 +340,7 @@ export default class DiracEditor {
     if (!this.syncController) return;
     const result = this.syncController.generateDirac();
     if (!result) return;
+    this._gen = result;
 
     // Show category + reason in sync bar
     this.syncTextEl.textContent = result.reason;
@@ -504,10 +543,18 @@ export default class DiracEditor {
     }
     try {
       if (typeof katex !== 'undefined') {
-        katex.render(latex, this.renderEl, {
+        // Still the generated expression: render the version whose terms are tagged
+        // with what they come from, so hovering a term highlights it in the diagram
+        const g = this._gen;
+        const tagged = g && g.annotated && latex === (g.latex || '').trim();
+        katex.render(tagged ? g.annotated : latex, this.renderEl, {
           displayMode: true,
           throwOnError: true,
+          trust: ctx => ctx.command === '\\htmlData',
+          strict: false,
         });
+        this.renderEl.classList.toggle('linked', !!tagged);
+        this.renderEl.title = tagged ? 'Hover a term to see where it comes from' : '';
       } else {
         this.renderEl.textContent = latex;
       }
@@ -568,6 +615,7 @@ export default class DiracEditor {
   onResize() { /* no-op */ }
 
   destroy() {
+    if (this._offHighlight) this._offHighlight();
     DocumentStore.offListChange(this._onStoreChange);
     window.removeEventListener('qpp:show-circuit', this._onShowCircuit);
     if (this.syncController) this.syncController.destroy();

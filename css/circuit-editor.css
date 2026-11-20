@@ -106,3 +106,7 @@
   padding: 6px 14px; border-radius: 4px; font-size: 12px;
   background: #886600; color: #fff; pointer-events: none; z-index: 20;
 }
+
+/* Hover-linking: the step another view points at */
+.circuit-hl-band { position: absolute; z-index: 0; pointer-events: none; border-radius: 5px;
+  background: rgba(255, 196, 0, 0.12); border: 1px solid rgba(255, 196, 0, 0.7); }

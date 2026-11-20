@@ -27,7 +27,11 @@ export default class LayoutManager {
     this._resizeObserver.observe(this.rootEl);
   }
 
-  splitArea(areaId, direction) {
+  /**
+   * Split a panel in two; the new half shows the same editor type.
+   * @param {number} [ratio] — where the divider goes (0–1 along the split)
+   */
+  splitArea(areaId, direction, ratio = 0.5) {
     const node = this._findNode(this.tree, areaId);
     if (!node) return;
     const newArea = new EditorArea(node.area.editorType, this);
@@ -35,7 +39,7 @@ export default class LayoutManager {
     const newLeaf = { type: 'leaf', areaId: newArea.id, area: newArea };
     const handle = new SplitHandle(direction, () => {});
     const splitNode = {
-      type: 'split', direction, ratio: 0.5,
+      type: 'split', direction, ratio: Math.max(0.1, Math.min(0.9, ratio)),
       children: [{ type: 'leaf', areaId: node.areaId, area: node.area }, newLeaf],
       handle
     };
@@ -57,6 +61,98 @@ export default class LayoutManager {
     this._replaceInTree(this.tree, parent, sibling);
     this.render();
     this._changed();
+  }
+
+  /* ---- Merging (Blender's "join areas") ---- */
+
+  /** Each panel's rectangle as fractions of the whole layout: Map areaId → {x0, y0, x1, y1}. */
+  leafRects() {
+    const out = new Map();
+    const walk = (n, r) => {
+      if (n.type === 'leaf') { out.set(n.areaId, r); return; }
+      if (n.direction === 'horizontal') {       // side by side
+        const xm = r.x0 + (r.x1 - r.x0) * n.ratio;
+        walk(n.children[0], { ...r, x1: xm }); walk(n.children[1], { ...r, x0: xm });
+      } else {                                  // one above the other
+        const ym = r.y0 + (r.y1 - r.y0) * n.ratio;
+        walk(n.children[0], { ...r, y1: ym }); walk(n.children[1], { ...r, y0: ym });
+      }
+    };
+    if (this.tree) walk(this.tree, { x0: 0, y0: 0, x1: 1, y1: 1 });
+    return out;
+  }
+
+  /**
+   * Can panel `srcId` take over panel `dstId`? Only if they share a whole edge
+   * (same width and stacked, or same height and side by side), so the merged
+   * panel is still a rectangle.
+   * @returns {null | 'left'|'right'|'up'|'down'} the side of src that dst is on
+   */
+  mergeDirection(srcId, dstId) {
+    if (srcId === dstId) return null;
+    const R = this.leafRects(), a = R.get(srcId), b = R.get(dstId);
+    if (!a || !b) return null;
+    const eq = (u, v) => Math.abs(u - v) < 1e-6;
+    if (eq(a.x0, b.x0) && eq(a.x1, b.x1)) {
+      if (eq(a.y1, b.y0)) return 'down';
+      if (eq(a.y0, b.y1)) return 'up';
+    }
+    if (eq(a.y0, b.y0) && eq(a.y1, b.y1)) {
+      if (eq(a.x1, b.x0)) return 'right';
+      if (eq(a.x0, b.x1)) return 'left';
+    }
+    return null;
+  }
+
+  /**
+   * Merge: panel `srcId` grows over its neighbour `dstId`, whose editor is
+   * closed. The split tree is rebuilt from the panels' rectangles.
+   * @returns {boolean} whether the panels were merged
+   */
+  mergeAreas(srcId, dstId) {
+    if (!this.mergeDirection(srcId, dstId)) return false;
+    const R = this.leafRects(), a = R.get(srcId), b = R.get(dstId);
+    R.set(srcId, { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) });
+    R.delete(dstId);
+    const prefer = this.tree.type === 'split' ? this.tree.direction : 'vertical';
+    const tree = this._treeFromRects([...R].map(([id, r]) => ({ id, r })), { x0: 0, y0: 0, x1: 1, y1: 1 }, prefer);
+    if (!tree) return false;                     // not a clean set of splits (cannot happen for a shared edge)
+    const destroyHandles = n => { if (n.type === 'split') { if (n.handle) n.handle.destroy(); n.children.forEach(destroyHandles); } };
+    destroyHandles(this.tree);
+    const dst = this.areas.get(dstId);
+    if (dst) { dst.destroy(); this.areas.delete(dstId); }
+    if (this.focusedId === dstId) this.focusedId = null;
+    this.tree = tree;
+    this.setFocus(srcId);
+    this.render();
+    this._changed();
+    return true;
+  }
+
+  /** Rebuild a split tree that cuts `box` into the rectangles `items` (straight cuts all the way across). */
+  _treeFromRects(items, box, prefer) {
+    const eps = 1e-6;
+    if (items.length === 1) {
+      const area = this.areas.get(items[0].id);
+      return { type: 'leaf', areaId: items[0].id, area };
+    }
+    const dirs = prefer === 'horizontal' ? ['horizontal', 'vertical'] : ['vertical', 'horizontal'];
+    for (const dir of dirs) {
+      const [lo, hi] = dir === 'horizontal' ? ['x0', 'x1'] : ['y0', 'y1'];
+      const cuts = [...new Set(items.map(it => it.r[hi]))].filter(c => c < box[hi] - eps).sort((u, v) => u - v);
+      for (const c of cuts) {
+        if (!items.every(it => it.r[hi] <= c + eps || it.r[lo] >= c - eps)) continue;
+        const A = items.filter(it => it.r[hi] <= c + eps), B = items.filter(it => it.r[lo] >= c - eps);
+        const ta = this._treeFromRects(A, { ...box, [hi]: c }, dir === 'horizontal' ? 'vertical' : 'horizontal');
+        const tb = this._treeFromRects(B, { ...box, [lo]: c }, dir === 'horizontal' ? 'vertical' : 'horizontal');
+        if (!ta || !tb) return null;
+        const handle = new SplitHandle(dir, () => {});
+        const node = { type: 'split', direction: dir, ratio: (c - box[lo]) / (box[hi] - box[lo]), children: [ta, tb], handle };
+        handle.onDragCallback = (delta, ev) => this._handleDrag(node, ev);
+        return node;
+      }
+    }
+    return null;
   }
 
   setFocus(areaId) {
@@ -193,9 +289,47 @@ export default class LayoutManager {
     const r = pe.getBoundingClientRect();
     const isH = splitNode.direction === 'horizontal';
     const pos = isH ? (ev.clientX - r.left) : (ev.clientY - r.top);
-    splitNode.ratio = Math.max(0.1, Math.min(0.9, pos / (isH ? r.width : r.height)));
+    let ratio = Math.max(0.1, Math.min(0.9, pos / (isH ? r.width : r.height)));
+    // Snap to a nearby panel edge elsewhere in the layout, so edges can be
+    // lined up exactly (which merging needs)
+    const snap = this._snapRatio(splitNode, ratio);
+    splitNode.handle.el.classList.toggle('snapped', snap !== null);
+    if (snap !== null) ratio = snap;
+    splitNode.ratio = ratio;
     this.render();
     this._changed();
+  }
+
+  /** A ratio for `splitNode` that puts its divider exactly on another panel's edge within SNAP_PX, or null. */
+  _snapRatio(splitNode, ratio) {
+    const SNAP_PX = 10;
+    const isH = splitNode.direction === 'horizontal';
+    const [lo, hi] = isH ? ['x0', 'x1'] : ['y0', 'y1'];
+    // this split's box and its subtree, in layout fractions
+    let box = null; const inside = new Set();
+    const walk = (n, rc, mine) => {
+      if (n === splitNode) { box = rc; mine = true; }
+      if (n.type === 'leaf') { if (mine) inside.add(n.areaId); return; }
+      const h = n.direction === 'horizontal', k = h ? 'x' : 'y';
+      const m = rc[k + '0'] + (rc[k + '1'] - rc[k + '0']) * n.ratio;
+      walk(n.children[0], { ...rc, [k + '1']: m }, mine);
+      walk(n.children[1], { ...rc, [k + '0']: m }, mine);
+    };
+    walk(this.tree, { x0: 0, y0: 0, x1: 1, y1: 1 }, false);
+    if (!box) return null;
+    const total = isH ? this.rootEl.getBoundingClientRect().width : this.rootEl.getBoundingClientRect().height;
+    if (!total) return null;
+    const c = box[lo] + (box[hi] - box[lo]) * ratio, tol = SNAP_PX / total;
+    let best = null, bestD = tol;
+    for (const [id, rc] of this.leafRects()) {
+      if (inside.has(id)) continue;
+      for (const e of [rc[lo], rc[hi]]) {
+        if (e <= box[lo] + 1e-9 || e >= box[hi] - 1e-9) continue;
+        const d = Math.abs(e - c);
+        if (d < bestD) { bestD = d; best = e; }
+      }
+    }
+    return best === null ? null : (best - box[lo]) / (box[hi] - box[lo]);
   }
 
   _buildDOM(node, w, h) {

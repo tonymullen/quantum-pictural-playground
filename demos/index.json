@@ -41,6 +41,16 @@
    }
   },
   {
+   "id": "pulling-taut",
+   "name": "Pulling wires taut",
+   "description": "In Picturing Quantum Processes wires are pieces of string: only what connects to what matters. Pull a diagram taut and every snake straightens, needless crossings undo, and each box riding a wire slides along it — coming out transposed if it went round a bend. Every proof step here was made by “⟿ Taut step” and is checked equal to the one before. On the right is a tangle to try yourself: press T (or ⟿) to watch it pull taut, scrub back and forth, then Apply.",
+   "summary": {
+    "circuits": 0,
+    "diagrams": 1,
+    "proofs": 5
+   }
+  },
+  {
    "id": "measurement-and-discarding",
    "name": "Measurement and discarding",
    "description": "The doubled picture of Picturing Quantum Processes: thick wires are quantum, thin wires classical. White dots with thin and thick legs measure (thick in, thin out), encode (thin in, thick out), copy and delete; ⏚ discards. The proofs: measuring then deleting is discarding, encoding then discarding is deleting, measuring then encoding is decoherence, discarding a pure state gives the Born rule, and a doubled unitary is causal.",

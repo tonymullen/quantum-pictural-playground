@@ -21,7 +21,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **A workbook** is what you save: its circuits, diagrams and proofs, the links between them, and the panel layout (with each panel's state)
 - **Workbook Browser** — **Demos** (shipped with the app, read-only) and **My Workbooks** in one tree; open, save, save a copy, rename, delete
 - **Demos** open with their own layout; edit freely, then **Save a copy** to keep your changes
-- **My Workbooks** are stored in this browser for now; the remote database will slot in behind the same interface
+- **My Workbooks** are saved on the server (MongoDB, `server/`) when it is running, and in this browser otherwise. Saves from a stale tab are refused rather than overwriting newer work
 
 ### Circuit Editor
 - **Quirk-style circuits** — drag gates onto wires; controls, anti-controls, swaps, phase gates
@@ -38,6 +38,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **Symbolic diagrams** (boxes f, states ψ, phases α, α+β, 2α−π/2 …) checked by random substitution — a pass is overwhelming evidence, a fail is a definite counterexample
 - **Assumptions** — "for causal Φ", "U unitary", "V an isometry": the checker samples values satisfying them (causality is linear, so a random causal map is a random point of exactly that set)
 - **Sums** Σᵢ over a basis, drawn as in PQP
+- **One-click rewrites** — select spiders (or Hadamards) and the inspector offers the rules that apply: **spider fusion**, **remove identity**, **H·H**, **colour change** (and back), **π-copy**, **copy a basis state**, **complementarity**. In a proof the result becomes the next step, noted with the rule. Each is checked before it is kept; scalars are exact (added as a scalar node, so the step is `=`) when the diagram is numeric, and `≈` when symbols make the scalar unknown
 - **Rewrite by copy and paste** — ＋ Step, select the region to rewrite, Cmd+V the replacement (from any diagram or step): wires reconnect in order, and the step is checked
 
 <table><tr>
@@ -51,6 +52,7 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 ### Diagram Editor
 - **PQP shapes** — boxes with a slanted side and states/effects with a clipped corner, so f, fᵀ, f† and f̄ are drawn (and computed) distinctly: one symbol, transformed
 - **Sliding** — a box slides round a cup or cap and comes out as its transpose, as a single undoable rewrite
+- **Pulling taut** (PQP §4: wires are string, only connectivity matters) — snakes vanish, crossings go, and the boxes riding a wire slide along it into a column; any that went round a bend come out transposed. An animated preview shows the string tightening and the boxes turning as they go round, with a scrubber, then **Apply**. Every result is checked equal to the original first
 - **The doubled picture** (PQP ch. 6–8) — thick quantum wires and thin classical ones; doubled generators, general processes, white dots (copy, delete, measure, encode, decoherence) and discard ⏚; strict PQP typing (thin wires in a doubled diagram are classical, so a thin phase spider there is flagged in red); fully checkable in proofs
 - **10 generator types** from ZX-calculus / categorical quantum mechanics:
   Z Spider, X Spider, Hadamard, Morphism box, Cup (η), Cap (ε), Swap (σ),
@@ -73,6 +75,13 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 - **Quantum processes in two notations, side by side** — a doubled diagram (or a circuit that measures) is written both the familiar way, `ρ ↦ Σ K ρ K†` (or, for a state, its density operator), and in PQP's doubled notation, `Σᵢ |i⟩ ⊗ ⟨i|̂` with `\widehat{f}` = f̄ ⊗ f wire by wire. **Write in** chooses which goes in the editor; either is verified. A classical (thin) wire is a diagonal `|i⟩⟨i|` in the familiar form and a single index in PQP's. Every generated expression is checked against the diagram before it is shown; teleportation comes out as `ρ ↦ ρ` and `\widehat{I}`
 - **Sums over a basis** — `\sum_{i,j} …` (kets and bras labelled i, j take 0 and 1), for diagrams with a Σ and in processes
 
+### Numbers
+- **A Numbers panel** (any panel's editor menu) shows what a circuit, diagram — or the nodes selected in a diagram — is in numbers: its matrix as a colour map (brightness = size, colour = phase; hover a cell for its value), whether it is unitary or causal, the **Born-rule probabilities** of a state as bars, its **density operator** in the doubled picture (and the probabilities of its classical outcomes), and a **Bloch sphere** for one qubit (pure on the surface, mixed inside)
+
+### Linking the views
+- **Hover a term** of a generated Dirac expression and the diagram nodes (and circuit step) it comes from light up; hover a node or a gate and its term lights up
+- **∘⊗** in the Diagram Editor's bar shows how the diagram reads as a formula: layers composed in sequence (∘, bottom to top) and pieces side by side (⊗)
+
 ### Diagram → Dirac Translation
 - **Component decomposition** — disconnected pieces translated independently
 - **Named-object recognition** — CNOT, CZ, SWAP, H, X, Y, Z, S, T, Bell
@@ -93,16 +102,26 @@ can be split, merged, resized, and assigned an arbitrary editor type.
 
 No build step required — pure vanilla ES modules + one CDN dependency (KaTeX).
 
+With the server (My Workbooks saved in MongoDB — see [server/README.md](server/README.md)):
+
+```bash
+cd QuantumPicturalPlayground/server
+npm install
+npm start                      # serves the app and the API on http://localhost:8080
+```
+
+Or without it (My Workbooks then stays in this browser):
+
 ```bash
 cd QuantumPicturalPlayground
-python3 serve.py 8080          # dev server with no-cache headers
+python3 serve.py 8080          # static dev server with no-cache headers
 ```
 
 Open **http://localhost:8080** in your browser.
-Run tests at **http://localhost:8080/tests/test-fixtures.html**.
+Run tests at **http://localhost:8080/tests/test-fixtures.html**, and the server's with `cd server && npm test`.
 
-> **Note:** Must be served over HTTP (not `file://`). Use `serve.py` for
-> development (sends no-cache headers on all responses including ES modules).
+> **Note:** Must be served over HTTP (not `file://`). Both servers send
+> no-cache headers on everything, including ES modules.
 
 ---
 
@@ -120,6 +139,8 @@ Run tests at **http://localhost:8080/tests/test-fixtures.html**.
 | Change leg count | **In / Out ±** in the inspector (spiders, boxes); **−** removes an unconnected leg first |
 | Remove a specific leg | Click its dot to select it, then 🗑 (or **Delete**) |
 | Transpose / adjoint / conjugate | Select a box, state or effect: **ᵀ** (rotate 180°), **†** (reflect top↔bottom), **‾** (reflect left↔right) in the inspector |
+| Rewrite (fusion, colour change, π-copy, …) | Select one spider (or two connected ones); the inspector's **Rewrite** row lists the rules that apply. In the Diagram Editor it rewrites in place (Cmd+Z undoes); in a proof it adds the next step |
+| Pull taut | **⟿** in the toolbar, or **T**: a preview of the wires straightening (scrub it back and forth), then **Apply** (Enter) or **Cancel** (Esc). In a proof, **⟿ Taut step** adds the result as the next step (=, "pull taut") |
 | Slide a box round a bend | Select a box on a cup or cap leg: click its **↷** handle (or press **S**) — it moves to the other leg as its transpose (PQP Prop. 4.30); the map is unchanged |
 | Doubled (thick) generator | Select it, tick **Thick** in the inspector — the quantum process f̂ = f̄ ⊗ f, drawn with thick lines |
 | General quantum process | A thick box/state/effect: choose **General process** (instead of *Pure (doubled)*) |
@@ -291,7 +312,7 @@ Symbols are matched by label and shape: the same `f` on both sides of a step is 
 
 The app bar shows the open workbook, where it is from, and **●** when it has unsaved changes. Closing the tab with unsaved changes asks first.
 
-**Demos:** *Getting started: the Bell state* (the same state as a circuit, its PQP diagram, a proof that it is a cup, and in Dirac notation), *Spider rules*, *Snake equations*, *Sliding round bends* (PQP Prop. 4.30 and the necklace), *Measurement and discarding* (the doubled picture), *Causality* (assumptions and Σᵢ: composing causal maps, measuring is causal), *GHZ state*, *Quantum teleportation* (measurement and classical control; the proof that it is a wire).
+**Demos:** *Getting started: the Bell state* (the same state as a circuit, its PQP diagram, a proof that it is a cup, and in Dirac notation), *Spider rules*, *Snake equations*, *Sliding round bends* (PQP Prop. 4.30 and the necklace), *Measurement and discarding* (the doubled picture), *Causality* (assumptions and Σᵢ: composing causal maps, measuring is causal), *GHZ state*, *Quantum teleportation* (measurement and classical control; the proof that it is a wire), *Pulling wires taut* (snakes, a box through a snake, the necklace in one pull, crossings that undo, and a tangle to pull yourself).
 
 **Opening a workbook from a link:** `index.html?demo=spider-rules` opens a demo directly; `index.html?open=path/to/workbook.json` opens a workbook file served with the app (the browser tests use `tests/fixtures/classic-workbook.json`).
 

@@ -67,11 +67,14 @@ export default class EditorArea {
     this.headerEl.appendChild(this.actionsEl);
     this.el.appendChild(this.headerEl);
 
-    // Split grip (top-right corner for drag-to-split)
-    this.gripEl = document.createElement('div');
-    this.gripEl.className = 'split-grip top-right';
-    this.gripEl.addEventListener('mousedown', (e) => this._onGripDrag(e));
-    this.el.appendChild(this.gripEl);
+    // Corner grips (as in Blender): drag inward to split, onto a neighbour to merge
+    for (const corner of ['top-right', 'bottom-left']) {
+      const g = document.createElement('div');
+      g.className = `split-grip ${corner}`;
+      g.title = 'Drag into this panel to split it; drag onto a neighbouring panel to merge into it';
+      g.addEventListener('mousedown', (e) => this._onGripDrag(e));
+      this.el.appendChild(g);
+    }
 
     // Body
     this.bodyEl = document.createElement('div');
@@ -176,33 +179,81 @@ export default class EditorArea {
     this.editorInstance = null;
   }
 
+  /**
+   * Corner-grip drag. Inside this panel: a split, previewed as a line at the
+   * pointer (the drag's main direction picks the orientation). Over a
+   * neighbour that shares a whole edge: merge — this panel takes its place.
+   * Escape cancels.
+   */
   _onGripDrag(e) {
     e.preventDefault();
     e.stopPropagation();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const rect = this.el.getBoundingClientRect();
+    const lm = this.layoutManager;
+    const startX = e.clientX, startY = e.clientY;
+    const ov = document.createElement('div');
+    ov.className = 'area-drag-overlay';
+    ov.hidden = true;
+    document.body.appendChild(ov);
+    document.body.classList.add('area-dragging');
+    let action = null;
+
+    const show = (r, cls, html = '') => {
+      ov.hidden = false;
+      ov.className = `area-drag-overlay ${cls}`;
+      Object.assign(ov.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+      ov.innerHTML = html;
+    };
+    const areaAt = (x, y) => {
+      ov.hidden = true;
+      const el = document.elementFromPoint(x, y);
+      const a = el && el.closest('.editor-area');
+      return a ? lm.areas.get(a.dataset.areaId) : null;
+    };
+    const arrows = { left: '←', right: '→', up: '↑', down: '↓' };
 
     const onMove = (ev) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      // Determine split direction based on dominant drag direction
-      if (Math.abs(dx) > 20 || Math.abs(dy) > 20) {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        if (Math.abs(dx) > Math.abs(dy)) {
-          this.layoutManager.splitArea(this.id, 'horizontal');
-        } else {
-          this.layoutManager.splitArea(this.id, 'vertical');
-        }
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      action = null;
+      if (Math.hypot(dx, dy) < 12) { ov.hidden = true; return; }
+      const over = areaAt(ev.clientX, ev.clientY);
+      if (!over) { ov.hidden = true; return; }
+      if (over === this) {
+        const r = this.el.getBoundingClientRect();
+        // a mostly sideways drag splits left | right (as in Blender)
+        const sideBySide = Math.abs(dx) >= Math.abs(dy);
+        const ratio = sideBySide ? (ev.clientX - r.left) / r.width : (ev.clientY - r.top) / r.height;
+        if (ratio < 0.1 || ratio > 0.9) { ov.hidden = true; return; }
+        action = { kind: 'split', direction: sideBySide ? 'horizontal' : 'vertical', ratio };
+        show(sideBySide ? { left: ev.clientX - 1, top: r.top, width: 2, height: r.height }
+                        : { left: r.left, top: ev.clientY - 1, width: r.width, height: 2 }, 'split-line');
+        return;
       }
+      const dir = lm.mergeDirection(this.id, over.id);
+      const r = over.el.getBoundingClientRect();
+      if (!dir) {
+        show(r, 'merge-no', `<span>Can’t merge — the panels’ edges don’t line up</span>`);
+        return;
+      }
+      action = { kind: 'merge', target: over.id };
+      show(r, 'merge-yes', `<span class="arrow">${arrows[dir]}</span><span>Merge: ${this.editorType} replaces ${over.editorType}</span>`);
     };
-    const onUp = () => {
+    const finish = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('keydown', onKey, true);
+      document.body.classList.remove('area-dragging');
+      ov.remove();
     };
+    const onUp = () => {
+      finish();
+      if (!action) return;
+      if (action.kind === 'split') lm.splitArea(this.id, action.direction, action.ratio);
+      else lm.mergeAreas(this.id, action.target);
+    };
+    const onKey = (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); action = null; finish(); } };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+    document.addEventListener('keydown', onKey, true);
   }
 
   setFocused(focused) {

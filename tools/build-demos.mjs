@@ -22,6 +22,7 @@ import ProofDocument from '../js/editors/EquationEditor/ProofDocument.js';
 import { derivedDiagram } from '../js/editors/CircuitEditor/CircuitDiagramLink.js';
 import Tensor from '../js/core/Tensor.js';
 import { captureWorkbook, openWorkbookDocuments } from '../js/workbooks/Workbook.js';
+import { pullTautChecked } from '../js/editors/DiagramEditor/PullTaut.js';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'demos');
 
@@ -227,6 +228,82 @@ DEMOS.push({
     return split('vertical', 0.72,
       leaf('Diagram Equation Editor', { proofId: pCup.id, selected: 1 }),
       leaf('Dirac Formula Editor', { docId: pCup.steps[0].diagram.id }));
+  },
+});
+
+DEMOS.push({
+  id: 'pulling-taut',
+  name: 'Pulling wires taut',
+  description: 'In Picturing Quantum Processes wires are pieces of string: only what connects to what matters. '
+    + 'Pull a diagram taut and every snake straightens, needless crossings undo, and each box riding a wire '
+    + 'slides along it — coming out transposed if it went round a bend. Every proof step here was made by '
+    + '“⟿ Taut step” and is checked equal to the one before. On the right is a tangle to try yourself: '
+    + 'press T (or ⟿) to watch it pull taut, scrub back and forth, then Apply.',
+  build() {
+    // A taut step: a copy of the diagram, pulled taut exactly as the editor does it
+    const taut = src => d => {
+      const c = DiagramDocument.copyOf(src);
+      const r = pullTautChecked(c);
+      if (!r.ok) throw new Error(`pull taut failed: ${r.why}`);
+      d.nodes = c.nodes; d.wires = c.wires;
+    };
+    const copyInto = src => d => { const c = DiagramDocument.copyOf(src); d.nodes = c.nodes; d.wires = c.wires; };
+    const pull = (name, src, note = 'pull taut (yanking)') =>
+      proof(name, [{ build: copyInto(src) }, { build: taut(src), relation: '=', note }]);
+
+    const snake = new DiagramDocument('snake');
+    { const cap = add(snake, NT.CAP, 100, 110), cup = add(snake, NT.CUP, 160, 210); wire(snake, cup, 0, cap, 1); }
+    const first = pull('The snake straightens', snake);
+
+    const boxSnake = new DiagramDocument('box');
+    { const cap = add(boxSnake, NT.CAP, 100, 60), f = add(boxSnake, NT.MORPHISM, 160, 150, { label: 'f' }), cup = add(boxSnake, NT.CUP, 220, 240);
+      wire(boxSnake, f, 0, cap, 1); wire(boxSnake, cup, 0, f, 0); }
+    pull('A box through a snake comes out transposed', boxSnake, 'pull taut: f rode both bends — fᵀ');
+
+    const neck = new DiagramDocument('necklace');
+    {
+      const a = add(neck, NT.MORPHISM, 120, 260, { label: 'a' }), cap = add(neck, NT.CAP, 160, 150);
+      const b = add(neck, NT.MORPHISM, 200, 260, { label: 'b' }), cup = add(neck, NT.CUP, 240, 370);
+      const c = add(neck, NT.MORPHISM, 280, 260, { label: 'c' });
+      wire(neck, a, 0, cap, 0); wire(neck, cup, 0, b, 0); wire(neck, b, 0, cap, 1); wire(neck, cup, 1, c, 0);
+    }
+    pull('The necklace in one pull', neck, 'pull taut: a, then bᵀ, then c');
+
+    const cross = new DiagramDocument('crossings');
+    {
+      const f = add(cross, NT.MORPHISM, 100, 320, { label: 'f' }), g = add(cross, NT.MORPHISM, 200, 320, { label: 'g' });
+      const s1 = add(cross, NT.SWAP, 150, 230), s2 = add(cross, NT.SWAP, 150, 150);
+      const h = add(cross, NT.MORPHISM, 100, 60, { label: 'h' }), k = add(cross, NT.MORPHISM, 200, 60, { label: 'k' });
+      wire(cross, f, 0, s1, 0); wire(cross, g, 0, s1, 1); wire(cross, s1, 0, s2, 0); wire(cross, s1, 1, s2, 1);
+      wire(cross, s2, 0, h, 0); wire(cross, s2, 1, k, 0);
+    }
+    pull('Two crossings undo', cross, 'pull taut: σ∘σ = 1');
+
+    const two = new DiagramDocument('two outputs');
+    {
+      const ps = add(two, NT.STATE, 80, 330, { label: 'ψ' }), ph = add(two, NT.STATE, 300, 330, { label: 'φ' });
+      const c1 = add(two, NT.CAP, 120, 100), c2 = add(two, NT.CUP, 190, 250), c3 = add(two, NT.CAP, 260, 140);
+      wire(two, ps, 0, c1, 0); wire(two, c2, 0, c1, 1); wire(two, c2, 1, c3, 0); wire(two, ph, 0, c3, 1);
+    }
+    pull('Two states joined: one cap stays', two, 'pull taut: two outputs need exactly one cap');
+
+    // A tangle to try: a double snake with five boxes (a ↑ b ↓ c ↑ d ↓ e ↑)
+    const tangle = DocumentStore.add(new DiagramDocument('A tangle to pull taut'));
+    {
+      const a = add(tangle, NT.MORPHISM, 100, 300, { label: 'a' }), cap1 = add(tangle, NT.CAP, 140, 190);
+      const b = add(tangle, NT.MORPHISM, 180, 300, { label: 'b' }), cup1 = add(tangle, NT.CUP, 220, 410);
+      const c = add(tangle, NT.MORPHISM, 260, 300, { label: 'c' }), cap2 = add(tangle, NT.CAP, 300, 190);
+      const dd = add(tangle, NT.MORPHISM, 340, 300, { label: 'd' }), cup2 = add(tangle, NT.CUP, 380, 410);
+      const e = add(tangle, NT.MORPHISM, 420, 300, { label: 'e' });
+      wire(tangle, a, 0, cap1, 0); wire(tangle, b, 0, cap1, 1); wire(tangle, cup1, 0, b, 0); wire(tangle, cup1, 1, c, 0);
+      wire(tangle, c, 0, cap2, 0); wire(tangle, dd, 0, cap2, 1); wire(tangle, cup2, 0, dd, 0); wire(tangle, cup2, 1, e, 0);
+    }
+    { const check = DiagramDocument.copyOf(tangle); const r = pullTautChecked(check);
+      if (!r.ok || r.beadsTransposed !== 2) throw new Error(`the tangle should pull taut with b and d transposed: ${JSON.stringify(r)}`); }
+    tangle._undoStack = [];
+    return split('horizontal', 0.55,
+      leaf('Diagram Equation Editor', { proofId: first.id, selected: 0 }),
+      leaf('Diagram Editor', { docId: tangle.id, orientation: 'pqp', view: { fitted: true } }));
   },
 });
 

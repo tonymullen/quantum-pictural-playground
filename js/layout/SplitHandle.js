@@ -34,7 +34,7 @@ export default class SplitHandle {
 
     const onUp = () => {
       document.body.classList.remove('resizing', 'resizing-v');
-      this.el.classList.remove('active');
+      this.el.classList.remove('active', 'snapped');
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };

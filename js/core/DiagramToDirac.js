@@ -57,6 +57,8 @@ export function irToDirac(ir) {
     }
 
     const compResult = _translateComponent(tensor, cl, comp);
+    // the diagram nodes this factor comes from (for hover-highlighting)
+    compResult.nodeIds = [...comp.nodes.values()].map(n => n.provenance && n.provenance.elementId).filter(Boolean);
     // Fold recognition scalar into the global prefactor
     if (compResult.scalar && !C.eq(compResult.scalar, C.ONE)) {
       scalarPrefactor = C.mul(scalarPrefactor, compResult.scalar);
@@ -80,6 +82,9 @@ export function irToDirac(ir) {
   const prefactorIsOne = C.eq(scalarPrefactor, C.ONE);
   const wrap = p => (p.isSum && (parts.length > 1 || !prefactorIsOne)) ? `(${p.latex})` : p.latex;
   const combined = parts.map(wrap).join(' \\otimes ');
+  // The same expression with each ⊗ factor tagged (KaTeX \htmlData), and what each tag points at
+  const links = parts.map(p => ({ nodeIds: p.nodeIds || [] }));
+  const annotatedParts = parts.map((p, k) => `\\htmlData{qpp=${k}}{${wrap(p)}}`).join(' \\otimes ');
 
   let latex;
   if (parts.length === 0) {
@@ -93,6 +98,11 @@ export function irToDirac(ir) {
   // A component that could not be printed would silently change the shape of
   // the ⊗ product, so emit nothing parseable rather than a wrong expression.
   if (parts.some(p => !p.latex)) latex = '';
+  let annotated = '';
+  if (latex && parts.length) {
+    annotated = prefactorIsOne ? annotatedParts
+      : (C.isZero(scalarPrefactor) ? '0' : _complexToLatex(scalarPrefactor)) + ' \\cdot ' + (parts.length > 1 ? '(' + annotatedParts + ')' : annotatedParts);
+  }
 
   const cats = parts.map(p => p.category);
   const overallCat = parts.length === 0 ? 'C'
@@ -104,7 +114,7 @@ export function irToDirac(ir) {
     : reasons.length <= 1 ? (reasons[0] || '') : parts.length + ' components';
 
   const info = infoParts.join(' | ');
-  return { latex, info, category: overallCat, reason: overallReason, tensor: null, ir };
+  return { latex, info, category: overallCat, reason: overallReason, tensor: null, ir, annotated, links };
 }
 
 /**

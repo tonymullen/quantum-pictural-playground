@@ -273,6 +273,7 @@
 
 /* Diagram editor: the inspector floats over the canvas's top-left corner */
 .diagram-inspector.floating {
+  flex-wrap: wrap; row-gap: 4px; max-width: calc(100% - 16px);
   position: absolute;
   top: 8px;
   left: 8px;
@@ -309,3 +310,26 @@
   border: 1px solid var(--border-color); border-radius: var(--radius-sm);
 }
 .diagram-sum-input:focus { outline: none; border-color: var(--accent); }
+
+/* Pull taut: the preview's controls, over the canvas */
+.taut-bar {
+  position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+  max-width: calc(100% - 24px); padding: 5px 10px; border-radius: 6px; z-index: 50;
+  background: rgba(37, 37, 38, 0.95); border: 1px solid #4fc1ff; font-size: 12px; color: #e0e0e0;
+}
+.taut-label { color: #c8c8c8; }
+.taut-range { width: 140px; }
+.taut-btn { background: #333; color: #e0e0e0; border: 1px solid #555; border-radius: 4px; padding: 2px 9px; cursor: pointer; font: inherit; }
+.taut-btn.primary { background: #0e639c; border-color: #1177bb; }
+.taut-btn:hover { filter: brightness(1.2); }
+
+/* Rewrites that apply to the selection */
+/* its own row, so the controls above never move when the list changes */
+.diagram-inspector .insp-rules { display: flex; flex-basis: 100%; flex-wrap: wrap; gap: 4px; align-items: center; }
+.diagram-inspector .insp-rules .insp-dim { color: var(--text-secondary); margin-right: 2px; }
+.diagram-inspector .insp-rules button {
+  background: transparent; color: #cca700; border: 1px solid #806a00; border-radius: 3px;
+  padding: 1px 7px; font-size: 11px; cursor: pointer;
+}
+.diagram-inspector .insp-rules button:hover { background: rgba(204,167,0,0.12); border-color: #cca700; }

@@ -85,6 +85,29 @@ export default class DiagramNode {
     this.legThick = { in: [], out: [] };
     this.portXOffsets = null;  // number[] | null: explicit x offset of port k (in & out),
                                // e.g. a circuit box whose ports sit on their qubits' wires
+                               // (a cup/cap: set by DiagramDocument.fitBends)
+  }
+
+  /* ---- Cup/cap shape: its width follows its legs (DiagramDocument.fitBends) ---- */
+
+  isBend() { return this.type.shape === 'cup' || this.type.shape === 'cap'; }
+
+  /** Distance between a cup's (cap's) two ports. */
+  bendWidth() {
+    const o = this.portXOffsets;
+    return o && o.length === 2 ? Math.abs(o[1] - o[0]) : 24;
+  }
+
+  /** How far the curve bows past the port line (≈ 0.75 · (2r + 2)). */
+  bendDepth() { return 0.75 * (2 * this.radius + 2); }
+
+  /** The y of the two ports (outputs of a cup, inputs of a cap). */
+  bendPortY() { return this.type.shape === 'cup' ? this.getOutputPort(0).y : this.getInputPort(0).y; }
+
+  /** The cubic's control y: a cubic with both controls at c bows 3/4 of the way to c. */
+  bendControlY() {
+    const sgn = this.type.shape === 'cup' ? 1 : -1;
+    return this.bendPortY() + sgn * this.bendDepth() / 0.75;
   }
 
   _defaultRadius() {
@@ -102,12 +125,16 @@ export default class DiagramNode {
 
   containsPoint(px, py) {
     const r = this.radius + 4; // small tolerance
-    const dx = Math.abs(px - this.x), dy = Math.abs(py - this.y);
+    const dx = Math.abs(px - this.x), dy = Math.abs(py - this.y), pyy = py;
     const s = this.type.shape;
     if (s === 'box') return dx <= r && dy <= r;
     if (s === 'morphbox') return dx <= this._boxWidth() / 2 + 4 && dy <= r;
     if (s === 'wire') return dx <= 7 && dy <= r;
-    if (s === 'cup' || s === 'cap') return dx <= r + 6 && dy <= r;
+    if (s === 'cup' || s === 'cap') {
+      const py = this.bendPortY(), ey = py + (s === 'cup' ? 1 : -1) * this.bendDepth();
+      return dx <= Math.max(r, this.bendWidth() / 2) + 6
+        && pyy >= Math.min(py, ey) - 6 && pyy <= Math.max(py, ey) + 6;
+    }
     if (s === 'swap') return dx <= r && dy <= r;
     if (s === 'triangle-down' || s === 'triangle-up') return dx <= r && dy <= r;
     return dx * dx + dy * dy <= r * r; // circles & scalar
@@ -123,6 +150,18 @@ export default class DiagramNode {
    */
   canonicalArity() {
     return this.flip && this.flip.v ? { inputs: this.outputs, outputs: this.inputs } : { inputs: this.inputs, outputs: this.outputs };
+  }
+
+  /** The node's label, upright on screen. */
+  drawLabel(ctx) {
+    if (!this.label) return;
+    const s = this.type.shape;
+    ctx.save();
+    ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ly = s === 'triangle-down' ? this.y - 4 : s === 'triangle-up' ? this.y + 4 : this.y;
+    uprightText(ctx, this.label, this.x, ly);
+    ctx.restore();
   }
 
   /** Width of a morphism box: wide enough for all its ports. */
@@ -200,10 +239,17 @@ export default class DiagramNode {
     return { x: startX + rank * spacing, y: this.y + (dir === 'in' ? inputYOffset : outputYOffset) };
   }
 
-  draw(ctx) {
+  /** @param {{ label?: boolean }} [opts] — label: false leaves the label off (drawn separately, e.g. upright on a turning box) */
+  draw(ctx, { label = true } = {}) {
     ctx.save();
     const r = this.radius, s = this.type.shape;
-    if (this.selected) {
+    if (this.selected && this.isBend()) {
+      // a cup/cap is selected along its curve (it can be much wider than a circle)
+      const [p0, p1] = s === 'cup' ? [this.getOutputPort(0), this.getOutputPort(1)] : [this.getInputPort(0), this.getInputPort(1)];
+      const cy = this.bendControlY();
+      ctx.strokeStyle = 'rgba(79,193,255,0.55)'; ctx.lineWidth = this.thick ? 13 : 10; ctx.lineCap = 'round'; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.bezierCurveTo(p0.x, cy, p1.x, cy, p1.x, p1.y); ctx.stroke();
+    } else if (this.selected) {
       ctx.strokeStyle = '#4fc1ff'; ctx.lineWidth = 3; ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2); ctx.stroke();
     }
@@ -253,13 +299,7 @@ export default class DiagramNode {
       ctx.beginPath(); ctx.arc(this.x,this.y,r-4,0,Math.PI*2);
       ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.stroke();
     }
-    // Label
-    if (this.label) {
-      ctx.fillStyle='#fff'; ctx.font='12px sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      const ly = s==='triangle-down'?this.y-4 : s==='triangle-up'?this.y+4 : this.y;
-      uprightText(ctx, this.label, this.x, ly);
-    }
+    if (label) this.drawLabel(ctx);
     // Port dots (cups/caps/swaps draw their own)
     if (s!=='cup'&&s!=='cap'&&s!=='swap') {
       ctx.fillStyle='#e0e0e0';
@@ -295,7 +335,7 @@ export default class DiagramNode {
     // Cup (∪): outputs at top in bottom-to-top flow
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
     const outP0 = this.getOutputPort(0), outP1 = this.getOutputPort(1);
-    const curveY = this.y + r; // curve bows downward
+    const curveY = this.bendControlY(); // curve bows downward
     ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=this.thick?5:2;
     ctx.beginPath(); ctx.moveTo(outP0.x, outP0.y);
     ctx.bezierCurveTo(outP0.x, curveY, outP1.x, curveY, outP1.x, outP1.y);
@@ -309,7 +349,7 @@ export default class DiagramNode {
     // Cap (∩): inputs at bottom in bottom-to-top flow
     const sp=24, lx=this.x-sp/2, rx=this.x+sp/2;
     const inP0 = this.getInputPort(0), inP1 = this.getInputPort(1);
-    const curveY = this.y - r; // curve bows upward
+    const curveY = this.bendControlY(); // curve bows upward
     ctx.strokeStyle='#b0b0b0'; ctx.lineWidth=this.thick?5:2;
     ctx.beginPath(); ctx.moveTo(inP0.x, inP0.y);
     ctx.bezierCurveTo(inP0.x, curveY, inP1.x, curveY, inP1.x, inP1.y);

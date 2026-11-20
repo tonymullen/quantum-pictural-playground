@@ -57,7 +57,7 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-120",
+   "id": "doc-164",
    "data": {
     "name": "GHZ · diagram",
     "tensorOrder": "big-endian",
@@ -66,7 +66,7 @@
     "ownerProof": null,
     "nodes": [
      {
-      "id": "node-296",
+      "id": "node-457",
       "typeKey": "x-spider",
       "x": 120,
       "y": 520,
@@ -80,7 +80,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-297",
+      "id": "node-458",
       "typeKey": "x-spider",
       "x": 230,
       "y": 520,
@@ -94,7 +94,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-298",
+      "id": "node-459",
       "typeKey": "x-spider",
       "x": 340,
       "y": 520,
@@ -108,7 +108,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-299",
+      "id": "node-460",
       "typeKey": "hadamard",
       "x": 120,
       "y": 440,
@@ -122,7 +122,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-300",
+      "id": "node-461",
       "typeKey": "z-spider",
       "x": 120,
       "y": 360,
@@ -136,7 +136,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-301",
+      "id": "node-462",
       "typeKey": "x-spider",
       "x": 230,
       "y": 360,
@@ -150,7 +150,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-302",
+      "id": "node-463",
       "typeKey": "z-spider",
       "x": 230,
       "y": 280,
@@ -164,7 +164,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-303",
+      "id": "node-464",
       "typeKey": "x-spider",
       "x": 340,
       "y": 280,
@@ -178,7 +178,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-304",
+      "id": "node-465",
       "typeKey": "scalar",
       "x": 450,
       "y": 520,
@@ -203,58 +203,58 @@
     ],
     "wires": [
      {
-      "id": "wire-163",
-      "fromNodeId": "node-296",
+      "id": "wire-300",
+      "fromNodeId": "node-457",
       "fromPort": 0,
-      "toNodeId": "node-299",
+      "toNodeId": "node-460",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-164",
-      "fromNodeId": "node-299",
+      "id": "wire-301",
+      "fromNodeId": "node-460",
       "fromPort": 0,
-      "toNodeId": "node-300",
+      "toNodeId": "node-461",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-165",
-      "fromNodeId": "node-297",
+      "id": "wire-302",
+      "fromNodeId": "node-458",
       "fromPort": 0,
-      "toNodeId": "node-301",
+      "toNodeId": "node-462",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-166",
-      "fromNodeId": "node-300",
+      "id": "wire-303",
+      "fromNodeId": "node-461",
       "fromPort": 1,
-      "toNodeId": "node-301",
+      "toNodeId": "node-462",
       "toPort": 1,
       "wireType": "qubit"
      },
      {
-      "id": "wire-167",
-      "fromNodeId": "node-301",
+      "id": "wire-304",
+      "fromNodeId": "node-462",
       "fromPort": 0,
-      "toNodeId": "node-302",
+      "toNodeId": "node-463",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-168",
-      "fromNodeId": "node-298",
+      "id": "wire-305",
+      "fromNodeId": "node-459",
       "fromPort": 0,
-      "toNodeId": "node-303",
+      "toNodeId": "node-464",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-169",
-      "fromNodeId": "node-302",
+      "id": "wire-306",
+      "fromNodeId": "node-463",
       "fromPort": 1,
-      "toNodeId": "node-303",
+      "toNodeId": "node-464",
       "toPort": 1,
       "wireType": "qubit"
      }
@@ -283,7 +283,7 @@
       "type": "leaf",
       "editorType": "Diagram Editor",
       "state": {
-       "docId": "doc-120",
+       "docId": "doc-164",
        "orientation": "pqp",
        "view": {
         "fitted": true

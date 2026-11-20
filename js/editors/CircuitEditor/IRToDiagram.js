@@ -28,6 +28,8 @@ export default function irToDiagram(ir) {
     if (n.tensor && (n.kind === 'morphism' || n.kind === 'scalar')) d.tensor = n.tensor;
     // The doubled picture (a circuit that measures): thick quantum nodes, white dots with typed legs
     if (n.thick) d.thick = true;
+    // which circuit step it came from (inputs 'in', outputs 'out'), for hover-highlighting
+    if (n.layout && n.provenance && n.provenance.editorType === 'circuit') d.circuitT = circuitStep(n.layout.t, ir);
     if (n.legThick) d.legThick = { in: [...n.legThick.in], out: [...n.legThick.out] };
     // A multi-qubit box puts each port on its own qubit's wire
     const pq = n.layout && n.layout.portQ;
@@ -39,6 +41,14 @@ export default function irToDiagram(ir) {
     wires.push(new DiagramWire(idMap.get(e.srcNodeId), e.srcPort, idMap.get(e.tgtNodeId), e.tgtPort));
   }
   return { nodes, wires };
+}
+
+/** IR time t (inputs 0, step k at k+1, outputs at ir.outputT) → the step index, or 'in' / 'out'. */
+function circuitStep(t, ir) {
+  const r = Math.round(t);
+  if (r <= 0) return 'in';
+  if (ir.outputT !== undefined && r >= ir.outputT) return 'out';
+  return r - 1;
 }
 
 function _label(n) {

@@ -20,6 +20,7 @@ import DiagramWire from '../DiagramEditor/DiagramWire.js';
 import { drawSigma } from '../DiagramEditor/DiagramCanvas.js';
 import { derivedDiagram } from '../CircuitEditor/CircuitDiagramLink.js';
 import { orient } from '../../core/FlowDirection.js';
+import { rulesFor, applyRewrite } from '../DiagramEditor/Rewrites.js';
 
 const SUB = n => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
 const THUMB_W = 112, THUMB_H = 78;
@@ -111,6 +112,7 @@ export default class EquationEditor {
     bar.append(span('Proof:'), this.proofSelectEl,
       btn('＋ New', 'Start a new proof', () => this._newProof()),
       btn('＋ Step', 'Duplicate the selected step as the next step (then edit it)', () => this._duplicate()),
+      btn('⟿ Taut step', 'Add the selected step pulled taut as the next step: watch the wires straighten, then Apply', () => this._tautStep()),
       this.insertSelectEl,
       btn('🗑', 'Delete the selected step (Del)', () => this._deleteStep()));
 
@@ -172,6 +174,52 @@ export default class EquationEditor {
       : this.proof.addEmptyStep();
     this.selected = at;
     this.render();
+  }
+
+  /**
+   * The next step is this one pulled taut: duplicate it, play the preview on
+   * the copy; Apply keeps it (noted "pull taut"), Cancel takes it away.
+   */
+  _tautStep() {
+    if (!this.proof.steps.length) return;
+    const base = this.selected;
+    this._duplicate();
+    const at = this.selected;
+    const cv = this.stepEditor.canvas;
+    const done = () => { cv.hooks.onPullTaut = cv.hooks.onPullTautCancel = null; };
+    const undo = () => { done(); this.proof.removeStep(at); this.selected = base; this.render(); };
+    cv.hooks.onPullTaut = () => { done(); this.proof.setRelation(at, '='); this.proof.setNote(at, 'pull taut (yanking)'); };
+    cv.hooks.onPullTautCancel = undo;
+    requestAnimationFrame(() => {
+      cv.previewPullTaut();
+      if (!cv._taut) undo();             // already taut (the canvas said so): no new step
+    });
+  }
+
+  /** The next step is this one with a rewrite applied to the selected nodes. */
+  _rewriteStep(ruleId, ids) {
+    const from = this.proof.steps[this.selected];
+    if (!from) return false;
+    // the copy keeps the node order, so the selection maps across by position
+    const order = [...from.diagram.nodes.keys()];
+    const base = this.selected;
+    this._duplicate();
+    const at = this.selected, d = this.proof.steps[at].diagram, keys = [...d.nodes.keys()];
+    const mapped = ids.map(id => keys[order.indexOf(id)]).filter(Boolean);
+    const rule = rulesFor(d, mapped).find(r => r.id === ruleId);
+    const res = rule ? applyRewrite(d, rule) : { ok: false, why: 'That rewrite does not apply' };
+    if (!res.ok) {
+      this.proof.removeStep(at); this.selected = base; this.render();
+      this.stepEditor.canvas._showToast(res.why, 'warn');
+      return true;
+    }
+    d._undoStack = [];
+    for (const n of d.nodes.values()) n.selected = res.nodes.some(m => m.id === n.id);
+    this.proof.setRelation(at, res.relation);
+    this.proof.setNote(at, rule.name.toLowerCase() + (res.scalar ? ` (× ${res.scalar})` : ''));
+    d.commit();
+    this.render();
+    return true;
   }
 
   _insertChosen() {
@@ -333,6 +381,8 @@ export default class EquationEditor {
     if (!st) return;
     if (!this.stepEditor) {
       this.stepEditor = new DiagramEditor(this.editorWrap, { doc: st.diagram, embedded: true });
+      // A rewrite in a proof makes the next step (the selected one stays as it was)
+      this.stepEditor.canvas.hooks.onRewriteRequest = (ruleId, ids) => this._rewriteStep(ruleId, ids);
       requestAnimationFrame(() => this.stepEditor.canvas.fitToContent());
       // Thumbnails follow the step editor's view orientation
       this.stepEditor.viewSelectEl.addEventListener('change', () => this.render());

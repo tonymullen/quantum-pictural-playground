@@ -19,6 +19,8 @@ import circuitToDirac from '../js/core/CircuitToDirac.js';
 import { circuitTensor, circuitChannel } from '../js/core/CircuitGates.js';
 import { evalProcess } from '../js/core/DiracEval.js';
 import { evaluateDiagram } from '../js/core/ProcessDirac.js';
+import { pullTautChecked, planPullTaut } from '../js/editors/DiagramEditor/PullTaut.js';
+import { rulesFor, applyRewrite } from '../js/editors/DiagramEditor/Rewrites.js';
 import CircuitDocument from '../js/editors/CircuitEditor/CircuitDocument.js';
 import { derivedDiagram } from '../js/editors/CircuitEditor/CircuitDiagramLink.js';
 import SyncController from '../js/core/SyncController.js';
@@ -1727,6 +1729,171 @@ log('\n=== D2: Sums over a basis in Dirac notation ===');
   const pd = evalProcess(parseDirac('\\widehat{H}'), { in: ['q'], out: ['q'] }).tensor;
   const Hd = new DiagramDocument('Hd'); const h = addN(Hd, NT.HADAMARD, 100, 150); h.thick = true;
   assert(Tensor.equal(pd, contractIR(diagramToIR(Hd)).tensor, 1e-9), '\\widehat{H} equals the doubled H drawn thick');
+}
+
+
+log('\n=== T1: Pulling taut — snakes, crossings, bends ===');
+{
+  const kinds = d => [...d.nodes.values()].map(n => n.type.key).sort().join(',');
+  const same = (a, b) => checkStep(a.toIR(), b.toIR(), '=').status === 'ok';
+  // The snake: a cup and a cap → one plain wire
+  const sn = new DiagramDocument('snake');
+  const cap = addN(sn, NT.CAP, 100, 110), cup = addN(sn, NT.CUP, 160, 210);
+  w(sn, cup, 0, cap, 1);
+  const before = DiagramDocument.copyOf(sn);
+  const r = pullTautChecked(sn);
+  assert(r.ok && kinds(sn) === 'identity' && sn.wires.length === 0, `Snake → a plain wire (${kinds(sn)})`);
+  assert(same(before, sn), 'and it is the same map (the yanking equation)');
+  assert(!pullTautChecked(sn).ok && /Already taut/.test(pullTautChecked(sn).why), 'Pulling again: already taut');
+
+  // Two crossings cancel (σ∘σ = 1): f → h, g → k, no swaps left
+  const x2 = new DiagramDocument('x2');
+  const f = addN(x2, NT.MORPHISM, 100, 300, { label: 'f' }), g = addN(x2, NT.MORPHISM, 200, 300, { label: 'g' });
+  const s1 = addN(x2, NT.SWAP, 150, 220), s2 = addN(x2, NT.SWAP, 150, 140);
+  const h = addN(x2, NT.MORPHISM, 100, 60, { label: 'h' }), k = addN(x2, NT.MORPHISM, 200, 60, { label: 'k' });
+  w(x2, f, 0, s1, 0); w(x2, g, 0, s1, 1); w(x2, s1, 0, s2, 0); w(x2, s1, 1, s2, 1); w(x2, s2, 0, h, 0); w(x2, s2, 1, k, 0);
+  const x2b = DiagramDocument.copyOf(x2);
+  assert(pullTautChecked(x2).ok && !kinds(x2).includes('swap'), 'Two crossings: both swaps go');
+  const to = (a) => x2.wires.find(x => x.fromNodeId === a.id).toNodeId;
+  assert(to(f) === h.id && to(g) === k.id && same(x2b, x2), 'f feeds h and g feeds k again (σ∘σ = 1)');
+
+  // One needed crossing: the swap goes, the wires just cross
+  const x1 = new DiagramDocument('x1');
+  const f1 = addN(x1, NT.MORPHISM, 100, 300, { label: 'f' }), g1 = addN(x1, NT.MORPHISM, 200, 300, { label: 'g' });
+  const sw = addN(x1, NT.SWAP, 150, 200);
+  const h1 = addN(x1, NT.MORPHISM, 100, 80, { label: 'h' }), k1 = addN(x1, NT.MORPHISM, 200, 80, { label: 'k' });
+  w(x1, f1, 0, sw, 0); w(x1, g1, 0, sw, 1); w(x1, sw, 0, h1, 0); w(x1, sw, 1, k1, 0);
+  const x1b = DiagramDocument.copyOf(x1);
+  assert(pullTautChecked(x1).ok && !kinds(x1).includes('swap') && same(x1b, x1), 'One crossing: no swap node, the wires cross (only connectivity matters)');
+  assert(x1.wires.some(x => x.fromNodeId === f1.id && x.toNodeId === k1.id), '…f still feeds k');
+
+  // Two inputs joined by a cup with an extra snake: exactly one cup is left
+  const tt = new DiagramDocument('tt');
+  const hh = addN(tt, NT.MORPHISM, 80, 60, { label: 'h' }), kk = addN(tt, NT.MORPHISM, 300, 60, { label: 'k' });
+  const c1 = addN(tt, NT.CUP, 120, 300), cp = addN(tt, NT.CAP, 190, 160), c2 = addN(tt, NT.CUP, 260, 260);
+  w(tt, c1, 0, hh, 0); w(tt, c1, 1, cp, 0); w(tt, c2, 0, cp, 1); w(tt, c2, 1, kk, 0);
+  const ttb = DiagramDocument.copyOf(tt);
+  assert(pullTautChecked(tt).ok && kinds(tt) === 'cup,morphism,morphism' && same(ttb, tt), 'Two inputs: a snake goes, one cup ∪ stays');
+  // Two outputs (states) joined through a cap and a snake: one cap is left
+  const bb = new DiagramDocument('bb');
+  const ps = addN(bb, NT.STATE, 80, 320, { label: 'ψ' }), ph = addN(bb, NT.STATE, 300, 320, { label: 'φ' });
+  const k1c = addN(bb, NT.CAP, 120, 100), k2 = addN(bb, NT.CUP, 190, 240), k3 = addN(bb, NT.CAP, 260, 140);
+  w(bb, ps, 0, k1c, 0); w(bb, k2, 0, k1c, 1); w(bb, k2, 1, k3, 0); w(bb, ph, 0, k3, 1);
+  const bbb = DiagramDocument.copyOf(bb);
+  assert(pullTautChecked(bb).ok && kinds(bb) === 'cap,state,state' && same(bbb, bb), 'Two outputs: one cap ∩ stays (⟨ψ|… as a bra-ket)');
+
+  // Doubled wiring pulls taut too
+  const dd = new DiagramDocument('dd');
+  const dcap = addN(dd, NT.CAP, 100, 110), dcup = addN(dd, NT.CUP, 160, 210);
+  dcap.thick = dcup.thick = true; w(dd, dcup, 0, dcap, 1);
+  const ddb = DiagramDocument.copyOf(dd);
+  const rd = pullTautChecked(dd);
+  assert(rd.ok && kinds(dd) === 'identity' && [...dd.nodes.values()][0].thick && same(ddb, dd), 'A doubled snake → a thick wire');
+
+  // A closed loop is a trace: left alone
+  const lp = new DiagramDocument('loop');
+  const lc = addN(lp, NT.CUP, 100, 200), lk = addN(lp, NT.CAP, 100, 100);
+  w(lp, lc, 0, lk, 0); w(lp, lc, 1, lk, 1);
+  assert(!planPullTaut(lp).changed, 'A closed loop (the dimension, a trace) is left as it is');
+
+  // A bead on a two-output string keeps its side (no needless transpose)
+  const bd = new DiagramDocument('bead');
+  const s0 = addN(bd, NT.STATE, 80, 380, { label: 'ψ' }), fb = addN(bd, NT.MORPHISM, 80, 280, { label: 'f' });
+  const s3 = addN(bd, NT.STATE, 300, 380, { label: 'φ' });
+  const q1 = addN(bd, NT.CAP, 120, 120), q2 = addN(bd, NT.CUP, 190, 260), q3 = addN(bd, NT.CAP, 260, 160);
+  w(bd, s0, 0, fb, 0); w(bd, fb, 0, q1, 0); w(bd, q2, 0, q1, 1); w(bd, q2, 1, q3, 0); w(bd, s3, 0, q3, 1);
+  const bdb = DiagramDocument.copyOf(bd);
+  const rb = pullTautChecked(bd);
+  assert(rb.ok && rb.beadsTransposed === 0 && !fb.flip.v && same(bdb, bd), 'The bead f stays on ψ’s leg, upright');
+}
+
+log('\n=== T2: Pulling taut — every demo proof step ===');
+{
+  const inNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+  const demos = inNode
+    ? new DemoStore({ base: new URL('../demos/', import.meta.url).pathname,
+        fetchJSON: async p => JSON.parse(await (await import('node:fs/promises')).readFile(p, 'utf8')) })
+    : new DemoStore({ base: new URL('../demos/', import.meta.url).href });
+  let pulled = 0, failed = [];
+  for (const item of await demos.list()) {
+    openWorkbookDocuments(await demos.load(item.id));
+    for (const p of DocumentStore.list('proof'))
+      p.steps.forEach((st, k) => {
+        const d = DiagramDocument.copyOf(st.diagram);
+        if (!planPullTaut(d).changed) return;
+        const before = DiagramDocument.copyOf(d);
+        const r = pullTautChecked(d);
+        if (!r.ok || checkStep(before.toIR(), d.toIR(), '=').status !== 'ok') failed.push(`${p.name} D${k + 1}`);
+        else pulled++;
+      });
+  }
+  assert(pulled >= 5 && failed.length === 0, `${pulled} demo proof steps pulled taut, each equal to the original${failed.length ? '; failed: ' + failed.join(', ') : ''}`);
+  // The necklace: three boxes on a snake → stacked a, bᵀ, c (Prop. 4.30 twice, then yanking)
+  openWorkbookDocuments(await demos.load('sliding-round-bends'));
+  const nk = DiagramDocument.copyOf(DocumentStore.list('proof').find(p => p.name === 'The necklace').steps[0].diagram);
+  const r = pullTautChecked(nk);
+  const col = [...nk.nodes.values()].filter(n => n.type.key === 'morphism').sort((a, b) => b.y - a.y);
+  assert(r.ok && col.map(n => n.label + (n.flip.v ? 'ᵀ' : '')).join(' ') === 'a bᵀ c' && new Set(col.map(n => Math.round(n.x))).size === 1,
+    `The necklace pulled taut: ${col.map(n => n.label + (n.flip.v ? 'ᵀ' : '')).join(' ')}, in one column`);
+}
+
+
+log('\n=== K1: Rewrite rules on a selection ===');
+{
+  const desc = d => [...d.nodes.values()].map(n => `${n.type.key}${n.label ? '(' + n.label + ')' : ''}`).sort().join(' ');
+  const go = (d, nodes, id) => { const r = rulesFor(d, nodes.map(n => n.id)).find(x => x.id === id); return r ? applyRewrite(d, r) : { ok: false, why: 'no match' }; };
+  // fusion: α and β → α+β, exactly (checked with α, β symbolic)
+  let d = new DiagramDocument('f');
+  let a = addN(d, NT.Z_SPIDER, 100, 200, { label: 'α', inputs: 1, outputs: 1 }), b = addN(d, NT.Z_SPIDER, 100, 100, { label: 'β', inputs: 1, outputs: 2 });
+  w(d, a, 0, b, 0);
+  assert(rulesFor(d, [a.id]).some(r => r.id === 'fuse'), 'Selecting one spider offers fusion with its same-colour neighbour');
+  let r = go(d, [a], 'fuse');
+  assert(r.ok && r.relation === '=' && desc(d) === 'z-spider(α+β)' && [...d.nodes.values()][0].outputs === 2, 'Spider fusion: Z(α);Z(β) = Z(α+β), legs kept');
+  d = new DiagramDocument('f2');
+  a = addN(d, NT.X_SPIDER, 100, 200, { label: '3π/2', inputs: 1, outputs: 1 }); b = addN(d, NT.X_SPIDER, 100, 100, { label: 'π', inputs: 1, outputs: 1 }); w(d, a, 0, b, 0);
+  assert(go(d, [a, b], 'fuse').ok && desc(d) === 'x-spider(π/2)', 'Phases add mod 2π: 3π/2 + π = π/2');
+  // identity, H·H
+  d = new DiagramDocument('id');
+  const f = addN(d, NT.MORPHISM, 100, 300, { label: 'f' }), z = addN(d, NT.Z_SPIDER, 100, 200, { inputs: 1, outputs: 1 }), g = addN(d, NT.MORPHISM, 100, 100, { label: 'g' });
+  w(d, f, 0, z, 0); w(d, z, 0, g, 0);
+  assert(go(d, [z], 'identity').ok && desc(d) === 'morphism(f) morphism(g)' && d.wires.length === 1, 'A phase-free two-legged spider is a wire');
+  d = new DiagramDocument('hh');
+  const h1 = addN(d, NT.HADAMARD, 100, 200), h2 = addN(d, NT.HADAMARD, 100, 120); w(d, h1, 0, h2, 0);
+  assert(go(d, [h1], 'hh').ok && desc(d) === 'identity', 'H·H = a wire');
+  // colour change there and back
+  d = new DiagramDocument('cc');
+  const zc = addN(d, NT.Z_SPIDER, 100, 200, { label: 'α', inputs: 1, outputs: 2 });
+  r = go(d, [zc], 'colour');
+  assert(r.ok && r.relation === '=' && desc(d) === 'hadamard hadamard hadamard x-spider(α)', 'Colour change: Z(α) = X(α) with H on all three legs');
+  const xc = [...d.nodes.values()].find(n => n.type.key === 'x-spider');
+  assert(rulesFor(d, [xc.id]).find(x => x.id === 'colour').name.includes('remove'), 'Back again is offered when every leg has an H');
+  assert(go(d, [xc], 'colour').ok && desc(d) === 'z-spider(α)', 'and gives Z(α) back');
+  // π-copy: exact scalar when numeric, ≈ when symbolic
+  d = new DiagramDocument('pc');
+  let p = addN(d, NT.X_SPIDER, 100, 260, { label: 'π', inputs: 1, outputs: 1 }), zz = addN(d, NT.Z_SPIDER, 100, 180, { label: 'π/4', inputs: 1, outputs: 2 }); w(d, p, 0, zz, 0);
+  r = go(d, [zz], 'picopy');
+  assert(r.ok && r.relation === '=' && r.scalar === 'e^(iπ/4)' && desc(d).includes('z-spider(-π/4)') && desc(d).split('x-spider(π)').length === 3,
+    `π-copy at π/4: Z(−π/4), X(π) on both outputs, and the scalar ${r.scalar} — exact`);
+  d = new DiagramDocument('pc2');
+  p = addN(d, NT.X_SPIDER, 100, 260, { label: 'π', inputs: 1, outputs: 1 }); zz = addN(d, NT.Z_SPIDER, 100, 180, { label: 'α', inputs: 1, outputs: 1 }); w(d, p, 0, zz, 0);
+  r = go(d, [zz, p], 'picopy');
+  assert(r.ok && r.relation === '≈' && desc(d).includes('z-spider(-α)'), 'π-copy with α: Z(−α), equal up to the scalar e^{iα} (≈)');
+  // state copy, complementarity
+  d = new DiagramDocument('cp');
+  const k = addN(d, NT.X_SPIDER, 100, 260, { label: 'π', inputs: 0, outputs: 1 }), zs = addN(d, NT.Z_SPIDER, 100, 180, { inputs: 1, outputs: 2 }); w(d, k, 0, zs, 0);
+  r = go(d, [zs], 'copy');
+  assert(r.ok && r.relation === '=' && desc(d) === 'scalar(1/√2) x-spider(π) x-spider(π)' || (r.ok && desc(d).split('x-spider(π)').length === 3), `Copy: |1⟩ through Z → two copies (${desc(d)})`);
+  d = new DiagramDocument('hopf');
+  const z2 = addN(d, NT.Z_SPIDER, 100, 200, { inputs: 1, outputs: 2 }), x2 = addN(d, NT.X_SPIDER, 100, 100, { inputs: 2, outputs: 1 });
+  w(d, z2, 0, x2, 0); w(d, z2, 1, x2, 1);
+  r = go(d, [z2, x2], 'hopf');
+  assert(r.ok && d.wires.length === 0 && r.scalar === '1/2', 'Complementarity: two wires between Z and X disconnect (scalar 1/2)');
+  // a rule that would be wrong is refused (here: forcing fusion on spiders of different colours)
+  d = new DiagramDocument('no');
+  const za = addN(d, NT.Z_SPIDER, 100, 200, { label: 'π', inputs: 1, outputs: 1 }), xa = addN(d, NT.X_SPIDER, 100, 100, { label: 'π', inputs: 1, outputs: 1 }); w(d, za, 0, xa, 0);
+  assert(!rulesFor(d, [za.id, xa.id]).some(x => x.id === 'fuse'), 'Fusion is not offered for different colours');
+  const bad = applyRewrite(d, { id: 'fuse', ctx: { a: za, b: xa } });
+  assert(!bad.ok && d.nodes.size === 2, 'and forcing it (Z(π)·X(π) is not Z(2π)) is caught by the check — the diagram is left as it was');
 }
 
 // === Summary ===

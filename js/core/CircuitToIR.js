@@ -242,6 +242,7 @@ export default function circuitToIR(circ) {
   g.inputBoundary = inputBoundary;
   g.outputBoundary = outputBoundary;
   g.mixed = mixed;
+  g.outputT = tOut;           // the outputs' time step (IRToDiagram: which step a node is)
   for (const node of g.nodes.values()) g.layoutKey.set(node.id, node.layout.q);
   _spliceIdentities(g);
   applyTensorOrder(g, circ.tensorOrder);   // qubit order → ⊗ order

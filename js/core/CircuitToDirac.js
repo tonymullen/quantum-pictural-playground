@@ -32,11 +32,12 @@ export default function circuitToDirac(circ) {
   const outputs = Array.from({ length: n }, (_, q) => circ.outputs[q] || 'open');
 
   const out = _boundary(outputs, 'bra');
-  if (out) factors.push(out);
-  const cols = circ.columns.filter(c => !isIdleColumn(c));
-  for (let k = cols.length - 1; k >= 0; k--) factors.push(_column(cols[k], n));
+  if (out) factors.push({ ...out, link: { columns: ['out'] } });
+  // each factor remembers its step (the column's index in the circuit), for hover-highlighting
+  const cols = circ.columns.map((c, t) => ({ c, t })).filter(x => !isIdleColumn(x.c));
+  for (let k = cols.length - 1; k >= 0; k--) factors.push({ ..._column(cols[k].c, n), link: { columns: [cols[k].t] } });
   const inp = _boundary(inputs, 'ket');
-  if (inp) factors.push(inp);
+  if (inp) factors.push({ ...inp, link: { columns: ['in'] } });
 
   let latex;
   if (factors.length === 0) latex = n === 1 ? 'I' : `I^{\\otimes ${n}}`;
@@ -47,7 +48,9 @@ export default function circuitToDirac(circ) {
     : `${nSteps} step${nSteps > 1 ? 's' : ''}, written column by column (latest on the left)`;
   const info = factors.some(f => f.fallback)
     ? 'A controlled swap of non-adjacent qubits is shown as U (not evaluated)' : '';
-  return { latex, info, category: 'A', reason };
+  const wrapF = f => (factors.length > 1 && f.compound ? `(${f.latex})` : f.latex);
+  const annotated = factors.length ? factors.map((f, k) => `\\htmlData{qpp=${k}}{${wrapF(f)}}`).join(' ') : '';
+  return { latex, info, category: 'A', reason, annotated, links: factors.map(f => f.link) };
 }
 
 /** The same circuit with qubit order reversed (qubit q ↦ n−1−q). */

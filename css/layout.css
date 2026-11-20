@@ -122,6 +122,7 @@
 .split-handle.active {
   background: var(--handle-hover);
 }
+.split-handle.snapped { background: var(--accent); }
 
 .split-handle.horizontal {
   width: 4px;
@@ -155,3 +156,41 @@
 .split-grip.top-right:hover {
   border-top-color: var(--accent);
 }
+
+.split-grip.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 12px solid var(--handle-color);
+  border-right: 12px solid transparent;
+}
+.split-grip.bottom-left:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* Corner-grip drag: split line or merge preview */
+body.area-dragging, body.area-dragging * { cursor: crosshair !important; user-select: none; }
+.area-drag-overlay {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-bright, #fff);
+  text-align: center;
+}
+.area-drag-overlay.split-line { background: var(--accent, #4fc1ff); }
+.area-drag-overlay.merge-yes {
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid var(--accent, #4fc1ff);
+}
+.area-drag-overlay.merge-yes .arrow { font-size: 64px; line-height: 1; color: var(--accent, #4fc1ff); }
+.area-drag-overlay.merge-no {
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px dashed #d16969;
+}
+.area-drag-overlay span { padding: 0 12px; text-shadow: 0 1px 2px #000; }

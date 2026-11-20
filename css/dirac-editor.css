@@ -190,3 +190,7 @@
 .dirac-compare-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary); }
 .dirac-compare-math { overflow-x: auto; font-size: 14px; }
 .dirac-compare-note { font-size: 10.5px; color: var(--text-secondary); }
+
+/* Hover-linking: terms of the generated expression and what they come from */
+.dirac-preview .linked [data-qpp], .render-output.linked [data-qpp] { cursor: default; border-radius: 3px; transition: background 0.1s; }
+[data-qpp].qpp-hl { background: rgba(255, 196, 0, 0.25); box-shadow: 0 0 0 1px rgba(255, 196, 0, 0.8); }

@@ -21,6 +21,7 @@ import CircuitDocument, { MAX_QUBITS } from './CircuitDocument.js';
 import DocumentStore from '../DocumentStore.js';
 import { derivedDiagram } from './CircuitDiagramLink.js';
 import { GATES, CONTROL, ANTI_CONTROL, SWAP, MEASURE, wireKinds } from '../../core/CircuitGates.js';
+import Highlight from '../../core/Highlight.js';
 
 const PALETTE = [
   { gate: 'H' }, { gate: 'X' }, { gate: 'Y' }, { gate: 'Z' },
@@ -61,6 +62,7 @@ export default class CircuitEditor {
     this._buildToolbar();
     this._buildDocBar();
     this._buildStage();
+    this._offHighlight = Highlight.on(h => this._onHighlight(h));
 
     let doc = (st.docId && DocumentStore.get(st.docId)) || DocumentStore.list('circuit')[0];
     if (!doc) doc = DocumentStore.add(new CircuitDocument('Circuit 1', 2));
@@ -300,6 +302,9 @@ export default class CircuitEditor {
       if (sel && sel.kind === 'cell' && sel.t === t && sel.q === q) holder.classList.add('selected');
       holder.title = TITLES[cell.gate];
       holder.addEventListener('mousedown', e => this._startDrag(e, { kind: 'move', from: { t, q }, cell }));
+      // hover-linking: this step ↔ its term in Dirac and its nodes in the diagram
+      holder.addEventListener('mouseenter', () => Highlight.emit({ circuitId: doc.id, columns: [t] }, 'circuit'));
+      holder.addEventListener('mouseleave', () => Highlight.clear('circuit'));
       const w = face.className.startsWith('cg-gate') ? Math.max(GATE, 12 + 7.5 * face.textContent.length) : GATE;
       place(holder, G.colX(t), G.wireY(q), w, GATE);
     }));
@@ -324,12 +329,41 @@ export default class CircuitEditor {
         wireEnd + 40, y, 58, 22);
     }
 
+    // Hover-linking: a band over the step another view points at
+    this.hlBand = document.createElement('div');
+    this.hlBand.className = 'circuit-hl-band';
+    this.hlBand.hidden = true;
+    st.appendChild(this.hlBand);
+    this._placeBand(this._hlColumns);
+
     // Drop indicator
     this.indicator = document.createElement('div');
     this.indicator.className = 'circuit-drop-indicator';
     this.indicator.hidden = true;
     st.appendChild(this.indicator);
     this._refreshInspector();
+  }
+
+  _onHighlight(h) {
+    if (h.source === 'circuit') return;
+    const cols = !h.clear && h.circuitId && this.doc && h.circuitId === this.doc.id && h.columns ? h.columns : null;
+    this._hlColumns = cols;
+    this._placeBand(cols);
+  }
+
+  /** Show the band over a step (or over the inputs / outputs). */
+  _placeBand(cols) {
+    if (!this.hlBand) return;
+    const c = cols && cols.find(x => x !== undefined && x !== null);
+    if (c === undefined || c === null) { this.hlBand.hidden = true; return; }
+    const G = this._geom();
+    const cx = c === 'in' ? 38 : c === 'out' ? LEFT + G.T * DT + 44 : G.colX(c);
+    const w = c === 'in' || c === 'out' ? 66 : DT - 6;
+    this.hlBand.style.left = G.X(cx - w / 2, w) + 'px';
+    this.hlBand.style.top = '2px';
+    this.hlBand.style.width = w + 'px';
+    this.hlBand.style.height = (G.H - 4) + 'px';
+    this.hlBand.hidden = false;
   }
 
   _picker(labels, value, onChange, title) {
@@ -531,6 +565,7 @@ export default class CircuitEditor {
   onResize() { /* layout is intrinsic; the stage scrolls */ }
 
   destroy() {
+    if (this._offHighlight) this._offHighlight();
     if (this.doc) this.doc.offChange(this._onDocChange);
     DocumentStore.offListChange(this._onStoreChange);
     window.removeEventListener('mousemove', this._mm);

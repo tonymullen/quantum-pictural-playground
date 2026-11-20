@@ -10,8 +10,8 @@
  *   label, note     shown in the browser
  *
  * DemoStore            — read-only; the demos shipped with the app (demos/*.json)
- * LocalWorkbookStore   — My Workbooks, kept in this browser (until the server exists)
- * RemoteWorkbookStore  — My Workbooks on the remote database (not implemented yet)
+ * LocalWorkbookStore   — My Workbooks kept in this browser (when there is no server)
+ * RemoteWorkbookStore  — My Workbooks on the server (server/, MongoDB)
  */
 
 /** Demos: read-only JSON files shipped with the app. */
@@ -43,7 +43,7 @@ export class LocalWorkbookStore {
   constructor({ storage = globalThis.localStorage, key = 'qpp.myWorkbooks.v1' } = {}) {
     this.readOnly = false;
     this.label = 'My Workbooks';
-    this.note = 'Saved in this browser for now · server storage is coming';
+    this.note = 'Saved in this browser — no server is running (start it with: cd server && npm start)';
     this.storage = storage;
     this.key = key;
   }
@@ -79,16 +79,79 @@ export class LocalWorkbookStore {
   }
 }
 
-/** My Workbooks on the remote database — the interface the server will implement. */
+/**
+ * My Workbooks on the server (server/, MongoDB). Keeps the revision of each
+ * workbook it has listed or loaded, so a save from a stale tab is refused
+ * (the server answers 409) instead of overwriting newer work.
+ */
 export class RemoteWorkbookStore {
-  constructor({ baseUrl } = {}) {
+  /** @param {{ baseUrl?: string, fetch?: typeof fetch, user?: object }} [opts] */
+  constructor({ baseUrl = 'api', fetch: fetchImpl, user = null } = {}) {
     this.readOnly = false;
     this.label = 'My Workbooks';
-    this.note = 'Stored on the server';
-    this.baseUrl = baseUrl;
+    this.user = user;
+    this.note = user ? `Saved on the server · ${user.displayName}` : 'Saved on the server';
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this._fetch = fetchImpl || ((...a) => fetch(...a));
+    this._revisions = new Map();
   }
-  async list() { throw new Error('Server storage is not available yet'); }
-  async load() { throw new Error('Server storage is not available yet'); }
-  async save() { throw new Error('Server storage is not available yet'); }
-  async remove() { throw new Error('Server storage is not available yet'); }
+
+  /** Is there a server? Resolves to the current user, or null (no server / not reachable). */
+  static async probe({ baseUrl = 'api', fetch: fetchImpl, timeoutMs = 2000 } = {}) {
+    const f = fetchImpl || ((...a) => fetch(...a));
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctl && setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const r = await f(`${baseUrl.replace(/\/$/, '')}/me`, { cache: 'no-store', signal: ctl && ctl.signal });
+      if (!r.ok) return null;
+      const body = await r.json();
+      return body && body.user ? body.user : null;
+    } catch { return null; } finally { if (timer) clearTimeout(timer); }
+  }
+
+  async _call(method, path, body) {
+    let r;
+    try {
+      r = await this._fetch(`${this.baseUrl}/workbooks${path}`, {
+        method, cache: 'no-store',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch { throw new Error('Could not reach the server — check that it is running'); }
+    const text = await r.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!r.ok) {
+      const err = new Error((data && data.error) || `Server error (${r.status})`);
+      err.status = r.status;
+      if (r.status === 409) { err.conflict = true; err.message = 'This workbook was saved somewhere else (another tab?) since you opened it — use “Save a copy” to keep your version'; }
+      throw err;
+    }
+    return data;
+  }
+
+  async list() {
+    const rows = await this._call('GET', '');
+    for (const w of rows) this._revisions.set(w.id, w.revision);
+    return rows;
+  }
+  async load(id) {
+    const { workbook, revision } = await this._call('GET', `/${encodeURIComponent(id)}`);
+    this._revisions.set(id, revision);
+    return workbook;
+  }
+  async save(wb, id = null) {
+    if (id) {
+      if (!this._revisions.has(id)) await this.load(id);      // learn the revision we are replacing
+      const { revision } = await this._call('PUT', `/${encodeURIComponent(id)}`, { workbook: wb, revision: this._revisions.get(id) });
+      this._revisions.set(id, revision);
+      return id;
+    }
+    const { id: newId, revision } = await this._call('POST', '', { workbook: wb });
+    this._revisions.set(newId, revision);
+    return newId;
+  }
+  async remove(id) {
+    await this._call('DELETE', `/${encodeURIComponent(id)}`);
+    this._revisions.delete(id);
+  }
 }

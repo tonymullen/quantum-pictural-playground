@@ -11,16 +11,16 @@
  "documents": [
   {
    "kind": "diagram",
-   "id": "doc-72",
+   "id": "doc-116",
    "data": {
     "name": "Measure, then delete = discard step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-20",
+    "ownerProof": "proof-30",
     "nodes": [
      {
-      "id": "node-201",
+      "id": "node-362",
       "typeKey": "dot",
       "x": 200,
       "y": 230,
@@ -42,7 +42,7 @@
       }
      },
      {
-      "id": "node-202",
+      "id": "node-363",
       "typeKey": "dot",
       "x": 200,
       "y": 150,
@@ -64,10 +64,10 @@
     ],
     "wires": [
      {
-      "id": "wire-120",
-      "fromNodeId": "node-201",
+      "id": "wire-257",
+      "fromNodeId": "node-362",
       "fromPort": 0,
-      "toNodeId": "node-202",
+      "toNodeId": "node-363",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -76,16 +76,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-73",
+   "id": "doc-117",
    "data": {
     "name": "Measure, then delete = discard step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-20",
+    "ownerProof": "proof-30",
     "nodes": [
      {
-      "id": "node-203",
+      "id": "node-364",
       "typeKey": "discard",
       "x": 200,
       "y": 190,
@@ -104,16 +104,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-74",
+   "id": "doc-118",
    "data": {
     "name": "Encode, then discard = delete step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-21",
+    "ownerProof": "proof-31",
     "nodes": [
      {
-      "id": "node-204",
+      "id": "node-365",
       "typeKey": "dot",
       "x": 200,
       "y": 230,
@@ -135,7 +135,7 @@
       }
      },
      {
-      "id": "node-205",
+      "id": "node-366",
       "typeKey": "discard",
       "x": 200,
       "y": 150,
@@ -151,10 +151,10 @@
     ],
     "wires": [
      {
-      "id": "wire-121",
-      "fromNodeId": "node-204",
+      "id": "wire-258",
+      "fromNodeId": "node-365",
       "fromPort": 0,
-      "toNodeId": "node-205",
+      "toNodeId": "node-366",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -163,16 +163,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-75",
+   "id": "doc-119",
    "data": {
     "name": "Encode, then discard = delete step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-21",
+    "ownerProof": "proof-31",
     "nodes": [
      {
-      "id": "node-206",
+      "id": "node-367",
       "typeKey": "dot",
       "x": 200,
       "y": 190,
@@ -197,16 +197,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-76",
+   "id": "doc-120",
    "data": {
     "name": "Measure, then encode = decoherence step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-22",
+    "ownerProof": "proof-32",
     "nodes": [
      {
-      "id": "node-207",
+      "id": "node-368",
       "typeKey": "dot",
       "x": 200,
       "y": 240,
@@ -228,7 +228,7 @@
       }
      },
      {
-      "id": "node-208",
+      "id": "node-369",
       "typeKey": "dot",
       "x": 200,
       "y": 140,
@@ -252,10 +252,10 @@
     ],
     "wires": [
      {
-      "id": "wire-122",
-      "fromNodeId": "node-207",
+      "id": "wire-259",
+      "fromNodeId": "node-368",
       "fromPort": 0,
-      "toNodeId": "node-208",
+      "toNodeId": "node-369",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -264,16 +264,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-77",
+   "id": "doc-121",
    "data": {
     "name": "Measure, then encode = decoherence step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-22",
+    "ownerProof": "proof-32",
     "nodes": [
      {
-      "id": "node-209",
+      "id": "node-370",
       "typeKey": "dot",
       "x": 200,
       "y": 190,
@@ -300,16 +300,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-78",
+   "id": "doc-122",
    "data": {
     "name": "Discarding a pure state: the Born rule step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-23",
+    "ownerProof": "proof-33",
     "nodes": [
      {
-      "id": "node-210",
+      "id": "node-371",
       "typeKey": "state",
       "x": 200,
       "y": 240,
@@ -324,7 +324,7 @@
       "thick": true
      },
      {
-      "id": "node-211",
+      "id": "node-372",
       "typeKey": "discard",
       "x": 200,
       "y": 150,
@@ -340,10 +340,10 @@
     ],
     "wires": [
      {
-      "id": "wire-123",
-      "fromNodeId": "node-210",
+      "id": "wire-260",
+      "fromNodeId": "node-371",
       "fromPort": 0,
-      "toNodeId": "node-211",
+      "toNodeId": "node-372",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -352,16 +352,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-79",
+   "id": "doc-123",
    "data": {
     "name": "Discarding a pure state: the Born rule step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-23",
+    "ownerProof": "proof-33",
     "nodes": [
      {
-      "id": "node-212",
+      "id": "node-373",
       "typeKey": "state",
       "x": 200,
       "y": 240,
@@ -375,7 +375,7 @@
       "portXOffsets": null
      },
      {
-      "id": "node-213",
+      "id": "node-374",
       "typeKey": "effect",
       "x": 200,
       "y": 150,
@@ -395,10 +395,10 @@
     ],
     "wires": [
      {
-      "id": "wire-124",
-      "fromNodeId": "node-212",
+      "id": "wire-261",
+      "fromNodeId": "node-373",
       "fromPort": 0,
-      "toNodeId": "node-213",
+      "toNodeId": "node-374",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -407,16 +407,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-80",
+   "id": "doc-124",
    "data": {
     "name": "A doubled unitary is causal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-24",
+    "ownerProof": "proof-34",
     "nodes": [
      {
-      "id": "node-214",
+      "id": "node-375",
       "typeKey": "hadamard",
       "x": 200,
       "y": 240,
@@ -431,7 +431,7 @@
       "thick": true
      },
      {
-      "id": "node-215",
+      "id": "node-376",
       "typeKey": "discard",
       "x": 200,
       "y": 150,
@@ -447,10 +447,10 @@
     ],
     "wires": [
      {
-      "id": "wire-125",
-      "fromNodeId": "node-214",
+      "id": "wire-262",
+      "fromNodeId": "node-375",
       "fromPort": 0,
-      "toNodeId": "node-215",
+      "toNodeId": "node-376",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -459,16 +459,16 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-81",
+   "id": "doc-125",
    "data": {
     "name": "A doubled unitary is causal step",
     "tensorOrder": "big-endian",
     "sumIndices": [],
     "derivedFrom": null,
-    "ownerProof": "proof-24",
+    "ownerProof": "proof-34",
     "nodes": [
      {
-      "id": "node-216",
+      "id": "node-377",
       "typeKey": "discard",
       "x": 200,
       "y": 190,
@@ -487,7 +487,7 @@
   },
   {
    "kind": "diagram",
-   "id": "doc-82",
+   "id": "doc-126",
    "data": {
     "name": "Measure and copy",
     "tensorOrder": "big-endian",
@@ -496,7 +496,7 @@
     "ownerProof": null,
     "nodes": [
      {
-      "id": "node-217",
+      "id": "node-378",
       "typeKey": "state",
       "x": 200,
       "y": 330,
@@ -512,7 +512,7 @@
       "process": true
      },
      {
-      "id": "node-218",
+      "id": "node-379",
       "typeKey": "dot",
       "x": 200,
       "y": 230,
@@ -534,7 +534,7 @@
       }
      },
      {
-      "id": "node-219",
+      "id": "node-380",
       "typeKey": "dot",
       "x": 200,
       "y": 140,
@@ -559,18 +559,18 @@
     ],
     "wires": [
      {
-      "id": "wire-126",
-      "fromNodeId": "node-217",
+      "id": "wire-263",
+      "fromNodeId": "node-378",
       "fromPort": 0,
-      "toNodeId": "node-218",
+      "toNodeId": "node-379",
       "toPort": 0,
       "wireType": "qubit"
      },
      {
-      "id": "wire-127",
-      "fromNodeId": "node-218",
+      "id": "wire-264",
+      "fromNodeId": "node-379",
       "fromPort": 0,
-      "toNodeId": "node-219",
+      "toNodeId": "node-380",
       "toPort": 0,
       "wireType": "qubit"
      }
@@ -579,19 +579,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-20",
+   "id": "proof-30",
    "data": {
     "name": "Measure, then delete = discard",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-72",
+      "diagram": "doc-116",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-73",
+      "diagram": "doc-117",
       "relation": "=",
       "note": "spider fusion (white dots)",
       "source": null
@@ -601,19 +601,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-21",
+   "id": "proof-31",
    "data": {
     "name": "Encode, then discard = delete",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-74",
+      "diagram": "doc-118",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-75",
+      "diagram": "doc-119",
       "relation": "=",
       "note": "the discard is a white dot on the pair",
       "source": null
@@ -623,19 +623,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-22",
+   "id": "proof-32",
    "data": {
     "name": "Measure, then encode = decoherence",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-76",
+      "diagram": "doc-120",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-77",
+      "diagram": "doc-121",
       "relation": "=",
       "note": "spider fusion",
       "source": null
@@ -645,19 +645,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-23",
+   "id": "proof-33",
    "data": {
     "name": "Discarding a pure state: the Born rule",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-78",
+      "diagram": "doc-122",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-79",
+      "diagram": "doc-123",
       "relation": "=",
       "note": "the discard of ψ̂ is ⟨ψ|ψ⟩",
       "source": null
@@ -667,19 +667,19 @@
   },
   {
    "kind": "proof",
-   "id": "proof-24",
+   "id": "proof-34",
    "data": {
     "name": "A doubled unitary is causal",
     "assumptions": {},
     "steps": [
      {
-      "diagram": "doc-80",
+      "diagram": "doc-124",
       "relation": "≈",
       "note": "",
       "source": null
      },
      {
-      "diagram": "doc-81",
+      "diagram": "doc-125",
       "relation": "=",
       "note": "Ĥ is unitary, so ⏚ ∘ Ĥ = ⏚",
       "source": null
@@ -697,7 +697,7 @@
     "type": "leaf",
     "editorType": "Diagram Equation Editor",
     "state": {
-     "proofId": "proof-20",
+     "proofId": "proof-30",
      "selected": 0
     }
    },
@@ -705,7 +705,7 @@
     "type": "leaf",
     "editorType": "Diagram Editor",
     "state": {
-     "docId": "doc-82",
+     "docId": "doc-126",
      "orientation": "pqp",
      "view": {
       "fitted": true

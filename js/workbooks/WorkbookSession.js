@@ -10,11 +10,13 @@
  */
 import DocumentStore from '../editors/DocumentStore.js';
 import { captureWorkbook, openWorkbookDocuments } from './Workbook.js';
-import { DemoStore, LocalWorkbookStore } from './WorkbookStores.js';
+import { DemoStore, LocalWorkbookStore, RemoteWorkbookStore } from './WorkbookStores.js';
 
 const Session = {
   /** Where workbooks come from: Demos (read-only) and My Workbooks. */
   stores: { demo: new DemoStore(), mine: new LocalWorkbookStore() },
+  /** The signed-in user (from the server), or null when there is no server. */
+  user: null,
   current: { name: 'Untitled workbook', description: '', origin: 'new', storeId: null },
   dirty: false,
   _layout: null,
@@ -27,6 +29,20 @@ const Session = {
     layout.onChange = () => this.markDirty();
     DocumentStore.onAnyChange(() => this.markDirty());
     DocumentStore.onListChange(() => this.markDirty());
+  },
+
+  /**
+   * Use the server for My Workbooks if there is one (call once at startup).
+   * Without a server, My Workbooks stays in this browser.
+   * @returns {Promise<boolean>} whether the server is in use
+   */
+  async connectServer(opts = {}) {
+    const user = await RemoteWorkbookStore.probe(opts);
+    if (!user) return false;
+    this.user = user;
+    this.stores.mine = new RemoteWorkbookStore({ ...opts, user });
+    this._notify();
+    return true;
   },
 
   onChange(fn) { this._listeners.add(fn); },

@@ -9,6 +9,7 @@ import DiagramEditor from './editors/DiagramEditor/DiagramEditor.js';
 import DiracEditor from './editors/DiracEditor/DiracEditor.js';
 import CircuitEditor from './editors/CircuitEditor/CircuitEditor.js';
 import EquationEditor from './editors/EquationEditor/EquationEditor.js';
+import NumbersView from './editors/NumbersView/NumbersView.js';
 import WorkbookBrowser from './editors/WorkbookBrowser/WorkbookBrowser.js';
 import LayoutManager from './layout/LayoutManager.js';
 import DocumentStore from './editors/DocumentStore.js';
@@ -21,6 +22,7 @@ EditorRegistry.register(CircuitEditor);
 EditorRegistry.register(DiagramEditor);
 EditorRegistry.register(DiracEditor);
 EditorRegistry.register(EquationEditor);
+EditorRegistry.register(NumbersView);
 EditorRegistry.register(WorkbookBrowser);
 
 // ---- App bar: the open workbook, Save, Workbooks ----
@@ -78,6 +80,7 @@ Session.attach(layout);
 //   ?open=<path>.json   a workbook file served with the app (e.g. a test fixture)
 //   otherwise           the Getting started demo
 const params = new URLSearchParams(location.search);
+await Session.connectServer();        // My Workbooks on the server, if one is running
 try {
   const file = params.get('open');
   if (file && /^[\w./-]+\.json$/.test(file) && !file.startsWith('/') && !file.includes('..')) {

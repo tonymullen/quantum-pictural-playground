@@ -5,6 +5,7 @@
  */
 import DiagramCanvas from './DiagramCanvas.js';
 import DiagramToolbar from './DiagramToolbar.js';
+import { rulesFor } from './Rewrites.js';
 import { NODE_TYPES } from './DiagramNode.js';
 import DocumentStore from '../DocumentStore.js';
 import { ORIENTATIONS } from '../../core/FlowDirection.js';
@@ -39,6 +40,7 @@ export default class DiagramEditor {
       addNode: (t) => this.canvas.addNode(t),
       togglePalette: () => this._togglePalette(),
       deleteSelected: () => this.canvas.deleteSelected(),
+      pullTaut: () => this.canvas.previewPullTaut(),
       copy: () => this.canvas.copySelection(),
       paste: e => this.canvas.paste({ alongside: !!(e && e.shiftKey) }),
     });
@@ -77,6 +79,7 @@ export default class DiagramEditor {
       this.canvas.orientation = ORIENTATIONS[st.orientation];
       this.viewSelectEl.value = st.orientation;
     }
+    if (st.structure) { this.canvas.showStructure = true; this.structureBox.checked = true; }
     if (st.view) {
       if (st.view.fitted) this.canvas._fitted = true;      // fits as soon as it has a size
       else Object.assign(this.canvas, { panX: st.view.panX, panY: st.view.panY, zoom: st.view.zoom });
@@ -172,6 +175,16 @@ export default class DiagramEditor {
     sumLab.appendChild(this.sumInputEl);
     this.docBarEl.appendChild(sumLab);
 
+    // The ∘/⊗ structure: layers in sequence, pieces side by side (a view option)
+    const structLab = document.createElement('label');
+    structLab.className = 'diagram-bar-field';
+    structLab.title = 'Show how the diagram reads as a formula: layers composed in sequence (∘, bottom to top) and pieces side by side (⊗)';
+    this.structureBox = document.createElement('input');
+    this.structureBox.type = 'checkbox';
+    this.structureBox.addEventListener('change', () => { this.canvas.showStructure = this.structureBox.checked; this.canvas.draw(); });
+    structLab.append(this.structureBox, '∘⊗');
+    this.docBarEl.appendChild(structLab);
+
     this.derivedNoteEl = document.createElement('span');
     this.derivedNoteEl.className = 'diagram-derived-note';
     this.docBarEl.appendChild(this.derivedNoteEl);
@@ -187,7 +200,7 @@ export default class DiagramEditor {
   /** Panel state for workbooks. */
   getState() {
     const c = this.canvas;
-    return { docId: this.currentDocId, orientation: c.orientation.id,
+    return { docId: this.currentDocId, orientation: c.orientation.id, structure: !!c.showStructure,
       view: { panX: c.panX, panY: c.panY, zoom: c.zoom, fitted: !!c._fitted } };
   }
 
@@ -258,7 +271,7 @@ export default class DiagramEditor {
     this.inspOrient.className = 'insp-field insp-orient';
     const obtn = (text, title, fn) => {
       const b = document.createElement('button'); b.textContent = text; b.title = title;
-      b.addEventListener('click', () => { const n = this._inspNode(); if (n) fn(n); });
+      b.addEventListener('click', () => { const n = this._inspNode(); if (n) fn(n); this.canvas.canvas.focus({ preventScroll: true }); });
       this.inspOrient.appendChild(b); return b;
     };
     obtn('ᵀ', 'Transpose: rotate 180°', n => this.canvas.flip(n, 'T'));
@@ -301,6 +314,11 @@ export default class DiagramEditor {
     }
     el.appendChild(this.inspLeg);
 
+    // Rewrites that apply to the selection (Rewrites.js): fusion, colour change, …
+    this.inspRules = document.createElement('span');
+    this.inspRules.className = 'insp-field insp-rules';
+    el.appendChild(this.inspRules);
+
     // Floats over the canvas (mounted in the constructor), so selecting
     // something never changes the toolbar layout or moves the canvas
     el.classList.add('floating');
@@ -331,6 +349,7 @@ export default class DiagramEditor {
         this.inspType.textContent = `${sel.length} nodes selected · ${l.inputs} in, ${l.outputs} out`;
         this.inspType.title = 'Cmd+C copies them as one piece; Cmd+V with a piece of the same legs replaces them';
       } else this.inspType.textContent = '';
+      this._refreshRules(sel);
       return;
     }
     this.inspType.textContent = sp && sel.length === 0
@@ -360,6 +379,27 @@ export default class DiagramEditor {
     this.inspOut.minus.disabled = n.outputs === 0;
     this.inspIn.plus.disabled = n.inputs >= this._maxLegs;
     this.inspOut.plus.disabled = n.outputs >= this._maxLegs;
+    this._refreshRules(legView ? [] : sel);
+  }
+
+  /** Buttons for the rewrites that apply to the selected nodes. */
+  _refreshRules(sel) {
+    const rules = sel.length ? rulesFor(this.canvas.doc, sel.map(n => n.id)) : [];
+    const key = rules.map(r => r.id + r.name).join('|') + '#' + sel.map(n => n.id).join(',');
+    this.inspRules.hidden = !rules.length;
+    if (key === this._rulesKey) return;
+    this._rulesKey = key;
+    this.inspRules.innerHTML = '';
+    if (!rules.length) return;
+    const lab = document.createElement('span'); lab.textContent = 'Rewrite'; lab.className = 'insp-dim';
+    this.inspRules.appendChild(lab);
+    for (const r of rules) {
+      const b = document.createElement('button');
+      b.textContent = r.name;
+      b.title = `${r.ref} — checked before it is applied`;
+      b.addEventListener('click', () => { this.canvas.rewrite(r.id); this.canvas.canvas.focus({ preventScroll: true }); });   // keys (Cmd+Z) go to the canvas
+      this.inspRules.appendChild(b);
+    }
   }
 
   _refreshDocSelect() {
