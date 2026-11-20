@@ -1,7 +1,7 @@
 /**
  * MongoDB connection and indexes.
  *
- * Collections (see server/README.md for the full model):
+ * Collections (see backend/README.md for the full model):
  *   users       one per person; logins are `identities` (provider + subject), so
  *               one person can sign in with Google and GitHub alike
  *   workbooks   one per saved workbook, owned by a user; `content` is the

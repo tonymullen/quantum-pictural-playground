@@ -1,5 +1,5 @@
 {
-  "name": "qpp-server",
+  "name": "qpp-backend",
   "version": "0.1.0",
   "private": true,
   "description": "Backend for the Quantum Pictural Playground: users and workbooks in MongoDB; serves the app in development",

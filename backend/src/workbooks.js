@@ -9,8 +9,8 @@
  *   DELETE /api/workbooks/:id      → 204   (soft: the workbook is kept, marked deleted)
  *
  * Only the owner can see or change a workbook; anyone else gets 404 (not 403),
- * so ids reveal nothing. The stored `summary` is recomputed here with the
- * app's own Workbook.summarize, so listings can't disagree with the content.
+ * so ids reveal nothing. The stored `summary` is recomputed here (see
+ * workbookFormat.js), so listings can't disagree with the content.
  *
  * The workbook itself is stored as a JSON string (`content`): it has
  * user-chosen keys (e.g. proof assumptions keyed by symbol), which MongoDB
@@ -19,7 +19,7 @@
  */
 import express from 'express';
 import { ObjectId } from 'mongodb';
-import { FORMAT, VERSION, summarize } from '../../js/workbooks/Workbook.js';
+import { FORMAT, VERSION, summarize } from './workbookFormat.js';
 
 const KINDS = new Set(['circuit', 'diagram', 'proof']);
 

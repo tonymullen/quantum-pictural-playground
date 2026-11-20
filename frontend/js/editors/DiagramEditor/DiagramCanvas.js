@@ -465,16 +465,18 @@ export default class DiagramCanvas {
     for (const id of this._hl || []) {                   // what another view points at (hover-linking)
       const n = this.nodes.get(id);
       if (!n) continue;
-      ctx.save(); ctx.fillStyle = 'rgba(255, 196, 0, 0.22)'; ctx.strokeStyle = '#ffc400'; ctx.lineWidth = this.px(2);
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.radius + this.px(10), 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+      // a glow along the node's own outline (under it, so only the outside shows)
+      ctx.save(); ctx.strokeStyle = 'rgba(255, 196, 0, 0.7)'; ctx.lineWidth = (n.thick ? 4 : 2) + this.px(16);
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      n._outlinePath(ctx); ctx.stroke(); ctx.restore();
     }
-    for (const node of this.nodes.values()) node.draw(ctx);
-    for (const id of this._errorNodes || []) {           // ring nodes with errors in red
+    for (const id of this._errorNodes || []) {           // nodes with errors: a dashed red outline
       const n = this.nodes.get(id);
       if (!n) continue;
-      ctx.save(); ctx.strokeStyle = '#f44747'; ctx.lineWidth = this.px(2.5); ctx.setLineDash([this.px(4), this.px(3)]);
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.radius + this.px(9), 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.strokeStyle = '#f44747'; ctx.lineWidth = (n.thick ? 4 : 2) + this.px(12); ctx.setLineDash([this.px(5), this.px(4)]);
+      ctx.lineJoin = 'round'; n._outlinePath(ctx); ctx.stroke(); ctx.restore();
     }
+    for (const node of this.nodes.values()) node.draw(ctx);
     this._drawBoundaryMarkers(ctx);
     this._drawHandles(ctx);
     if (g && g.kind === 'wire') this._drawWiringPreview(ctx);
@@ -592,8 +594,8 @@ export default class DiagramCanvas {
       }
       if (g.target && g.target.isNew) {
         const n = this.nodes.get(g.target.nodeId);
-        if (n) { ctx.beginPath(); ctx.arc(n.x, n.y, n.radius + px(6), 0, Math.PI * 2);
-          ctx.strokeStyle = '#4fc1ff'; ctx.lineWidth = px(2); ctx.stroke(); }
+        if (n) { n._outlinePath(ctx); ctx.lineJoin = 'round';
+          ctx.strokeStyle = '#4fc1ff'; ctx.lineWidth = (n.thick ? 4 : 2) + px(2); ctx.stroke(); }
       }
     } else {
       // "+ new leg" handle on the hovered / selected spiders

@@ -11,7 +11,7 @@
  *
  * DemoStore            — read-only; the demos shipped with the app (demos/*.json)
  * LocalWorkbookStore   — My Workbooks kept in this browser (when there is no server)
- * RemoteWorkbookStore  — My Workbooks on the server (server/, MongoDB)
+ * RemoteWorkbookStore  — My Workbooks on the backend's API (any origin; see config.js)
  */
 
 /** Demos: read-only JSON files shipped with the app. */
@@ -102,7 +102,7 @@ export class RemoteWorkbookStore {
     const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timer = ctl && setTimeout(() => ctl.abort(), timeoutMs);
     try {
-      const r = await f(`${baseUrl.replace(/\/$/, '')}/me`, { cache: 'no-store', signal: ctl && ctl.signal });
+      const r = await f(`${baseUrl.replace(/\/$/, '')}/me`, { cache: 'no-store', credentials: 'include', signal: ctl && ctl.signal });
       if (!r.ok) return null;
       const body = await r.json();
       return body && body.user ? body.user : null;
@@ -113,7 +113,7 @@ export class RemoteWorkbookStore {
     let r;
     try {
       r = await this._fetch(`${this.baseUrl}/workbooks${path}`, {
-        method, cache: 'no-store',
+        method, cache: 'no-store', credentials: 'include',
         headers: body ? { 'Content-Type': 'application/json' } : {},
         body: body ? JSON.stringify(body) : undefined,
       });

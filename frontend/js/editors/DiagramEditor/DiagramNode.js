@@ -243,15 +243,12 @@ export default class DiagramNode {
   draw(ctx, { label = true } = {}) {
     ctx.save();
     const r = this.radius, s = this.type.shape;
-    if (this.selected && this.isBend()) {
-      // a cup/cap is selected along its curve (it can be much wider than a circle)
-      const [p0, p1] = s === 'cup' ? [this.getOutputPort(0), this.getOutputPort(1)] : [this.getInputPort(0), this.getInputPort(1)];
-      const cy = this.bendControlY();
-      ctx.strokeStyle = 'rgba(79,193,255,0.55)'; ctx.lineWidth = this.thick ? 13 : 10; ctx.lineCap = 'round'; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.bezierCurveTo(p0.x, cy, p1.x, cy, p1.x, p1.y); ctx.stroke();
-    } else if (this.selected) {
-      ctx.strokeStyle = '#4fc1ff'; ctx.lineWidth = 3; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.arc(this.x, this.y, r + 6, 0, Math.PI * 2); ctx.stroke();
+    if (this.selected) {
+      // a halo that follows the node's own outline (under the node, so only its outer half shows)
+      ctx.strokeStyle = 'rgba(79,193,255,0.6)'; ctx.lineWidth = (this.thick ? 4 : 2) + 10;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.setLineDash([]);
+      this._outlinePath(ctx); ctx.stroke();
+      ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
     }
     ctx.fillStyle = this.type.color; ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = this.thick ? 4 : 2; ctx.setLineDash([]);   // PQP: doubled things are drawn thick
@@ -264,8 +261,7 @@ export default class DiagramNode {
         ctx.textAlign='center'; ctx.textBaseline='middle'; uprightText(ctx,'H',this.x,this.y); }
     } else if (s === 'morphbox') {
       // PQP box: slanted right side, wider at the top (outputs); reflected per orientation
-      const w = this._boxWidth(), h = r * 2, sl = Math.min(h * 0.6, w * 0.4);
-      this._polygon(ctx, [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2 - sl, h / 2], [-w / 2, h / 2]]);
+      this._polygon(ctx, this._shapePoints());
     } else if (s==='cup') { this._drawCup(ctx,r);
     } else if (s==='cap') { this._drawCap(ctx,r);
     } else if (s==='swap') { this._drawSwap(ctx,r);
@@ -273,9 +269,7 @@ export default class DiagramNode {
       // PQP state/effect: a triangle with one corner clipped. Canonical state: flat
       // top, clipped top-left; its canonical effect is that reflected top↔bottom.
       // (An effect that is a flipped state uses the state's canonical shape.)
-      const canonicalState = (s === 'triangle-down') !== !!(this.flip && this.flip.v);
-      const st = [[-r, -r], [r, -r], [0, r], [-r, -r + 0.7 * r]];
-      this._polygon(ctx, canonicalState ? st : st.map(([x, y]) => [x, -y]));
+      this._polygon(ctx, this._shapePoints());
     } else if (s==='wire') {
       const a = this.getInputPort(0), b = this.getOutputPort(0);
       ctx.strokeStyle = this.type.color; ctx.lineWidth = this.thick ? 5 : 2;
@@ -312,6 +306,53 @@ export default class DiagramNode {
   }
 
   /** Fill and stroke a polygon given in node-local coordinates, applying the orientation. */
+  /** Corner points (relative, before flips) of a box, state or effect. */
+  _shapePoints() {
+    const r = this.radius, s = this.type.shape;
+    if (s === 'morphbox') {
+      // PQP box: slanted right side, wider at the top (outputs); reflected per orientation
+      const w = this._boxWidth(), h = r * 2, sl = Math.min(h * 0.6, w * 0.4);
+      return [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2 - sl, h / 2], [-w / 2, h / 2]];
+    }
+    // PQP state/effect: a triangle with one corner clipped. Canonical state: flat
+    // top, clipped top-left; its canonical effect is that reflected top↔bottom.
+    const canonicalState = (s === 'triangle-down') !== !!(this.flip && this.flip.v);
+    const st = [[-r, -r], [r, -r], [0, r], [-r, -r + 0.7 * r]];
+    return canonicalState ? st : st.map(([x, y]) => [x, -y]);
+  }
+
+  /** The node's outline as the current path (for the selection halo). */
+  _outlinePath(ctx) {
+    const r = this.radius, s = this.type.shape;
+    ctx.beginPath();
+    if (s === 'morphbox' || s === 'triangle-down' || s === 'triangle-up') {
+      const fv = this.flip && this.flip.v ? -1 : 1, fh = this.flip && this.flip.h ? -1 : 1;
+      this._shapePoints().forEach(([x, y], i) => {
+        const px = this.x + fh * x, py = this.y + fv * y;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+    } else if (s === 'box') {
+      ctx.rect(this.x - r, this.y - r, 2 * r, 2 * r);
+    } else if (s === 'cup' || s === 'cap') {
+      const [p0, p1] = s === 'cup' ? [this.getOutputPort(0), this.getOutputPort(1)] : [this.getInputPort(0), this.getInputPort(1)];
+      const cy = this.bendControlY();
+      ctx.moveTo(p0.x, p0.y); ctx.bezierCurveTo(p0.x, cy, p1.x, cy, p1.x, p1.y);
+    } else if (s === 'wire') {
+      const a = this.getInputPort(0), b = this.getOutputPort(0);
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    } else if (s === 'swap') {
+      const a0 = this.getInputPort(0), a1 = this.getInputPort(1), b0 = this.getOutputPort(0), b1 = this.getOutputPort(1);
+      ctx.moveTo(a0.x, a0.y); ctx.lineTo(b1.x, b1.y); ctx.moveTo(a1.x, a1.y); ctx.lineTo(b0.x, b0.y);
+    } else if (s === 'ground') {
+      const a = this.getInputPort(0);
+      ctx.moveTo(a.x, a.y); ctx.lineTo(this.x, this.y + 2);
+      ctx.moveTo(this.x - r, this.y + 2); ctx.lineTo(this.x + r, this.y + 2);
+    } else {
+      ctx.arc(this.x, this.y, s === 'dot' ? r + 1.2 : r, 0, Math.PI * 2);   // spiders, dots, scalars
+    }
+  }
+
   _polygon(ctx, pts) {
     const fv = this.flip && this.flip.v ? -1 : 1, fh = this.flip && this.flip.h ? -1 : 1;
     ctx.beginPath();

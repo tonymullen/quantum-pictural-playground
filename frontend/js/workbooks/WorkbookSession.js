@@ -37,6 +37,7 @@ const Session = {
    * @returns {Promise<boolean>} whether the server is in use
    */
   async connectServer(opts = {}) {
+    if (!opts.baseUrl) return false;
     const user = await RemoteWorkbookStore.probe(opts);
     if (!user) return false;
     this.user = user;

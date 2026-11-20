@@ -80,7 +80,14 @@ Session.attach(layout);
 //   ?open=<path>.json   a workbook file served with the app (e.g. a test fixture)
 //   otherwise           the Getting started demo
 const params = new URLSearchParams(location.search);
-await Session.connectServer();        // My Workbooks on the server, if one is running
+/** The backend's API (config.js), or null for none. */
+function apiBase() {
+  const c = (window.QPP_CONFIG || {}).apiBase;
+  if (c === false) return null;
+  if (typeof c === 'string' && c) return c;
+  return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? 'http://localhost:8080/api' : null;
+}
+await Session.connectServer({ baseUrl: apiBase() });   // My Workbooks on the backend, if there is one
 try {
   const file = params.get('open');
   if (file && /^[\w./-]+\.json$/.test(file) && !file.startsWith('/') && !file.includes('..')) {

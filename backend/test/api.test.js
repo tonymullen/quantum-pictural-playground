@@ -9,9 +9,10 @@ import { loadConfig } from '../src/config.js';
 import { connect } from '../src/db.js';
 import { createApp } from '../src/app.js';
 
-const config = loadConfig({ ...process.env, DB_NAME: `qpp_test_${Date.now().toString(36)}`, PORT: '0' });
+const FRONTEND = 'https://frontend.example';
+const config = loadConfig({ ...process.env, DB_NAME: `qpp_test_${Date.now().toString(36)}`, PORT: '0', ALLOWED_ORIGINS: FRONTEND });
 let client, db, server, base;
-const demo = JSON.parse(readFileSync(new URL('../../demos/teleportation.json', import.meta.url)));
+const demo = JSON.parse(readFileSync(new URL('./fixtures/workbook.json', import.meta.url)));   // a sample workbook
 
 before(async () => {
   ({ client, db } = await connect(config));
@@ -113,39 +114,26 @@ test('workbook keys MongoDB could not store as field names survive', async () =>
   assert.equal(back.body.workbook.documents.at(-1).data.assumptions['$x.y'], 'causal');
 });
 
-test('the app is served, but not the server’s own files', async () => {
-  const page = await fetch(base + '/');
-  assert.equal(page.status, 200);
-  assert.match(await page.text(), /<html|<!doctype/i);
-  assert.equal((await fetch(base + '/js/app.js')).status, 200);
-  assert.equal((await fetch(base + '/demos/index.json')).status, 200);
-  assert.equal((await fetch(base + '/server/src/config.js')).status, 404);
-  assert.equal((await fetch(base + '/server/package.json')).status, 404);
+test('only the API is served: no files', async () => {
+  for (const p of ['/', '/index.html', '/js/app.js', '/src/config.js', '/package.json']) {
+    const r = await fetch(base + p);
+    assert.equal(r.status, 404, p);
+    assert.match((await r.json()).error, /api/);
+  }
 });
 
-test('the app’s RemoteWorkbookStore works against the server', async () => {
-  const { RemoteWorkbookStore } = await import('../../js/workbooks/WorkbookStores.js');
-  const asCarol = (url, opts = {}) => fetch(url, { ...opts, headers: { ...(opts.headers || {}), 'X-QPP-Dev-User': 'carol' } });
-  const opts = { baseUrl: `${base}/api`, fetch: asCarol };
-  const user = await RemoteWorkbookStore.probe(opts);
-  assert.equal(user.displayName, 'carol');
-  assert.equal(await RemoteWorkbookStore.probe({ baseUrl: 'http://127.0.0.1:9/api', timeoutMs: 500 }), null, 'no server → null');
-
-  const tab1 = new RemoteWorkbookStore({ ...opts, user });
-  const id = await tab1.save(demo);
-  assert.deepEqual((await tab1.list()).map(w => w.id), [id]);
-  assert.deepEqual(await tab1.load(id), demo);
-  await tab1.save({ ...demo, name: 'Saved in place' }, id);
-  assert.equal((await tab1.list())[0].name, 'Saved in place');
-
-  // A second tab loads it, saves; the first tab's next save is refused, not lost
-  const tab2 = new RemoteWorkbookStore({ ...opts, user });
-  await tab2.load(id);
-  await tab2.save({ ...demo, name: 'From tab 2' }, id);
-  await assert.rejects(tab1.save({ ...demo, name: 'From tab 1' }, id), e => e.conflict === true && /another tab/.test(e.message));
-  assert.equal((await tab2.list())[0].name, 'From tab 2');
-
-  await tab2.remove(id);
-  assert.equal((await tab1.list()).length, 0);
-  await assert.rejects(tab1.load(id), e => e.status === 404);
+test('CORS: the frontend’s origin may call the API, others may not', async () => {
+  const pre = await fetch(base + '/api/workbooks', { method: 'OPTIONS', headers: {
+    Origin: FRONTEND, 'Access-Control-Request-Method': 'PUT', 'Access-Control-Request-Headers': 'content-type' } });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.headers.get('access-control-allow-origin'), FRONTEND);
+  assert.equal(pre.headers.get('access-control-allow-credentials'), 'true');
+  assert.match(pre.headers.get('access-control-allow-methods'), /PUT/);
+  const get = await fetch(base + '/api/me', { headers: { Origin: FRONTEND } });
+  assert.equal(get.headers.get('access-control-allow-origin'), FRONTEND);
+  const other = await fetch(base + '/api/me', { headers: { Origin: 'https://elsewhere.example' } });
+  assert.equal(other.headers.get('access-control-allow-origin'), null, 'no CORS grant for other origins');
+  const otherPre = await fetch(base + '/api/workbooks', { method: 'OPTIONS', headers: { Origin: 'https://elsewhere.example', 'Access-Control-Request-Method': 'POST' } });
+  assert.equal(otherPre.status, 403);
+  assert.throws(() => loadConfig({ NODE_ENV: 'production', AUTH_MODE: 'oauth' }), /ALLOWED_ORIGINS/);
 });

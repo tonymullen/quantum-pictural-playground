@@ -1,18 +1,25 @@
-# Quantum Pictural Playground — server
+# Quantum Pictural Playground — backend
 
-The backend: users and their workbooks, in MongoDB. In development it also
-serves the app, so the app and the API share one origin (no CORS, and login
-cookies will just work).
+Users and their workbooks, in MongoDB, as a JSON API under `/api` — nothing
+else is served. The frontend is deployed separately (any static host) and
+calls the API across origins; list its origin(s) in `ALLOWED_ORIGINS` (CORS,
+with credentials, for login cookies later).
 
 ```bash
-cd server
+cd backend
 npm install
-npm start            # http://localhost:8080  (npm run dev restarts on changes)
+npm start            # http://localhost:8080/api  (npm run dev restarts on changes)
 npm test             # API tests, in a throwaway database that is dropped afterwards
 ```
 
-Without the server (e.g. `python3 serve.py`), the app still works: My
-Workbooks falls back to the browser's own storage and says so.
+Point the frontend at it in `frontend/config.js` (`apiBase`). Without a
+backend the app still works: My Workbooks falls back to the browser's own
+storage and says so.
+
+The API's view of the workbook format (`src/workbookFormat.js`) mirrors the
+app's `frontend/js/workbooks/Workbook.js`; keep `FORMAT`, `VERSION` and
+`summarize` in step when the format changes. Nothing here imports frontend
+code.
 
 | Setting | Default | |
 |---|---|---|
@@ -21,6 +28,7 @@ Workbooks falls back to the browser's own storage and says so.
 | `DB_NAME` | `qpp` | |
 | `AUTH_MODE` | `dev` | no login yet (see below); refused when `NODE_ENV=production` |
 | `MAX_WORKBOOK_BYTES` | 2 MB | the demos are ~25 KB |
+| `ALLOWED_ORIGINS` | `*` (development) | comma-separated frontend origins allowed to call the API; required in production |
 
 ## API
 
@@ -37,7 +45,7 @@ user's data. Someone else's workbook is a 404, never a 403, so ids reveal nothin
 | `PUT /api/workbooks/:id` | `{ workbook, revision }` | `{ id, revision }`. `revision` is the one you loaded: if it was saved elsewhere since, **409** (and the current revision), so a stale tab never overwrites newer work |
 | `DELETE /api/workbooks/:id` | | `204`. Soft: the workbook is kept, marked deleted |
 
-A `workbook` is exactly what the app saves (`js/workbooks/Workbook.js`,
+A `workbook` is exactly what the app saves (`frontend/js/workbooks/Workbook.js`,
 `format: "qpp-workbook"`). The server checks its shape and recomputes its
 summary with the app's own `summarize`. It imports the app's modules
 directly; the core runs unchanged in Node, which is also how class progress
